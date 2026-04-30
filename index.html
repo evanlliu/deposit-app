@@ -1,0 +1,3199 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>定期存款管理系统</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #d7deea;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --green: #84cc16;
+      --green-dark: #166534;
+      --red: #ef4444;
+      --orange: #f59e0b;
+      --purple: #ede9fe;
+      --thead: #e9edf7;
+      --shadow: 0 10px 30px rgba(31, 41, 55, .08);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(245, 247, 251, .92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .wrap {
+      width: min(1800px, 100%);
+      margin: 0 auto;
+      padding: 14px 16px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .title p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toolbar, .filterbar, .ratebar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button, .btn {
+      border: 1px solid transparent;
+      background: var(--primary);
+      color: white;
+      padding: 9px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 650;
+      transition: .15s ease;
+      box-shadow: 0 2px 10px rgba(37, 99, 235, .12);
+      white-space: nowrap;
+    }
+
+    button:hover { background: var(--primary-dark); }
+    button.secondary { background: white; color: var(--text); border-color: var(--line); box-shadow: none; }
+    button.secondary:hover { background: #f3f4f6; }
+    button.danger { background: var(--red); }
+    button.danger:hover { background: #dc2626; }
+    button.warn { background: var(--orange); }
+    button.warn:hover { background: #d97706; }
+    button.green { background: #16a34a; }
+    button.green:hover { background: #15803d; }
+    button.small { padding: 6px 8px; border-radius: 8px; font-size: 12px; }
+
+    input, select, textarea {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: white;
+      color: var(--text);
+      padding: 9px 10px;
+      outline: none;
+      font-size: 14px;
+      min-height: 38px;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+    }
+
+    .section {
+      width: min(1800px, 100%);
+      margin: 14px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .summary-item {
+      padding: 14px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .summary-item .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .summary-item .value {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .ratebar label, .filterbar label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .ratebar input { width: 105px; }
+    .rate-info {
+      color: var(--muted);
+      font-size: 12px;
+      padding: 0 4px;
+    }
+    .filterbar input { width: 260px; max-width: calc(100vw - 40px); }
+    .filterbar select { width: 150px; }
+
+    .table-wrap {
+      overflow: auto;
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+
+    table {
+      width: 100%;
+      min-width: 1540px;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th, td {
+      border: 1px solid #cfd6e3;
+      padding: 8px 7px;
+      text-align: center;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--thead);
+      color: #0f172a;
+      font-weight: 800;
+    }
+
+    tfoot td {
+      background: #f8fafc;
+      font-weight: 800;
+    }
+
+    .seq-col { min-width: 46px; font-weight: 800; background: #f8fafc; }
+    .open-rate, .now-rate { background: var(--purple); }
+    .money-red { color: red; font-weight: 800; }
+    .gain-green { background: var(--green); color: #0a2d05; font-weight: 900; }
+    .muted { color: var(--muted); }
+    .yes { color: #0f766e; font-weight: 700; }
+    .no { color: #777; }
+
+    tr.soon .remaining-cell { background: #fde68a; font-weight: 900; }
+    tr.expired .remaining-cell { background: #ef4444; color: white; font-weight: 900; }
+
+    .mobile-list { display: none; padding: 12px; gap: 10px; }
+    .mobile-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: white;
+      box-shadow: 0 6px 18px rgba(31, 41, 55, .06);
+    }
+
+    .mobile-card.soon { border-color: #f59e0b; }
+    .mobile-card.expired { border-color: #ef4444; }
+    .mobile-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .mobile-title strong { font-size: 16px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
+    .pill.soon { background: #fef3c7; color: #92400e; }
+    .pill.expired { background: #fee2e2; color: #991b1b; }
+    .mobile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .mobile-field {
+      padding: 8px;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .mobile-field .k { color: var(--muted); font-size: 12px; margin-bottom: 3px; }
+    .mobile-field .v { font-weight: 750; }
+    .mobile-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+    .modal-mask {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, .45);
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .modal {
+      width: min(940px, 100%);
+      margin: 30px auto;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.25);
+      overflow: hidden;
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .modal-head h2 { margin: 0; font-size: 18px; }
+    .modal-body { padding: 16px; }
+    .modal-foot {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 14px 16px;
+      border-top: 1px solid var(--line);
+      background: #f8fafc;
+      flex-wrap: wrap;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .form-field { display: flex; flex-direction: column; gap: 6px; }
+    .form-field label { color: var(--muted); font-size: 13px; font-weight: 650; }
+    .form-field.full { grid-column: 1 / -1; }
+    textarea { min-height: 80px; resize: vertical; }
+
+    .hint {
+      margin: 12px 0 0;
+      padding: 10px 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      color: #1e40af;
+      line-height: 1.55;
+    }
+
+    .status-line {
+      padding: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .hidden-file { display: none; }
+
+    .column-config-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .column-config-box {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: #f8fbff;
+    }
+    .column-config-box h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+    .column-config-box .hint {
+      margin-top: 10px;
+    }
+
+    .nested-grid { box-shadow: none; margin-top: 6px; }
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(130px, 1fr));
+      gap: 8px;
+      padding: 8px 0;
+    }
+    .checkbox-grid label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: white;
+      color: var(--text);
+    }
+    .checkbox-grid input { width: auto; min-height: auto; }
+    .preview-box {
+      white-space: pre-wrap;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 90px;
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+
+    @media (max-width: 1100px) {
+      .summary-grid { grid-template-columns: repeat(3, 1fr); }
+      .form-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 760px) {
+      .wrap, .section { padding-left: 10px; padding-right: 10px; }
+      .title h1 { font-size: 18px; }
+      .toolbar, .filterbar, .ratebar { width: 100%; }
+      .toolbar button, .filterbar input, .filterbar select, .ratebar input, .ratebar button { flex: 1 1 auto; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .summary-item { padding: 10px; }
+      .summary-item .value { font-size: 17px; }
+      .desktop-table { display: none; }
+      .mobile-list { display: grid; }
+      .form-grid { grid-template-columns: 1fr; }
+      .modal { margin: 0 auto; border-radius: 16px; }
+      .modal-mask { padding: 8px; }
+      .checkbox-grid { grid-template-columns: 1fr 1fr; }
+      .column-config-layout { grid-template-columns: 1fr; }
+      .mobile-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 420px) {
+      .summary-grid { grid-template-columns: 1fr; }
+      .mobile-grid { grid-template-columns: 1fr; }
+      button, input, select { width: 100%; }
+      .checkbox-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap topbar">
+      <div class="title">
+        <h1>定期存款管理系统</h1>
+        <p>当前定存 + 历史记录；只需录入关键字段，汇率和收益自动计算。</p>
+      </div>
+      <div class="toolbar">
+        <button id="btnAdd">新增定存</button>
+        <button id="btnRefresh" class="secondary">从云端刷新</button>
+        <button id="btnSyncSetting" class="secondary">同步设置</button>
+        <button id="btnMailSetting" class="secondary">邮件提醒</button>
+        <button id="btnColumnSetting" class="secondary">列配置</button>
+        <button id="btnRateSetting" class="secondary">汇率设置</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="summary-grid" id="summaryGrid"></div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="active">当前定存</button>
+        <button class="tab-btn" data-tab="history">历史记录</button>
+      </div>
+
+      <div class="card">
+        <div class="panel-head">
+          <div class="ratebar">
+            <button id="btnFetchRates" class="green">刷新汇率</button>
+            <label>历史刷新范围
+              <input id="historyRateRefreshDays" type="number" min="0" step="1" value="30" />
+              天
+            </label>
+            <span id="rateInfo" class="rate-info">刷新汇率会更新当前定存全部记录；历史记录只更新配置天数内的记录。</span>
+          </div>
+          <div class="filterbar">
+            <input id="searchInput" placeholder="搜索银行 / 备注 / 日期" />
+            <select id="bankFilter"><option value="">全部银行</option></select>
+            <button id="btnExportJson" class="secondary">导出JSON</button>
+            <button id="btnExportCsv" class="secondary">导出CSV</button>
+            <button id="btnExportBackupJson" class="secondary">备份JSON</button>
+            <button id="btnImport" class="secondary">导入备份</button>
+            <input id="importFile" class="hidden-file" type="file" accept="application/json,.json" />
+          </div>
+          <div class="status-line" id="statusLine">本地模式</div>
+        </div>
+
+        <div id="activePanel">
+          <div class="table-wrap desktop-table">
+            <table id="activeTable"></table>
+          </div>
+          <div class="mobile-list" id="activeMobileList"></div>
+        </div>
+
+        <div id="historyPanel" style="display:none;">
+          <div class="table-wrap desktop-table">
+            <table id="historyTable"></table>
+          </div>
+          <div class="mobile-list" id="historyMobileList"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-mask" id="recordModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="recordModalTitle">新增定存</h2>
+        <button class="secondary small" data-close="recordModal">关闭</button>
+      </div>
+      <div class="modal-body">
+        <form id="recordForm">
+          <input type="hidden" id="recordId" />
+          <div class="form-grid">
+            <div class="form-field">
+              <label>银行</label>
+              <input id="bank" list="bankList" placeholder="例如 YAP(G)" required />
+              <datalist id="bankList">
+                <option value="YAP(G)"></option>
+                <option value="YAP"></option>
+                <option value="ICBC"></option>
+                <option value="BOC"></option>
+                <option value="CCB"></option>
+                <option value="HSBC"></option>
+              </datalist>
+            </div>
+            <div class="form-field">
+              <label>开户日期</label>
+              <input id="openDate" type="date" required />
+            </div>
+            <div class="form-field">
+              <label>开始日期</label>
+              <input id="startDate" type="date" required />
+            </div>
+            <div class="form-field">
+              <label>结束日期</label>
+              <input id="endDate" type="date" required />
+            </div>
+
+            <div class="form-field">
+              <label>本金 TRY</label>
+              <input id="principalTry" type="number" step="0.01" placeholder="例如 400000" required />
+            </div>
+            <div class="form-field">
+              <label>本金+利息 TRY</label>
+              <input id="principalPlusInterestTry" type="number" step="0.01" placeholder="例如 412295.89" required />
+            </div>
+            <div class="form-field">
+              <label>年利率 TRY %</label>
+              <input id="annualRateTry" type="number" step="0.01" placeholder="例如 40" required />
+            </div>
+            <div class="form-field">
+              <label>是否创建提醒</label>
+              <select id="reminderEnabled">
+                <option value="YES">YES</option>
+                <option value="NO">NO</option>
+              </select>
+            </div>
+
+            <input id="usdCnyOpen" type="hidden" />
+            <input id="tryCnyOpen" type="hidden" />
+            <input id="usdCnyNow" type="hidden" />
+            <input id="tryCnyNow" type="hidden" />
+            <input id="interestTry" type="hidden" />
+
+            <div class="form-field full">
+              <label>自动计算结果</label>
+              <div id="calcPreview" class="hint">填写本金、本金+利息、日期后自动计算。</div>
+            </div>
+
+            <div class="form-field full">
+              <label>汇率自动获取</label>
+              <div class="toolbar">
+                <button id="btnFetchOpenRates" type="button" class="secondary">按开户日期获取汇率</button>
+                <button id="btnFetchNowRatesToForm" type="button" class="secondary">按结束日期获取汇率</button>
+                <button id="btnFetchAllRatesToForm" type="button" class="green">自动填入全部汇率</button>
+              </div>
+              <div class="hint" id="formRateHint">开户汇率根据开户日期获取；结束汇率根据结束日期获取。周末/节假日通常会返回最近一个工作日汇率。</div>
+            </div>
+
+            <div class="form-field full">
+              <label>备注</label>
+              <textarea id="remark" placeholder="例如：一个月定期、已续存、资金来源说明等"></textarea>
+            </div>
+
+            <div class="form-field full history-extra">
+              <label>历史记录兑换信息（可选）</label>
+              <div class="form-grid nested-grid">
+                <div class="form-field">
+                  <label>兑换 TRY</label>
+                  <input id="exchangeTry" type="number" step="0.01" placeholder="例如 393820" />
+                </div>
+                <div class="form-field">
+                  <label>兑换 CNY</label>
+                  <input id="exchangeCny" type="number" step="0.01" placeholder="例如 59722" />
+                </div>
+                <div class="form-field full">
+                  <label>兑换原因</label>
+                  <input id="exchangeReason" placeholder="例如：和 OPPO 苏建明换" />
+                </div>
+              </div>
+              <div class="hint">新增当前定存时可以不填；移入历史后可编辑补充。</div>
+            </div>
+          </div>
+          <div class="hint">
+            说明：现在只需要手动录入开户日期、开始日期、结束日期、本金 TRY、本金+利息 TRY、年利率 TRY。利息、存款天数、剩余天数、CNY/USD 换算、CNY 年化收益率都会自动计算。结束日期如果是未来日期，系统会暂时使用最新可用汇率，等到结束日期后可以点击“刷新汇率”重新按开户日期和结束日期更新汇率。
+          </div>
+        </form>
+      </div>
+      <div class="modal-foot">
+        <button class="secondary" data-close="recordModal">取消</button>
+        <button id="btnSaveRecord">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-mask" id="syncModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>同步设置</h2>
+        <button class="secondary small" data-close="syncModal">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field full">
+            <label>Cloudflare Worker API 地址</label>
+            <input id="apiUrl" placeholder="https://你的worker.workers.dev/data" />
+          </div>
+          <div class="form-field full">
+            <label>访问密码</label>
+            <input id="apiPassword" type="password" placeholder="和 Worker 里的 APP_PASSWORD 一样" />
+          </div>
+        </div>
+        <div class="hint">
+          不填写 API 地址时，系统使用本地模式，数据只保存在当前浏览器。填写后，手机和电脑会通过 GitHub 的 data.json 同步。API 地址会写入云端配置，方便换设备后识别；访问密码只保存在本机，不写入 data.json。
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="secondary" data-close="syncModal">取消</button>
+        <button id="btnSaveSync">保存同步设置</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal-mask" id="rateModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>汇率设置</h2>
+        <button class="secondary small" data-close="rateModal">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>默认汇率来源</label>
+            <select id="rateProvider">
+              <option value="TCMB">TCMB 土耳其央行，推荐 TRY 场景</option>
+              <option value="Frankfurter">Frankfurter</option>
+              <option value="ExchangeRateAPI">ExchangeRate-API</option>
+              <option value="ExchangeRateHost">exchangerate.host</option>
+              <option value="CurrencyAPI">currencyapi.com</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>失败时自动切换备用来源</label>
+            <select id="rateFallbackEnabled">
+              <option value="YES">YES</option>
+              <option value="NO">NO</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>TCMB 汇率类型</label>
+            <select id="tcmbRateType">
+              <option value="ForexBuying">ForexBuying 外汇买入</option>
+              <option value="ForexSelling">ForexSelling 外汇卖出</option>
+              <option value="Average">买入/卖出平均价</option>
+              <option value="BanknoteBuying">BanknoteBuying 现钞买入</option>
+              <option value="BanknoteSelling">BanknoteSelling 现钞卖出</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>ExchangeRate-API Key，可选</label>
+            <input id="exchangeRateApiKey" type="password" placeholder="不填则使用 open.er-api.com 最新汇率；历史日期需要付费历史接口权限" />
+          </div>
+          <div class="form-field full">
+            <label>exchangerate.host API Key</label>
+            <input id="exchangeRateHostApiKey" type="password" placeholder="exchangerate.host / APILayer access_key；支持 live / historical / timeframe" />
+          </div>
+          <div class="form-field">
+            <label>exchangerate.host 批量获取历史汇率</label>
+            <select id="exchangeRateHostBatchEnabled">
+              <option value="YES">YES，刷新时优先用 timeframe 批量获取</option>
+              <option value="NO">NO，每个日期单独获取</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>批量单次最大天数</label>
+            <input id="exchangeRateHostBatchWindowDays" type="number" min="1" max="365" step="1" placeholder="默认 365" />
+          </div>
+          <div class="form-field full">
+            <label>批量失败后允许单日接口兜底</label>
+            <select id="exchangeRateHostAllowSingleFallback">
+              <option value="NO">NO，停止刷新，避免消耗次数</option>
+              <option value="YES">YES，继续单日请求兜底</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>currencyapi.com API Key</label>
+            <input id="currencyApiKey" type="password" placeholder="currencyapi.com 需要 API Key；支持 latest / historical" />
+          </div>
+          <div class="form-field full">
+            <label>是否把汇率 API Key 同步到云端</label>
+            <select id="rateApiKeysCloudSync">
+              <option value="NO">NO，不同步密钥，推荐更安全</option>
+              <option value="YES">YES，同步到 GitHub data.json，换设备不用重新填写</option>
+            </select>
+          </div>
+        </div>
+        <div class="hint">
+          开户汇率和结束汇率都会按这里选择的来源获取。TCMB 更适合 TRY 场景；Frankfurter 无需 Key；ExchangeRate-API 不填 Key 时只使用开放最新汇率；exchangerate.host 和 currencyapi.com 需要 API Key。exchangerate.host 已支持 timeframe 批量获取历史汇率，刷新大量记录时会优先按日期区间缓存，减少 API 调用次数。默认情况下密钥只保存在当前浏览器本地配置；如果选择“同步 API Key 到云端”，会写入 GitHub 私有仓库的 data.json，换设备可自动带出。汇率值不再强制保留 4 位小数，会尽量保留接口返回的精度。
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="secondary" data-close="rateModal">取消</button>
+        <button id="btnSaveRateSetting">保存汇率设置</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal-mask" id="columnModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>列配置</h2>
+        <button class="secondary small" data-close="columnModal">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="column-config-layout">
+          <div class="column-config-box">
+            <h3>当前定存列配置</h3>
+            <div class="checkbox-grid" id="activeColumnBox"></div>
+            <div class="hint">当前定存表和历史记录表独立保存配置。例如可以只隐藏当前定存的“本金(USD)”。</div>
+          </div>
+          <div class="column-config-box">
+            <h3>历史记录列配置</h3>
+            <div class="checkbox-grid" id="historyColumnBox"></div>
+            <div class="hint">历史记录可以保留更多字段，例如删除时间、兑换原因、兑换金额等。</div>
+          </div>
+        </div>
+        <div class="hint" style="margin-top:12px;">
+          “序号”列现在也可以隐藏/显示；“操作”列固定显示，避免隐藏后无法编辑或恢复记录。列配置会保存在本地数据中，后续同步到云端时也会一起保存。
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="secondary" id="btnResetColumns">恢复默认列</button>
+        <button class="secondary" data-close="columnModal">取消</button>
+        <button id="btnSaveColumnSetting">保存列配置</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-mask" id="mailModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>邮件提醒设置</h2>
+        <button class="secondary small" data-close="mailModal">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>是否启用邮件提醒</label>
+            <select id="mailEnabled">
+              <option value="YES">YES</option>
+              <option value="NO">NO</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>收件邮箱</label>
+            <input id="mailTo" placeholder="例如 you@example.com" />
+          </div>
+          <div class="form-field">
+            <label>提前几天推送</label>
+            <input id="mailAdvanceDays" placeholder="例如 1 或 3，留空则不提前推送" />
+          </div>
+          <div class="form-field">
+            <label>到期当天每几小时推送</label>
+            <input id="mailDueTodayIntervalHours" type="number" min="1" step="1" placeholder="例如 1 或 2，留空则不当天循环推送" />
+          </div>
+          <div class="form-field">
+            <label>只提醒已开启提醒的记录</label>
+            <select id="mailOnlyEnabledRecords">
+              <option value="YES">YES</option>
+              <option value="NO">NO</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label>邮件标题模板</label>
+            <input id="mailSubjectTemplate" placeholder="例如：定存到期提醒：{{bank}} {{principalTry}} TRY" />
+          </div>
+          <div class="form-field full">
+            <label>邮件内容模板</label>
+            <textarea id="mailBodyTemplate" placeholder="支持变量：{{bank}}、{{principalTry}}、{{endDate}}、{{remainingDays}}、{{principalPlusInterestTry}}、{{gainCny}}"></textarea>
+          </div>
+          <div class="form-field full">
+            <label>选择推送内容字段</label>
+            <div class="checkbox-grid" id="mailFieldsBox">
+              <label><input type="checkbox" value="bank" />银行</label>
+              <label><input type="checkbox" value="principalTry" />本金 TRY</label>
+              <label><input type="checkbox" value="endDate" />到期日期</label>
+              <label><input type="checkbox" value="remainingDays" />剩余天数</label>
+              <label><input type="checkbox" value="principalPlusInterestTry" />本金+利息 TRY</label>
+              <label><input type="checkbox" value="gainCny" />获得 CNY</label>
+              <label><input type="checkbox" value="annualRateTry" />年利率 TRY</label>
+              <label><input type="checkbox" value="annualRateCny" />年利率 CNY</label>
+              <label><input type="checkbox" value="remark" />备注</label>
+            </div>
+          </div>
+          <div class="form-field full">
+            <label>邮件预览</label>
+            <div id="mailPreview" class="preview-box">点击“预览提醒邮件”。</div>
+          </div>
+        </div>
+        <div class="hint">
+          本地模式会保存提醒规则并生成预览；如需本地真实发送邮件，请运行 local-email-server.js 并配置 .env 中的 SMTP 信息。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；两个规则都填写时会同时生效。
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="secondary" id="btnPreviewMail">预览提醒邮件</button>
+        <button class="secondary" id="btnSendTestMail">发送测试邮件</button>
+        <button class="secondary" id="btnSendLocalReminder">本地执行一次提醒</button>
+        <button class="secondary" data-close="mailModal">取消</button>
+        <button id="btnSaveMailSetting">保存邮件设置</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'deposit-manager-data-v1';
+  const CONFIG_KEY = 'deposit-manager-config-v1';
+  const RATE_CACHE_KEY = 'deposit-manager-rate-cache-v2';
+
+  let appData = defaultData();
+  let currentTab = 'active';
+  let editingMode = 'add';
+  let editingRecordId = null;
+  let settingsPersistTimer = null;
+
+
+  const ACTIVE_COLUMNS = [
+    { key: 'seq', label: '序号' },
+    { key: 'remainingDays', label: '剩余<br>天数' },
+    { key: 'bank', label: '银行' },
+    { key: 'openDate', label: '开户日期' },
+    { key: 'usdCnyOpen', label: '开户汇率<br>(USD=&gt;CNY)', thClass: 'open-rate' },
+    { key: 'tryCnyOpen', label: '开户汇率<br>(TRY=&gt;CNY)', thClass: 'open-rate' },
+    { key: 'startDate', label: '开始日期' },
+    { key: 'endDate', label: '结束日期' },
+    { key: 'usdCnyNow', label: '结束汇率<br>(USD=&gt;CNY)', thClass: 'now-rate' },
+    { key: 'tryCnyNow', label: '结束汇率<br>(TRY=&gt;CNY)', thClass: 'now-rate' },
+    { key: 'principalTry', label: '本金<br>(TRY)' },
+    { key: 'interestTry', label: '利息<br>(TRY)' },
+    { key: 'principalPlusInterestTry', label: '本金+利息<br>(TRY)' },
+    { key: 'depositDays', label: '存款<br>(天)' },
+    { key: 'annualRateTry', label: '年利率' },
+    { key: 'annualRateCny', label: '年利率<br>(CNY)' },
+    { key: 'principalCny', label: '本金(CNY)' },
+    { key: 'principalUsd', label: '本金(USD)' },
+    { key: 'principalPlusInterestCny', label: '本金+利息<br>(CNY)' },
+    { key: 'principalPlusInterestUsd', label: '本金+利息<br>(USD)' },
+    { key: 'gainTry', label: '获得<br>(TRY)' },
+    { key: 'gainCny', label: '获得<br>(CNY)' },
+    { key: 'gainUsd', label: '获得<br>(USD)' },
+    { key: 'reminderEnabled', label: '是否创建<br>提醒' },
+    { key: 'actions', label: '操作', locked: true }
+  ];
+
+  const HISTORY_COLUMNS = [
+    { key: 'seq', label: '序号' },
+    { key: 'deletedAt', label: '删除时间' },
+    { key: 'deleteReason', label: '删除原因' },
+    { key: 'remainingDays', label: '剩余<br>天数' },
+    { key: 'bank', label: '银行' },
+    { key: 'openDate', label: '开户日期' },
+    { key: 'usdCnyOpen', label: '开户汇率<br>(USD=&gt;CNY)', thClass: 'open-rate' },
+    { key: 'tryCnyOpen', label: '开户汇率<br>(TRY=&gt;CNY)', thClass: 'open-rate' },
+    { key: 'startDate', label: '开始日期' },
+    { key: 'endDate', label: '结束日期' },
+    { key: 'usdCnyNow', label: '结束汇率<br>(USD=&gt;CNY)', thClass: 'now-rate' },
+    { key: 'tryCnyNow', label: '结束汇率<br>(TRY=&gt;CNY)', thClass: 'now-rate' },
+    { key: 'principalTry', label: '本金<br>(TRY)' },
+    { key: 'interestTry', label: '利息<br>(TRY)' },
+    { key: 'principalPlusInterestTry', label: '本金+利息<br>(TRY)' },
+    { key: 'depositDays', label: '存款<br>(天)' },
+    { key: 'annualRateTry', label: '年利率' },
+    { key: 'annualRateCny', label: '年利率<br>(CNY)' },
+    { key: 'principalCny', label: '本金(CNY)' },
+    { key: 'principalUsd', label: '本金(USD)' },
+    { key: 'principalPlusInterestCny', label: '本金+利息<br>(CNY)' },
+    { key: 'principalPlusInterestUsd', label: '本金+利息<br>(USD)' },
+    { key: 'gainTry', label: '获利<br>(TRY)' },
+    { key: 'gainCny', label: '获利<br>(CNY)' },
+    { key: 'gainUsd', label: '获利<br>(USD)' },
+    { key: 'exchangeTry', label: '兑换<br>(TRY)' },
+    { key: 'exchangeCny', label: '兑换<br>(CNY)' },
+    { key: 'exchangeReason', label: '兑换<br>(原因)' },
+    { key: 'remark', label: '备注' },
+    { key: 'actions', label: '操作', locked: true }
+  ];
+
+  $(init);
+
+  function init() {
+    bindEvents();
+    loadConfigToForm();
+    loadLocalData();
+    setGlobalRateInputs();
+    renderAll();
+    updateStatus('已加载本地数据');
+  }
+
+  function bindEvents() {
+    $('#btnAdd').on('click', openAddModal);
+    $('#btnSaveRecord').on('click', saveRecordFromForm);
+    $('#btnEstimateInterest').on('click', function (e) { e.preventDefault(); estimateInterestToForm(); });
+    $('#btnFetchOpenRates').on('click', function (e) { e.preventDefault(); fetchOpenRatesToForm(true); });
+    $('#btnFetchNowRatesToForm').on('click', function (e) { e.preventDefault(); fetchEndRatesToForm(true); });
+    $('#btnFetchAllRatesToForm').on('click', function (e) { e.preventDefault(); autoFillFormRates(true); });
+    $('#btnSyncSetting').on('click', openSyncModal);
+    $('#btnMailSetting').on('click', openMailModal);
+    $('#btnColumnSetting').on('click', openColumnModal);
+    $('#btnRateSetting').on('click', openRateModal);
+    $('#btnSaveRateSetting').on('click', saveRateSetting);
+    $('#btnSaveMailSetting').on('click', saveMailSetting);
+    $('#btnSaveColumnSetting').on('click', saveColumnSetting);
+    $('#btnResetColumns').on('click', resetColumnSetting);
+    $('#btnPreviewMail').on('click', previewMailReminder);
+    $('#btnSendTestMail').on('click', sendLocalTestMail);
+    $('#btnSendLocalReminder').on('click', sendLocalReminderOnce);
+    $('#btnSaveSync').on('click', saveSyncSetting);
+    $('#btnRefresh').on('click', loadCloudData);
+    $('#btnFetchRates').on('click', refreshAllRatesByOpenAndEndDate);
+    $('#btnExportJson').on('click', exportJson);
+    $('#btnExportCsv').on('click', exportCsv);
+    $('#btnExportBackupJson').on('click', exportBackupJson);
+    $('#btnImport').on('click', () => $('#importFile').click());
+    $('#importFile').on('change', importJson);
+    $('#searchInput, #bankFilter').on('input change', renderAll);
+    $('#globalUsdCny, #globalTryCny').on('input change', function () {
+      appData.settings.currentUsdCny = numberValue('#globalUsdCny');
+      appData.settings.currentTryCny = numberValue('#globalTryCny');
+      saveLocalData();
+      persistSettingsSoon();
+    });
+
+    $('#historyRateRefreshDays').on('input change', function () {
+      appData.settings.historyRateRefreshDays = getHistoryRateRefreshDays();
+      saveLocalData();
+      $('#rateInfo').text(`刷新汇率会更新当前定存全部记录；历史记录只更新近 ${appData.settings.historyRateRefreshDays} 天内的记录。`);
+      persistSettingsSoon();
+    });
+
+    $('#openDate').on('change', function () { fetchOpenRatesToForm(false).finally(updateFormPreview); });
+    $('#endDate').on('change', function () { fetchEndRatesToForm(false).finally(updateFormPreview); });
+
+    $('#startDate, #endDate, #principalTry, #principalPlusInterestTry, #annualRateTry').on('input change', updateFormPreview);
+
+    $('.tab-btn').on('click', function () {
+      currentTab = $(this).data('tab');
+      $('.tab-btn').removeClass('active');
+      $(this).addClass('active');
+      $('#activePanel').toggle(currentTab === 'active');
+      $('#historyPanel').toggle(currentTab === 'history');
+      renderAll();
+    });
+
+    $('[data-close]').on('click', function (e) {
+      e.preventDefault();
+      $('#' + $(this).data('close')).hide();
+    });
+
+    $('.modal-mask').on('click', function (e) {
+      if (e.target === this) $(this).hide();
+    });
+  }
+
+  function defaultData() {
+    return {
+      activeRecords: [],
+      historyRecords: [],
+      editLogs: [],
+      settings: {
+        currentUsdCny: 6.8375,
+        currentTryCny: 0.1517,
+        defaultTaxRate: 17.5,
+        rateProvider: 'TCMB',
+        rateFallbackEnabled: 'YES',
+        tcmbRateType: 'ForexBuying',
+        exchangeRateHostBatchEnabled: 'YES',
+        exchangeRateHostBatchWindowDays: 365,
+        exchangeRateHostAllowSingleFallback: 'NO',
+        rateApiKeysCloudSync: 'NO',
+        rateApiKeys: {},
+        syncSettings: { apiUrl: '' },
+        lastRateFetchDate: '',
+        historyRateRefreshDays: 30,
+        emailReminder: defaultEmailReminder(),
+        sentReminders: {},
+        columnVisibility: defaultColumnVisibility()
+      }
+    };
+  }
+
+  function normalizeData(data) {
+    const d = data || {};
+    const defaults = defaultData().settings;
+    const rawSettings = d.settings || {};
+    const settings = Object.assign({}, defaults, rawSettings);
+    settings.emailReminder = Object.assign(defaultEmailReminder(), rawSettings.emailReminder || {});
+    settings.emailReminder.advanceDays = normalizeAdvanceDays(settings.emailReminder.advanceDays);
+    settings.emailReminder.dueTodayIntervalHours = normalizeDueTodayIntervalHours(settings.emailReminder.dueTodayIntervalHours);
+    settings.emailReminder.fields = normalizeMailFields(settings.emailReminder.fields);
+    settings.sentReminders = rawSettings.sentReminders && typeof rawSettings.sentReminders === 'object' ? rawSettings.sentReminders : {};
+    settings.columnVisibility = normalizeColumnVisibility(rawSettings.columnVisibility);
+    settings.historyRateRefreshDays = normalizePositiveInt(settings.historyRateRefreshDays, 30);
+    settings.rateProvider = normalizeRateProvider(settings.rateProvider);
+    settings.rateFallbackEnabled = settings.rateFallbackEnabled === 'NO' ? 'NO' : 'YES';
+    settings.tcmbRateType = normalizeTcmRateType(settings.tcmbRateType);
+    settings.exchangeRateHostBatchEnabled = settings.exchangeRateHostBatchEnabled === 'NO' ? 'NO' : 'YES';
+    settings.exchangeRateHostBatchWindowDays = Math.min(365, Math.max(1, normalizePositiveInt(settings.exchangeRateHostBatchWindowDays, 365)));
+    settings.exchangeRateHostAllowSingleFallback = settings.exchangeRateHostAllowSingleFallback === 'YES' ? 'YES' : 'NO';
+    settings.rateApiKeysCloudSync = settings.rateApiKeysCloudSync === 'YES' ? 'YES' : 'NO';
+    settings.rateApiKeys = settings.rateApiKeys && typeof settings.rateApiKeys === 'object' ? settings.rateApiKeys : {};
+    settings.syncSettings = settings.syncSettings && typeof settings.syncSettings === 'object' ? settings.syncSettings : { apiUrl: '' };
+    return {
+      activeRecords: Array.isArray(d.activeRecords) ? d.activeRecords : [],
+      historyRecords: Array.isArray(d.historyRecords) ? d.historyRecords : [],
+      editLogs: Array.isArray(d.editLogs) ? d.editLogs : [],
+      settings
+    };
+  }
+
+  function loadLocalData() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) appData = normalizeData(JSON.parse(raw));
+    } catch (e) {
+      console.warn(e);
+      appData = defaultData();
+    }
+  }
+
+  function saveLocalData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+  }
+
+  function persistSettingsSoon() {
+    clearTimeout(settingsPersistTimer);
+    settingsPersistTimer = setTimeout(() => {
+      persistData();
+    }, 800);
+  }
+
+  async function persistData() {
+    saveLocalData();
+    const cfg = getConfig();
+    if (!cfg.apiUrl) {
+      updateStatus('本地保存成功：未配置云端同步');
+      renderAll();
+      return;
+    }
+
+    try {
+      updateStatus('正在保存到 GitHub...');
+      const res = await fetch(cfg.apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-app-password': cfg.apiPassword || ''
+        },
+        body: JSON.stringify({ data: appData })
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload.ok) throw new Error(payload.error || '云端保存失败');
+      updateStatus('云端保存成功：' + formatDateTime(new Date()));
+    } catch (e) {
+      updateStatus('云端保存失败，已先保存在本地：' + e.message);
+      alert('云端保存失败，数据已经先保存在本地。\n' + e.message);
+    }
+    renderAll();
+  }
+
+  async function loadCloudData() {
+    const cfg = getConfig();
+    if (!cfg.apiUrl) {
+      alert('还没有填写 Cloudflare Worker API 地址。');
+      openSyncModal();
+      return;
+    }
+
+    try {
+      updateStatus('正在从云端读取...');
+      const res = await fetch(cfg.apiUrl, {
+        method: 'GET',
+        headers: { 'x-app-password': cfg.apiPassword || '' }
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload.ok) throw new Error(payload.error || '读取失败');
+      appData = normalizeData(payload.data);
+      saveLocalData();
+      const cloudSync = appData.settings.syncSettings || {};
+      if (cloudSync.apiUrl) {
+        const localCfg = getConfig();
+        if (!localCfg.apiUrl || localCfg.apiUrl === cfg.apiUrl) {
+          saveConfig(Object.assign({}, localCfg, { apiUrl: cloudSync.apiUrl }));
+        }
+      }
+      setGlobalRateInputs();
+      renderAll();
+      updateStatus('云端数据和配置读取成功：' + formatDateTime(new Date()));
+    } catch (e) {
+      updateStatus('云端读取失败：' + e.message);
+      alert('云端读取失败：\n' + e.message);
+    }
+  }
+
+  function getConfig() {
+    try { return JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}'); }
+    catch { return {}; }
+  }
+
+  function saveConfig(cfg) {
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+  }
+
+  function loadConfigToForm() {
+    const cfg = getConfig();
+    const cloudSync = (appData.settings && appData.settings.syncSettings) || {};
+    $('#apiUrl').val(cfg.apiUrl || cloudSync.apiUrl || '');
+    $('#apiPassword').val(cfg.apiPassword || '');
+  }
+
+  function openSyncModal() {
+    loadConfigToForm();
+    $('#syncModal').show();
+  }
+
+  function saveSyncSetting() {
+    const cfg = {
+      apiUrl: $('#apiUrl').val().trim(),
+      apiPassword: $('#apiPassword').val()
+    };
+    saveConfig(cfg);
+    appData.settings.syncSettings = { apiUrl: cfg.apiUrl };
+    saveLocalData();
+    $('#syncModal').hide();
+    if (cfg.apiUrl) {
+      persistData();
+      updateStatus('同步设置已保存，API 地址会同步到云端；访问密码仅保存在本机');
+    } else {
+      updateStatus('已切换为本地模式');
+    }
+  }
+
+
+
+  function getRateLocalConfig() {
+    const cfg = getConfig();
+    return cfg.rateSettings && typeof cfg.rateSettings === 'object' ? cfg.rateSettings : {};
+  }
+
+  function getCloudRateApiKeys() {
+    if (!appData.settings || appData.settings.rateApiKeysCloudSync !== 'YES') return {};
+    return appData.settings.rateApiKeys && typeof appData.settings.rateApiKeys === 'object' ? appData.settings.rateApiKeys : {};
+  }
+
+  function getRateCredentialConfig() {
+    const cloud = getCloudRateApiKeys();
+    const local = getRateLocalConfig();
+    return {
+      exchangeRateApiKey: local.exchangeRateApiKey || cloud.exchangeRateApiKey || '',
+      exchangeRateHostApiKey: local.exchangeRateHostApiKey || cloud.exchangeRateHostApiKey || '',
+      currencyApiKey: local.currencyApiKey || cloud.currencyApiKey || ''
+    };
+  }
+
+  function saveRateLocalConfig(rateSettings) {
+    const cfg = getConfig();
+    cfg.rateSettings = Object.assign({}, cfg.rateSettings || {}, rateSettings || {});
+    saveConfig(cfg);
+  }
+
+  function openRateModal() {
+    const rc = getRateCredentialConfig();
+    $('#rateProvider').val(normalizeRateProvider(appData.settings.rateProvider || rc.rateProvider || 'TCMB'));
+    $('#rateFallbackEnabled').val(appData.settings.rateFallbackEnabled === 'NO' ? 'NO' : 'YES');
+    $('#tcmbRateType').val(normalizeTcmRateType(appData.settings.tcmbRateType || rc.tcmbRateType || 'ForexBuying'));
+    $('#exchangeRateHostBatchEnabled').val(appData.settings.exchangeRateHostBatchEnabled === 'NO' ? 'NO' : 'YES');
+    $('#exchangeRateHostBatchWindowDays').val(Math.min(365, Math.max(1, normalizePositiveInt(appData.settings.exchangeRateHostBatchWindowDays, 365))));
+    $('#exchangeRateHostAllowSingleFallback').val(appData.settings.exchangeRateHostAllowSingleFallback === 'YES' ? 'YES' : 'NO');
+    $('#rateApiKeysCloudSync').val(appData.settings.rateApiKeysCloudSync === 'YES' ? 'YES' : 'NO');
+    $('#exchangeRateApiKey').val(rc.exchangeRateApiKey || '');
+    $('#exchangeRateHostApiKey').val(rc.exchangeRateHostApiKey || '');
+    $('#currencyApiKey').val(rc.currencyApiKey || '');
+    $('#rateModal').show();
+  }
+
+  function saveRateSetting() {
+    appData.settings.rateProvider = normalizeRateProvider($('#rateProvider').val());
+    appData.settings.rateFallbackEnabled = $('#rateFallbackEnabled').val() === 'NO' ? 'NO' : 'YES';
+    appData.settings.tcmbRateType = normalizeTcmRateType($('#tcmbRateType').val());
+    appData.settings.exchangeRateHostBatchEnabled = $('#exchangeRateHostBatchEnabled').val() === 'NO' ? 'NO' : 'YES';
+    appData.settings.exchangeRateHostBatchWindowDays = Math.min(365, Math.max(1, normalizePositiveInt($('#exchangeRateHostBatchWindowDays').val(), 365)));
+    appData.settings.exchangeRateHostAllowSingleFallback = $('#exchangeRateHostAllowSingleFallback').val() === 'YES' ? 'YES' : 'NO';
+    appData.settings.rateApiKeysCloudSync = $('#rateApiKeysCloudSync').val() === 'YES' ? 'YES' : 'NO';
+    const apiKeys = {
+      exchangeRateApiKey: $('#exchangeRateApiKey').val().trim(),
+      exchangeRateHostApiKey: $('#exchangeRateHostApiKey').val().trim(),
+      currencyApiKey: $('#currencyApiKey').val().trim()
+    };
+    saveRateLocalConfig(apiKeys);
+    appData.settings.rateApiKeys = appData.settings.rateApiKeysCloudSync === 'YES' ? apiKeys : {};
+    try { localStorage.removeItem(RATE_CACHE_KEY); } catch (e) {}
+    $('#rateModal').hide();
+    $('#rateInfo').text(`当前汇率来源：${getRateProviderLabel(appData.settings.rateProvider)}。点击“刷新汇率”会按该来源重新计算。`);
+    persistData();
+  }
+
+  function normalizeRateProvider(v) {
+    const allowed = ['TCMB', 'Frankfurter', 'ExchangeRateAPI', 'ExchangeRateHost', 'CurrencyAPI'];
+    return allowed.includes(v) ? v : 'TCMB';
+  }
+
+  function normalizeTcmRateType(v) {
+    const allowed = ['ForexBuying', 'ForexSelling', 'Average', 'BanknoteBuying', 'BanknoteSelling'];
+    return allowed.includes(v) ? v : 'ForexBuying';
+  }
+
+  function getRateProviderLabel(v) {
+    const map = {
+      TCMB: 'TCMB 土耳其央行',
+      Frankfurter: 'Frankfurter',
+      ExchangeRateAPI: 'ExchangeRate-API',
+      ExchangeRateHost: 'exchangerate.host',
+      CurrencyAPI: 'currencyapi.com'
+    };
+    return map[normalizeRateProvider(v)] || 'TCMB 土耳其央行';
+  }
+
+  function setGlobalRateInputs() {
+    $('#globalUsdCny').val(toRateInput(appData.settings.currentUsdCny));
+    $('#globalTryCny').val(toRateInput(appData.settings.currentTryCny));
+    $('#historyRateRefreshDays').val(normalizePositiveInt(appData.settings.historyRateRefreshDays, 30));
+  }
+
+  function openAddModal() {
+    editingMode = 'add';
+    editingRecordId = null;
+    $('#recordModalTitle').text('新增定存');
+    $('#recordForm')[0].reset();
+    $('#recordId').val('');
+    $('#openDate').val(todayString());
+    $('#startDate').val(todayString());
+    $('#endDate').val(addDaysString(todayString(), 35));
+    $('#usdCnyOpen').val(toRateInput(appData.settings.currentUsdCny));
+    $('#tryCnyOpen').val(toRateInput(appData.settings.currentTryCny));
+    $('#usdCnyNow').val(toRateInput(appData.settings.currentUsdCny));
+    $('#tryCnyNow').val(toRateInput(appData.settings.currentTryCny));
+    $('#interestTry').val('');
+    $('#principalPlusInterestTry').val('');
+    $('#reminderEnabled').val('YES');
+    $('#recordModal').show();
+    updateFormPreview();
+    autoFillFormRates(false).finally(updateFormPreview);
+  }
+
+  function openEditModal(id, source) {
+    const list = source === 'history' ? appData.historyRecords : appData.activeRecords;
+    const record = list.find(x => x.id === id);
+    if (!record) return;
+
+    const c = getCalc(record);
+    editingMode = source === 'history' ? 'edit-history' : 'edit';
+    editingRecordId = id;
+    $('#recordModalTitle').text(source === 'history' ? '编辑历史记录' : '编辑当前定存');
+    $('#recordId').val(record.id);
+    $('#bank').val(record.bank || '');
+    $('#openDate').val(record.openDate || '');
+    $('#startDate').val(record.startDate || '');
+    $('#endDate').val(record.endDate || '');
+    $('#usdCnyOpen').val(toRateInput(record.usdCnyOpen));
+    $('#tryCnyOpen').val(toRateInput(record.tryCnyOpen));
+    $('#usdCnyNow').val(toRateInput(record.usdCnyNow));
+    $('#tryCnyNow').val(toRateInput(record.tryCnyNow));
+    $('#principalTry').val(toInput(record.principalTry, 2));
+    $('#principalPlusInterestTry').val(toInput(c.principalPlusInterestTry, 2));
+    $('#annualRateTry').val(toInput(record.annualRateTry, 2));
+    $('#interestTry').val(toInput(c.interestTry, 2));
+    $('#reminderEnabled').val(record.reminderEnabled ? 'YES' : 'NO');
+    $('#remark').val(record.remark || '');
+    $('#exchangeTry').val(record.exchangeTry ? toInput(record.exchangeTry, 2) : '');
+    $('#exchangeCny').val(record.exchangeCny ? toInput(record.exchangeCny, 2) : '');
+    $('#exchangeReason').val(record.exchangeReason || '');
+    $('#recordModal').show();
+    updateFormPreview();
+  }
+
+  async function saveRecordFromForm(e) {
+    e.preventDefault();
+    const record = getRecordFromForm();
+    if (!record) return;
+
+    const now = new Date().toISOString();
+    if (editingMode === 'add') {
+      record.id = generateId();
+      record.createdAt = now;
+      record.updatedAt = now;
+      appData.activeRecords.push(record);
+    } else if (editingMode === 'edit') {
+      const idx = appData.activeRecords.findIndex(x => x.id === editingRecordId);
+      if (idx >= 0) {
+        const before = clone(appData.activeRecords[idx]);
+        record.id = editingRecordId;
+        record.createdAt = before.createdAt || now;
+        record.updatedAt = now;
+        appData.activeRecords[idx] = record;
+        addEditLog(editingRecordId, before, record);
+      }
+    } else if (editingMode === 'edit-history') {
+      const idx = appData.historyRecords.findIndex(x => x.id === editingRecordId);
+      if (idx >= 0) {
+        const before = clone(appData.historyRecords[idx]);
+        record.id = editingRecordId;
+        record.createdAt = before.createdAt || now;
+        record.deletedAt = before.deletedAt;
+        record.deleteReason = before.deleteReason;
+        record.updatedAt = now;
+        appData.historyRecords[idx] = record;
+        addEditLog(editingRecordId, before, record);
+      }
+    }
+
+    $('#recordModal').hide();
+    persistData();
+  }
+
+  function getRecordFromForm() {
+    const bank = $('#bank').val().trim();
+    const openDate = $('#openDate').val();
+    const startDate = $('#startDate').val();
+    const endDate = $('#endDate').val();
+    const principalTry = numberValue('#principalTry');
+    const principalPlusInterestTry = numberValue('#principalPlusInterestTry');
+    const interestTry = principalPlusInterestTry - principalTry;
+
+    if (!bank || !openDate || !startDate || !endDate) {
+      alert('请填写银行、开户日期、开始日期、结束日期。');
+      return null;
+    }
+    if (!principalTry || principalTry <= 0) {
+      alert('本金必须大于 0。');
+      return null;
+    }
+    if (!principalPlusInterestTry || principalPlusInterestTry <= 0) {
+      alert('本金+利息必须大于 0。');
+      return null;
+    }
+    if (principalPlusInterestTry < principalTry) {
+      alert('本金+利息不能小于本金。');
+      return null;
+    }
+    if (dateDiffDays(startDate, endDate) <= 0) {
+      alert('结束日期必须晚于开始日期。');
+      return null;
+    }
+    if (!numberValue('#usdCnyOpen') || !numberValue('#tryCnyOpen') || !numberValue('#usdCnyNow') || !numberValue('#tryCnyNow')) {
+      alert('汇率还没有自动获取成功，请点击“自动填入全部汇率”后再保存。');
+      return null;
+    }
+
+    appData.settings.currentUsdCny = numberValue('#usdCnyNow') || appData.settings.currentUsdCny;
+    appData.settings.currentTryCny = numberValue('#tryCnyNow') || appData.settings.currentTryCny;
+
+    return {
+      bank,
+      openDate,
+      startDate,
+      endDate,
+      usdCnyOpen: numberValue('#usdCnyOpen'),
+      tryCnyOpen: numberValue('#tryCnyOpen'),
+      usdCnyNow: numberValue('#usdCnyNow'),
+      tryCnyNow: numberValue('#tryCnyNow'),
+      principalTry,
+      principalPlusInterestTry,
+      annualRateTry: numberValue('#annualRateTry'),
+      interestTry,
+      reminderEnabled: $('#reminderEnabled').val() === 'YES',
+      remark: $('#remark').val().trim(),
+      exchangeTry: numberValue('#exchangeTry') || undefined,
+      exchangeCny: numberValue('#exchangeCny') || undefined,
+      exchangeReason: $('#exchangeReason').val().trim() || undefined
+    };
+  }
+
+  async function ensureFormRates() {
+    const needOpen = !numberValue('#usdCnyOpen') || !numberValue('#tryCnyOpen');
+    const needEnd = !numberValue('#usdCnyNow') || !numberValue('#tryCnyNow');
+    if (needOpen || needEnd) {
+      $('#formRateHint').text('保存前正在自动补齐汇率...');
+      await autoFillFormRates(false);
+    }
+  }
+
+  function estimateInterestToForm(showMessage = true) {
+    const principal = numberValue('#principalTry');
+    const rate = numberValue('#annualRateTry');
+    const tax = numberValue('#taxRate');
+    const start = $('#startDate').val();
+    const end = $('#endDate').val();
+    const days = dateDiffDays(start, end);
+
+    if (!principal || !rate || days <= 0) {
+      if (showMessage) alert('请先填写本金、年利率、开始日期和结束日期。');
+      return;
+    }
+
+    const interest = principal * (rate / 100) / 365 * days * (1 - Math.max(tax, 0) / 100);
+    $('#interestTry').val(toInput(interest, 2));
+  }
+
+  function moveToHistory(id) {
+    const idx = appData.activeRecords.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    const record = appData.activeRecords[idx];
+    const reason = prompt('请输入移入历史原因：', getCalc(record).remainingDays <= 0 ? '已到期' : '手动删除');
+    if (reason === null) return;
+
+    const c = getCalc(record);
+    const historyRecord = Object.assign({}, record, {
+      deletedAt: new Date().toISOString(),
+      deleteReason: reason || '手动删除',
+      exchangeTry: record.exchangeTry || c.principalPlusInterestTry,
+      exchangeCny: record.exchangeCny || c.principalPlusInterestCny,
+      exchangeReason: record.exchangeReason || reason || ''
+    });
+    appData.activeRecords.splice(idx, 1);
+    appData.historyRecords.unshift(historyRecord);
+    persistData();
+  }
+
+  function restoreFromHistory(id) {
+    const idx = appData.historyRecords.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    if (!confirm('确定要恢复到当前定存表吗？')) return;
+    const record = appData.historyRecords[idx];
+    delete record.deletedAt;
+    delete record.deleteReason;
+    record.updatedAt = new Date().toISOString();
+    appData.historyRecords.splice(idx, 1);
+    appData.activeRecords.push(record);
+    persistData();
+  }
+
+  function deleteHistoryForever(id) {
+    if (!confirm('确定要永久删除这条历史记录吗？这个操作不可恢复。')) return;
+    appData.historyRecords = appData.historyRecords.filter(x => x.id !== id);
+    persistData();
+  }
+
+  async function refreshAllRatesByOpenAndEndDate() {
+    const btn = $('#btnFetchRates');
+    try {
+      const historyDays = getHistoryRateRefreshDays();
+      appData.settings.historyRateRefreshDays = historyDays;
+      saveLocalData();
+
+      const activeRecords = appData.activeRecords || [];
+      const eligibleHistoryRecords = (appData.historyRecords || []).filter(r => isHistoryRateRefreshEligible(r, historyDays));
+      const skippedHistoryCount = Math.max((appData.historyRecords || []).length - eligibleHistoryRecords.length, 0);
+
+      if (!activeRecords.length && !eligibleHistoryRecords.length) {
+        alert(`没有需要刷新的记录。当前定存为空，历史记录近 ${historyDays} 天内也没有需要更新的记录。`);
+        return;
+      }
+
+      btn.prop('disabled', true).text('刷新中...');
+      updateStatus(`正在刷新汇率：当前 ${activeRecords.length} 条，历史近 ${historyDays} 天 ${eligibleHistoryRecords.length} 条...`);
+
+      const refreshItems = [
+        ...activeRecords.map(r => ({ record: r, type: '当前' })),
+        ...eligibleHistoryRecords.map(r => ({ record: r, type: '历史' }))
+      ];
+
+      let preloadInfo = null;
+      if (shouldPreloadExchangeRateHostTimeframe()) {
+        updateStatus('正在使用 exchangerate.host timeframe 批量缓存历史汇率，减少 API 调用次数...');
+        preloadInfo = await preloadExchangeRateHostRatesForItems(refreshItems);
+      }
+
+      const result = await refreshRatesForRecordList(refreshItems);
+      result.preloadInfo = preloadInfo;
+
+      setGlobalRateInputs();
+
+      const notes = [];
+      if (result.preloadInfo && result.preloadInfo.callCount) notes.push(`exchangerate.host 批量接口 ${result.preloadInfo.callCount} 次，缓存 ${result.preloadInfo.cachedDateCount} 天汇率`);
+      if (result.openFutureCount) notes.push(result.openFutureCount + ' 条开户日期未到，开户汇率暂用最新汇率');
+      if (result.endFutureCount) notes.push(result.endFutureCount + ' 条结束日期未到，结束汇率暂用最新汇率');
+      if (skippedHistoryCount) notes.push('历史记录跳过 ' + skippedHistoryCount + ` 条（超过 ${historyDays} 天）`);
+      if (result.failedItems.length) notes.push(result.failedItems.length + ' 条失败');
+
+      $('#rateInfo').text(`已刷新：当前 ${result.activeSuccessCount} 条，历史 ${result.historySuccessCount} 条${notes.length ? '；' + notes.join('；') : ''}`);
+      await persistData();
+      updateStatus('汇率刷新完成：' + formatDateTime(new Date()));
+
+      if (result.failedItems.length) {
+        alert('部分记录汇率刷新失败：\n' + result.failedItems.slice(0, 10).join('\n') + (result.failedItems.length > 10 ? '\n...' : ''));
+      }
+    } catch (e) {
+      console.error(e);
+      updateStatus('刷新汇率失败：' + e.message);
+      alert('刷新汇率失败：\n' + e.message + '\n\n你也可以先手动填写汇率。');
+    } finally {
+      btn.prop('disabled', false).text('刷新汇率');
+    }
+  }
+
+  async function refreshRatesForRecordList(items) {
+    let activeSuccessCount = 0;
+    let historySuccessCount = 0;
+    let openFutureCount = 0;
+    let endFutureCount = 0;
+    const failedItems = [];
+
+    for (const item of items) {
+      const r = item.record;
+      const type = item.type || '记录';
+      try {
+        if (!r.openDate || !r.endDate) {
+          failedItems.push(`${type} ${(r.bank || r.id || '未命名记录')}：缺少开户日期或结束日期`);
+          continue;
+        }
+
+        const [openRates, endRates] = await Promise.all([
+          fetchRatesForRecordDate(r.openDate),
+          fetchEndRatesForDate(r.endDate)
+        ]);
+
+        r.usdCnyOpen = openRates.usdCny;
+        r.tryCnyOpen = openRates.tryCny;
+        r.usdCnyNow = endRates.usdCny;
+        r.tryCnyNow = endRates.tryCny;
+        r.updatedAt = new Date().toISOString();
+        r.rateRefreshedAt = new Date().toISOString();
+
+        if (type === '历史') historySuccessCount++;
+        else activeSuccessCount++;
+        if (openRates.isFuture) openFutureCount++;
+        if (endRates.isFuture) endFutureCount++;
+
+        appData.settings.currentUsdCny = endRates.usdCny;
+        appData.settings.currentTryCny = endRates.tryCny;
+        appData.settings.lastRateFetchDate = endRates.date || todayString();
+      } catch (itemError) {
+        failedItems.push(`${type} ${(r.bank || r.id || '未命名记录')}：${itemError.message}`);
+      }
+    }
+
+    return { activeSuccessCount, historySuccessCount, openFutureCount, endFutureCount, failedItems };
+  }
+
+  function getHistoryRateRefreshDays() {
+    const raw = $('#historyRateRefreshDays').val();
+    return normalizePositiveInt(raw || appData.settings.historyRateRefreshDays, 30);
+  }
+
+  function normalizePositiveInt(value, fallback) {
+    const num = parseInt(value, 10);
+    if (!Number.isFinite(num) || num < 0) return fallback;
+    return num;
+  }
+
+  function isHistoryRateRefreshEligible(record, days) {
+    if (days < 0) return false;
+    const today = todayString();
+    const refDate = normalizeDateOnly(record.endDate) || normalizeDateOnly(record.deletedAt);
+    if (!refDate) return false;
+
+    const diffFromRefToToday = dateDiffDays(refDate, today);
+    if (diffFromRefToToday >= 0 && diffFromRefToToday <= days) return true;
+
+    const diffFromTodayToRef = dateDiffDays(today, refDate);
+    return diffFromTodayToRef >= 0 && diffFromTodayToRef <= days;
+  }
+
+  function normalizeDateOnly(value) {
+    if (!value) return '';
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    return dateToString(d);
+  }
+
+  async function autoFillFormRates(showMessage) {
+    try {
+      $('#formRateHint').text('正在自动获取开户日期汇率和结束日期汇率...');
+      await Promise.all([fetchOpenRatesToForm(false), fetchEndRatesToForm(false)]);
+      $('#formRateHint').text('汇率已自动填入。');
+      updateFormPreview();
+      if (showMessage) alert('汇率已自动填入。');
+    } catch (e) {
+      $('#formRateHint').text('自动获取汇率失败：' + e.message + '。可以手动填写。');
+      if (showMessage) alert('自动获取汇率失败：\n' + e.message);
+    }
+  }
+
+  async function fetchOpenRatesToForm(showMessage) {
+    const date = $('#openDate').val();
+    if (!date) {
+      if (showMessage) alert('请先选择开户日期。');
+      return;
+    }
+    const rates = await fetchRatesForDate(date);
+    $('#usdCnyOpen').val(toRateInput(rates.usdCny));
+    $('#tryCnyOpen').val(toRateInput(rates.tryCny));
+    $('#formRateHint').text(`开户汇率已获取：${rates.date || date}，来源：${rates.source}`);
+    updateFormPreview();
+    if (showMessage) alert(`已填入开户汇率。\nUSD→CNY = ${fmtRate(rates.usdCny)}\nTRY→CNY = ${fmtRate(rates.tryCny)}\n日期：${rates.date || date}`);
+  }
+
+  async function fetchEndRatesToForm(showMessage) {
+    const endDate = $('#endDate').val();
+    if (!endDate) {
+      if (showMessage) alert('请先选择结束日期。');
+      return;
+    }
+
+    const rates = await fetchEndRatesForDate(endDate);
+    $('#usdCnyNow').val(toRateInput(rates.usdCny));
+    $('#tryCnyNow').val(toRateInput(rates.tryCny));
+    $('#globalUsdCny').val(toRateInput(rates.usdCny));
+    $('#globalTryCny').val(toRateInput(rates.tryCny));
+    appData.settings.currentUsdCny = rates.usdCny;
+    appData.settings.currentTryCny = rates.tryCny;
+    appData.settings.lastRateFetchDate = rates.date || todayString();
+    saveLocalData();
+
+    const msg = `结束汇率已获取：${rates.date || endDate}，来源：${rates.source}${rates.isFuture ? '；结束日期未到，暂用最新可用汇率' : ''}`;
+    $('#rateInfo').text(`来源：${rates.source}，日期：${rates.date || endDate}`);
+    $('#formRateHint').text(msg);
+    updateFormPreview();
+    if (showMessage) alert(`已填入结束汇率。\nUSD→CNY = ${fmtRate(rates.usdCny)}\nTRY→CNY = ${fmtRate(rates.tryCny)}\n日期：${rates.date || endDate}${rates.isFuture ? '\n提示：结束日期未到，暂用最新可用汇率。' : ''}`);
+  }
+
+
+  function shouldPreloadExchangeRateHostTimeframe() {
+    return normalizeRateProvider(appData.settings.rateProvider) === 'ExchangeRateHost'
+      && appData.settings.exchangeRateHostBatchEnabled !== 'NO';
+  }
+
+  function getExchangeRateHostBatchWindowDays() {
+    return Math.min(365, Math.max(1, normalizePositiveInt(appData.settings.exchangeRateHostBatchWindowDays, 365)));
+  }
+
+  async function preloadExchangeRateHostRatesForItems(items) {
+    const today = todayString();
+    const dates = new Set();
+
+    for (const item of items || []) {
+      const r = item.record || {};
+      [r.openDate, r.endDate].forEach(value => {
+        const date = normalizeDateOnly(value);
+        if (!date || date > today) return;
+        if (!getRateCache(makeRateCacheKey('ExchangeRateHost', date))) dates.add(date);
+      });
+    }
+
+    const dateList = Array.from(dates).sort();
+    if (!dateList.length) return { callCount: 0, cachedDateCount: 0, skipped: 0 };
+
+    try {
+      return await preloadExchangeRateHostDates(dateList);
+    } catch (e) {
+      if (appData.settings.exchangeRateHostAllowSingleFallback === 'YES') {
+        updateStatus('exchangerate.host timeframe 批量获取失败，已按设置继续单日接口兜底：' + e.message);
+        return { callCount: 0, cachedDateCount: 0, skipped: dateList.length, error: e.message, singleFallback: true };
+      }
+      throw new Error('exchangerate.host timeframe 批量获取失败。已停止刷新，避免自动改用单日接口消耗次数。原因：' + e.message);
+    }
+  }
+
+  async function preloadExchangeRateHostDates(dateList) {
+    const ranges = buildDateRanges(dateList, getExchangeRateHostBatchWindowDays());
+    let callCount = 0;
+    let cachedDateCount = 0;
+
+    for (const range of ranges) {
+      const payload = await fetchExchangeRateHostTimeframe(range.start, range.end);
+      callCount++;
+      cachedDateCount += cacheExchangeRateHostTimeframePayload(payload, range.start, range.end);
+    }
+
+    return { callCount, cachedDateCount, rangeCount: ranges.length };
+  }
+
+  function buildDateRanges(sortedDates, maxDays) {
+    const ranges = [];
+    let start = '';
+    let end = '';
+
+    for (const date of sortedDates) {
+      if (!start) {
+        start = date;
+        end = date;
+        continue;
+      }
+      const diff = dateDiffDays(start, date);
+      if (diff >= 0 && diff < maxDays) {
+        end = date;
+      } else {
+        ranges.push({ start, end });
+        start = date;
+        end = date;
+      }
+    }
+    if (start) ranges.push({ start, end });
+    return ranges;
+  }
+
+  async function fetchExchangeRateHostTimeframe(startDate, endDate) {
+    const rc = getRateCredentialConfig();
+    const apiKey = (rc.exchangeRateHostApiKey || '').trim();
+    if (!apiKey) throw new Error('请先在“汇率设置”里填写 exchangerate.host API Key');
+
+    const params = new URLSearchParams({
+      access_key: apiKey,
+      start_date: startDate,
+      end_date: endDate,
+      source: 'USD',
+      currencies: 'CNY,TRY'
+    });
+
+    const url = `https://api.exchangerate.host/timeframe?${params.toString()}`;
+    return await fetchJsonStrict(url);
+  }
+
+  function cacheExchangeRateHostTimeframePayload(payload, startDate, endDate) {
+    const container = payload.quotes || payload.rates || {};
+    let count = 0;
+
+    Object.keys(container).forEach(date => {
+      const daily = container[date];
+      if (!daily || typeof daily !== 'object') return;
+      try {
+        const parsed = parseUsdBasedRates({ quotes: daily, rates: daily, date }, 'exchangerate.host timeframe', date);
+        setRateCache(makeRateCacheKey('ExchangeRateHost', date), parsed);
+        count++;
+      } catch (e) {
+        console.warn('跳过 timeframe 日期汇率：', date, e.message);
+      }
+    });
+
+    if (!count) throw new Error(`timeframe 返回中没有可用的 CNY/TRY 汇率：${startDate} ~ ${endDate}`);
+    return count;
+  }
+
+  function makeRateCacheKey(provider, key) {
+    const tcmbRateType = normalizeTcmRateType(appData.settings.tcmbRateType);
+    return `${normalizeRateProvider(provider)}|${tcmbRateType}|${key}`;
+  }
+
+  async function fetchRatesForRecordDate(recordDate) {
+    const today = todayString();
+    if (!recordDate) return fetchRatesForDate('latest');
+
+    if (recordDate > today) {
+      const rates = await fetchRatesForDate('latest');
+      return Object.assign({}, rates, {
+        requestedDate: recordDate,
+        isFuture: true,
+        note: '日期未到，暂用最新可用汇率'
+      });
+    }
+
+    const rates = await fetchRatesForDate(recordDate);
+    return Object.assign({}, rates, {
+      requestedDate: recordDate,
+      isFuture: false
+    });
+  }
+
+  async function fetchEndRatesForDate(endDate) {
+    const today = todayString();
+    if (!endDate) return fetchRatesForDate('latest');
+
+    if (endDate > today) {
+      const rates = await fetchRatesForDate('latest');
+      return Object.assign({}, rates, {
+        requestedDate: endDate,
+        isFuture: true,
+        note: '结束日期未到，暂用最新可用汇率'
+      });
+    }
+
+    const rates = await fetchRatesForDate(endDate);
+    return Object.assign({}, rates, {
+      requestedDate: endDate,
+      isFuture: false
+    });
+  }
+
+  async function fetchRatesForDate(dateOrLatest) {
+    const key = dateOrLatest || 'latest';
+    const today = todayString();
+    const provider = normalizeRateProvider(appData.settings.rateProvider);
+    const tcmbRateType = normalizeTcmRateType(appData.settings.tcmbRateType);
+    const cacheKey = makeRateCacheKey(provider, key === 'latest' ? 'latest-' + today : key);
+    const cached = getRateCache(cacheKey);
+    if (cached) return cached;
+
+    const dateParam = key === 'latest' ? '' : key;
+    const providers = appData.settings.rateFallbackEnabled === 'NO'
+      ? [provider]
+      : [provider, ...['TCMB', 'Frankfurter', 'ExchangeRateHost', 'CurrencyAPI', 'ExchangeRateAPI'].filter(x => x !== provider)];
+
+    const errors = [];
+    for (const p of providers) {
+      try {
+        const result = await fetchRatesFromProvider(p, dateParam);
+        result.usdCny = normalizeRateValue(result.usdCny);
+        result.tryCny = normalizeRateValue(result.tryCny);
+        result.source = result.source || getRateProviderLabel(p);
+        if (p !== provider) result.source += '（备用）';
+        setRateCache(cacheKey, result);
+        return result;
+      } catch (e) {
+        errors.push(`${getRateProviderLabel(p)}：${e.message}`);
+      }
+    }
+    throw new Error(errors.join('\n'));
+  }
+
+  async function fetchRatesFromProvider(provider, dateParam) {
+    provider = normalizeRateProvider(provider);
+    if (provider === 'TCMB') return fetchRatesFromTCMB(dateParam);
+    if (provider === 'Frankfurter') return fetchRatesFromFrankfurter(dateParam);
+    if (provider === 'ExchangeRateAPI') return fetchRatesFromExchangeRateAPI(dateParam);
+    if (provider === 'ExchangeRateHost') return fetchRatesFromExchangeRateHost(dateParam);
+    if (provider === 'CurrencyAPI') return fetchRatesFromCurrencyAPI(dateParam);
+    return fetchRatesFromTCMB(dateParam);
+  }
+
+  async function fetchRatesFromFrankfurter(dateParam) {
+    const [usd, tr] = await Promise.all([
+      fetchSingleRateFrankfurter('USD', 'CNY', dateParam),
+      fetchSingleRateFrankfurter('TRY', 'CNY', dateParam)
+    ]);
+    return {
+      usdCny: usd.rate,
+      tryCny: tr.rate,
+      date: usd.date || tr.date || dateParam || todayString(),
+      source: 'Frankfurter'
+    };
+  }
+
+  async function fetchSingleRateFrankfurter(base, target, date) {
+    const encodedBase = encodeURIComponent(base);
+    const encodedTarget = encodeURIComponent(target);
+    const urlV2 = date
+      ? `https://api.frankfurter.dev/v2/rates?base=${encodedBase}&quotes=${encodedTarget}&date=${encodeURIComponent(date)}`
+      : `https://api.frankfurter.dev/v2/rates?base=${encodedBase}&quotes=${encodedTarget}`;
+
+    try {
+      const res = await fetch(urlV2, { cache: 'no-store' });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.message || payload.error || 'HTTP ' + res.status);
+      const rate = parseRateFromPayload(payload, target);
+      if (rate) return { rate, date: payload.date, source: 'Frankfurter' };
+      throw new Error('接口返回里没有找到 ' + target + ' 汇率');
+    } catch (err) {
+      const urlV1 = date
+        ? `https://api.frankfurter.dev/v1/${encodeURIComponent(date)}?base=${encodedBase}&symbols=${encodedTarget}`
+        : `https://api.frankfurter.dev/v1/latest?base=${encodedBase}&symbols=${encodedTarget}`;
+      const res = await fetch(urlV1, { cache: 'no-store' });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.message || payload.error || err.message || 'HTTP ' + res.status);
+      const rate = parseRateFromPayload(payload, target);
+      if (!rate) throw new Error('接口返回里没有找到 ' + target + ' 汇率');
+      return { rate, date: payload.date, source: 'Frankfurter' };
+    }
+  }
+
+  async function fetchRatesFromTCMB(dateParam) {
+    const xmlInfo = await fetchTCMBXmlWithBackoff(dateParam);
+    const doc = new DOMParser().parseFromString(xmlInfo.text, 'application/xml');
+    const parseError = doc.querySelector('parsererror');
+    if (parseError) throw new Error('TCMB XML 解析失败');
+
+    const usdTry = parseTCMBCurrencyTryValue(doc, 'USD');
+    const cnyTry = parseTCMBCurrencyTryValue(doc, 'CNY');
+    if (!usdTry || !cnyTry) throw new Error('TCMB 返回中没有 USD 或 CNY 汇率');
+
+    return {
+      usdCny: usdTry / cnyTry,
+      tryCny: 1 / cnyTry,
+      date: xmlInfo.usedDate || getTCMBXmlDate(doc) || dateParam || todayString(),
+      source: 'TCMB 土耳其央行'
+    };
+  }
+
+  async function fetchTCMBXmlWithBackoff(dateParam) {
+    if (!dateParam) {
+      const text = await fetchTextStrict('https://www.tcmb.gov.tr/kurlar/today.xml');
+      return { text, usedDate: todayString() };
+    }
+
+    let d = parseDateLocal(dateParam);
+    if (!d) throw new Error('TCMB 日期格式无效：' + dateParam);
+    const errors = [];
+    for (let i = 0; i < 10; i++) {
+      const ymd = formatDateYmd(d);
+      const url = tcmbHistoricalUrl(ymd);
+      try {
+        const text = await fetchTextStrict(url);
+        return { text, usedDate: ymd };
+      } catch (e) {
+        errors.push(`${ymd}: ${e.message}`);
+        d.setDate(d.getDate() - 1);
+      }
+    }
+    throw new Error('TCMB 历史汇率获取失败，可能是节假日或接口不可访问：' + errors[0]);
+  }
+
+  function tcmbHistoricalUrl(ymd) {
+    const [y, m, d] = ymd.split('-');
+    return `https://www.tcmb.gov.tr/kurlar/${y}${m}/${d}${m}${y}.xml`;
+  }
+
+  async function fetchTextStrict(url) {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.text();
+  }
+
+  function parseTCMBCurrencyTryValue(doc, code) {
+    const node = Array.from(doc.querySelectorAll('Currency')).find(x =>
+      (x.getAttribute('CurrencyCode') || x.getAttribute('Kod') || '').toUpperCase() === code.toUpperCase()
+    );
+    if (!node) return null;
+    const rateType = normalizeTcmRateType(appData.settings.tcmbRateType);
+    const unit = parseFlexibleNumber(getXmlText(node, 'Unit')) || 1;
+    let value = null;
+    if (rateType === 'Average') {
+      const buying = parseFlexibleNumber(getXmlText(node, 'ForexBuying'));
+      const selling = parseFlexibleNumber(getXmlText(node, 'ForexSelling'));
+      if (buying && selling) value = (buying + selling) / 2;
+    } else {
+      value = parseFlexibleNumber(getXmlText(node, rateType));
+    }
+    if (!value) value = parseFlexibleNumber(getXmlText(node, 'ForexBuying')) || parseFlexibleNumber(getXmlText(node, 'ForexSelling'));
+    return value ? value / unit : null;
+  }
+
+  function getXmlText(node, tag) {
+    const el = node.querySelector(tag);
+    return el ? (el.textContent || '').trim() : '';
+  }
+
+  function getTCMBXmlDate(doc) {
+    const root = doc.querySelector('Tarih_Date');
+    const d = root && (root.getAttribute('Date') || root.getAttribute('Tarih'));
+    if (!d) return '';
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(d)) {
+      const [day, month, year] = d.split('.');
+      return `${year}-${month}-${day}`;
+    }
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
+      const [month, day, year] = d.split('/');
+      return `${year}-${month}-${day}`;
+    }
+    return d;
+  }
+
+  async function fetchRatesFromExchangeRateAPI(dateParam) {
+    const rc = getRateCredentialConfig();
+    const apiKey = (rc.exchangeRateApiKey || '').trim();
+    let url = '';
+    let historicalAttempt = false;
+    if (apiKey && dateParam) {
+      const [y, m, d] = dateParam.split('-');
+      url = `https://v6.exchangerate-api.com/v6/${encodeURIComponent(apiKey)}/history/USD/${Number(y)}/${Number(m)}/${Number(d)}`;
+      historicalAttempt = true;
+    } else if (apiKey) {
+      url = `https://v6.exchangerate-api.com/v6/${encodeURIComponent(apiKey)}/latest/USD`;
+    } else {
+      url = 'https://open.er-api.com/v6/latest/USD';
+    }
+
+    try {
+      const payload = await fetchJsonStrict(url);
+      return parseUsdBasedRates(payload, historicalAttempt ? 'ExchangeRate-API 历史接口' : (apiKey ? 'ExchangeRate-API' : 'ExchangeRate-API Open Access'), dateParam);
+    } catch (e) {
+      if (historicalAttempt) {
+        const latestUrl = apiKey
+          ? `https://v6.exchangerate-api.com/v6/${encodeURIComponent(apiKey)}/latest/USD`
+          : 'https://open.er-api.com/v6/latest/USD';
+        const payload = await fetchJsonStrict(latestUrl);
+        const result = parseUsdBasedRates(payload, 'ExchangeRate-API 最新汇率', '');
+        result.source += '（历史不可用，暂用最新）';
+        return result;
+      }
+      throw e;
+    }
+  }
+
+  async function fetchRatesFromExchangeRateHost(dateParam) {
+    const rc = getRateCredentialConfig();
+    const apiKey = (rc.exchangeRateHostApiKey || '').trim();
+    if (!apiKey) throw new Error('请先在“汇率设置”里填写 exchangerate.host API Key');
+
+    const endpoint = dateParam ? 'historical' : 'live';
+    const params = new URLSearchParams({
+      access_key: apiKey,
+      source: 'USD',
+      currencies: 'CNY,TRY'
+    });
+    if (dateParam) params.set('date', dateParam);
+
+    const url = `https://api.exchangerate.host/${endpoint}?${params.toString()}`;
+    const payload = await fetchJsonStrict(url);
+    return parseUsdBasedRates(payload, dateParam ? 'exchangerate.host historical 单日接口' : 'exchangerate.host live', dateParam);
+  }
+
+  async function fetchRatesFromCurrencyAPI(dateParam) {
+    const rc = getRateCredentialConfig();
+    const apiKey = (rc.currencyApiKey || '').trim();
+    if (!apiKey) throw new Error('请先在“汇率设置”里填写 currencyapi.com API Key');
+    const endpoint = dateParam ? 'historical' : 'latest';
+    const url = `https://api.currencyapi.com/v3/${endpoint}?apikey=${encodeURIComponent(apiKey)}&base_currency=USD&currencies=CNY,TRY${dateParam ? '&date=' + encodeURIComponent(dateParam) : ''}`;
+    const payload = await fetchJsonStrict(url);
+    const cny = getCurrencyApiValue(payload, 'CNY');
+    const tr = getCurrencyApiValue(payload, 'TRY');
+    if (!cny || !tr) throw new Error('currencyapi.com 返回中没有 CNY 或 TRY');
+    return {
+      usdCny: cny,
+      tryCny: cny / tr,
+      date: payload.meta && payload.meta.last_updated_at ? String(payload.meta.last_updated_at).slice(0, 10) : (dateParam || todayString()),
+      source: 'currencyapi.com'
+    };
+  }
+
+  async function fetchJsonStrict(url) {
+    const res = await fetch(url, { cache: 'no-store' });
+    const payload = await res.json();
+    if (!res.ok || payload.result === 'error' || payload.success === false) {
+      throw new Error(payload['error-type'] || payload.error || payload.message || 'HTTP ' + res.status);
+    }
+    return payload;
+  }
+
+  function parseUsdBasedRates(payload, source, requestedDate) {
+    const rates = payload.conversion_rates || payload.rates || payload.data || {};
+    const quotes = payload.quotes || {};
+    let cny = extractRateValue((rates.CNY && rates.CNY.value) || rates.CNY || rates.cny);
+    let tr = extractRateValue((rates.TRY && rates.TRY.value) || rates.TRY || rates.try);
+
+    if ((!cny || !tr) && quotes) {
+      cny = cny || extractRateValue(quotes.USDCNY || quotes['USD/CNY'] || quotes.CNY);
+      tr = tr || extractRateValue(quotes.USDTRY || quotes['USD/TRY'] || quotes.TRY);
+    }
+
+    if (!cny || !tr) throw new Error(source + ' 返回中没有 CNY 或 TRY');
+    return {
+      usdCny: cny,
+      tryCny: cny / tr,
+      date: payload.date || (payload.time_last_update_utc ? parseExchangeRateApiDate(payload.time_last_update_utc) : (payload.timestamp ? parseUnixDate(payload.timestamp) : (requestedDate || todayString()))),
+      source
+    };
+  }
+
+  function getCurrencyApiValue(payload, code) {
+    const item = payload && payload.data && (payload.data[code] || payload.data[code.toLowerCase()]);
+    const val = item && (item.value ?? item.rate);
+    return extractRateValue(val);
+  }
+
+  function parseExchangeRateApiDate(s) {
+    const d = new Date(s);
+    if (!Number.isNaN(d.getTime())) return formatDateYmd(d);
+    return todayString();
+  }
+
+  function parseRateFromPayload(payload, target) {
+    const box = payload && (payload.rates || payload.quotes || payload.data || {});
+    const value = box[target] ?? box[target.toUpperCase()] ?? box[target.toLowerCase()];
+    return extractRateValue(value);
+  }
+
+  function parseFlexibleNumber(v) {
+    if (v === null || v === undefined) return null;
+    const num = Number(String(v).trim().replace(',', '.'));
+    return Number.isFinite(num) && num > 0 ? num : null;
+  }
+
+  function getRateCache(key) {
+    try {
+      const cache = JSON.parse(localStorage.getItem(RATE_CACHE_KEY) || '{}');
+      return cache[key] || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function setRateCache(key, value) {
+    try {
+      const cache = JSON.parse(localStorage.getItem(RATE_CACHE_KEY) || '{}');
+      cache[key] = value;
+      localStorage.setItem(RATE_CACHE_KEY, JSON.stringify(cache));
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
+  function extractRateValue(v) {
+    if (v === null || v === undefined || v === '') return null;
+    const num = Number(v);
+    return Number.isFinite(num) && num > 0 ? num : null;
+  }
+
+  function normalizeRateValue(v) {
+    const num = extractRateValue(v);
+    if (!num) throw new Error('汇率值无效：' + v);
+    return num;
+  }
+
+  function fmtRate(v) {
+    if (v === null || v === undefined || v === '') return '';
+    const num = Number(v);
+    if (!Number.isFinite(num)) return '';
+    return String(num);
+  }
+
+  function toRateInput(v) {
+    return fmtRate(v);
+  }
+
+  function parseUnixDate(timestamp) {
+    const num = Number(timestamp);
+    if (!Number.isFinite(num)) return todayString();
+    const d = new Date(num * 1000);
+    return Number.isNaN(d.getTime()) ? todayString() : formatDateYmd(d);
+  }
+
+  function applyGlobalRatesToActive() {
+    const usd = numberValue('#globalUsdCny');
+    const tr = numberValue('#globalTryCny');
+    if (!usd || !tr) {
+      alert('请填写手动 USD→CNY 和 TRY→CNY 汇率。');
+      return;
+    }
+    if (!confirm('确定要把上方手动汇率应用到所有“当前定存”记录吗？这会覆盖每条记录的结束汇率。')) return;
+    appData.settings.currentUsdCny = usd;
+    appData.settings.currentTryCny = tr;
+    appData.activeRecords.forEach(r => {
+      r.usdCnyNow = usd;
+      r.tryCnyNow = tr;
+      r.updatedAt = new Date().toISOString();
+    });
+    persistData();
+  }
+
+  function addEditLog(id, before, after) {
+    appData.editLogs.unshift({
+      recordId: id,
+      editedAt: new Date().toISOString(),
+      before,
+      after
+    });
+    if (appData.editLogs.length > 200) appData.editLogs = appData.editLogs.slice(0, 200);
+  }
+
+  function renderAll() {
+    appData.activeRecords.sort((a, b) => (a.endDate || '').localeCompare(b.endDate || ''));
+    renderSummary();
+    renderBankFilter();
+    renderActiveTable();
+    renderHistoryTable();
+    renderMobileLists();
+  }
+
+  function renderSummary() {
+    const active = appData.activeRecords;
+    const totals = active.reduce((acc, r) => {
+      const c = getCalc(r);
+      acc.principalTry += n(r.principalTry);
+      acc.interestTry += c.interestTry;
+      acc.principalCny += c.principalCny;
+      acc.gainCny += c.gainCny;
+      acc.gainUsd += c.gainUsd;
+      if (c.remainingDays <= 7 && c.remainingDays > 0 && r.reminderEnabled) acc.soon++;
+      if (c.remainingDays <= 0 && r.reminderEnabled) acc.expired++;
+      return acc;
+    }, { principalTry: 0, interestTry: 0, principalCny: 0, gainCny: 0, gainUsd: 0, soon: 0, expired: 0 });
+
+    const items = [
+      ['当前笔数', active.length + ' 笔'],
+      ['本金合计 TRY', fmt(totals.principalTry)],
+      ['利息合计 TRY', fmt(totals.interestTry)],
+      ['本金合计 CNY', fmt(totals.principalCny)],
+      ['获得 CNY', fmt(totals.gainCny)],
+      ['提醒', `7天内 ${totals.soon} / 到期 ${totals.expired}`]
+    ];
+
+    $('#summaryGrid').html(items.map(x => `
+      <div class="summary-item">
+        <div class="label">${escapeHtml(x[0])}</div>
+        <div class="value">${escapeHtml(x[1])}</div>
+      </div>
+    `).join(''));
+  }
+
+  function getFilteredRecords(list) {
+    const q = ($('#searchInput').val() || '').trim().toLowerCase();
+    const bank = $('#bankFilter').val() || '';
+    return list.filter(r => {
+      const bankOk = !bank || r.bank === bank;
+      const text = [r.bank, r.openDate, r.startDate, r.endDate, r.remark, r.deleteReason].join(' ').toLowerCase();
+      const qOk = !q || text.includes(q);
+      return bankOk && qOk;
+    });
+  }
+
+  function renderBankFilter() {
+    const selected = $('#bankFilter').val() || '';
+    const banks = Array.from(new Set([...appData.activeRecords, ...appData.historyRecords].map(x => x.bank).filter(Boolean))).sort();
+    const html = '<option value="">全部银行</option>' + banks.map(b => `<option value="${escapeAttr(b)}">${escapeHtml(b)}</option>`).join('');
+    $('#bankFilter').html(html).val(selected);
+  }
+
+  function getTableColumns(type) {
+    return type === 'active' ? ACTIVE_COLUMNS : HISTORY_COLUMNS;
+  }
+
+  function defaultColumnVisibility() {
+    return { active: {}, history: {} };
+  }
+
+  function normalizeColumnVisibility(value) {
+    const result = defaultColumnVisibility();
+    if (!value || typeof value !== 'object') return result;
+    ['active', 'history'].forEach(type => {
+      const src = value[type];
+      if (!src || typeof src !== 'object') return;
+      getTableColumns(type).forEach(col => {
+        if (col.locked) return;
+        if (src[col.key] === false) result[type][col.key] = false;
+      });
+    });
+    return result;
+  }
+
+  function isColumnVisible(type, key) {
+    const col = getTableColumns(type).find(x => x.key === key);
+    if (!col) return true;
+    if (col.locked) return true;
+    const visibility = appData.settings.columnVisibility || defaultColumnVisibility();
+    const tableVisibility = visibility[type] || {};
+    return tableVisibility[key] !== false;
+  }
+
+  function getVisibleColumns(type) {
+    return getTableColumns(type).filter(col => isColumnVisible(type, col.key));
+  }
+
+  function tableHeadHtml(type) {
+    const cols = getVisibleColumns(type);
+    return '<thead><tr>' + cols.map(col => `<th class="${escapeAttr(col.thClass || '')}">${col.label}</th>`).join('') + '</tr></thead>';
+  }
+
+  function tableCell(className, html) {
+    return `<td class="${escapeAttr(className || '')}">${html}</td>`;
+  }
+
+  function renderActiveTable() {
+    const records = getFilteredRecords(appData.activeRecords);
+    const head = tableHeadHtml('active');
+    const visibleCount = getVisibleColumns('active').length;
+    const body = records.map((r, index) => activeRowHtml(r, index)).join('') || `<tr><td colspan="${visibleCount}" class="muted">暂无当前定存，点击“新增定存”开始。</td></tr>`;
+    const foot = activeFootHtml(records);
+    $('#activeTable').html(head + '<tbody>' + body + '</tbody>' + foot);
+
+    $('#activeTable [data-edit]').off().on('click', function () { openEditModal($(this).data('edit'), 'active'); });
+    $('#activeTable [data-history]').off().on('click', function () { moveToHistory($(this).data('history')); });
+  }
+
+  function activeRowHtml(r, index) {
+    const c = getCalc(r);
+    const statusClass = c.remainingDays <= 0 ? 'expired' : (c.remainingDays <= 7 ? 'soon' : '');
+    const cells = getVisibleColumns('active').map(col => activeCellHtml(col.key, r, c, index));
+    return `<tr class="${statusClass}">${cells.join('')}</tr>`;
+  }
+
+  function activeCellHtml(key, r, c, index) {
+    switch (key) {
+      case 'seq': return tableCell('seq-col', index + 1);
+      case 'remainingDays': return tableCell('remaining-cell', c.remainingDays);
+      case 'bank': return tableCell('', `<strong>${escapeHtml(r.bank)}</strong>`);
+      case 'openDate': return tableCell('money-red', escapeHtml(r.openDate));
+      case 'usdCnyOpen': return tableCell('open-rate', fmtRate(r.usdCnyOpen));
+      case 'tryCnyOpen': return tableCell('open-rate', fmtRate(r.tryCnyOpen));
+      case 'startDate': return tableCell('money-red', escapeHtml(r.startDate));
+      case 'endDate': return tableCell('money-red', escapeHtml(r.endDate));
+      case 'usdCnyNow': return tableCell('now-rate', fmtRate(r.usdCnyNow));
+      case 'tryCnyNow': return tableCell('now-rate', fmtRate(r.tryCnyNow));
+      case 'principalTry': return tableCell('money-red', fmt(r.principalTry));
+      case 'interestTry': return tableCell('', fmt(c.interestTry));
+      case 'principalPlusInterestTry': return tableCell('money-red', fmt(c.principalPlusInterestTry));
+      case 'depositDays': return tableCell('', c.depositDays);
+      case 'annualRateTry': return tableCell('money-red', `${fmt(r.annualRateTry, 2)}%`);
+      case 'annualRateCny': return tableCell('', `${fmt(c.annualRateCny, 2)}%`);
+      case 'principalCny': return tableCell('', fmt(c.principalCny));
+      case 'principalUsd': return tableCell('', fmt(c.principalUsd));
+      case 'principalPlusInterestCny': return tableCell('', fmt(c.principalPlusInterestCny));
+      case 'principalPlusInterestUsd': return tableCell('', fmt(c.principalPlusInterestUsd));
+      case 'gainTry': return tableCell('', fmt(c.gainTry));
+      case 'gainCny': return tableCell('gain-green', fmt(c.gainCny));
+      case 'gainUsd': return tableCell('', fmt(c.gainUsd));
+      case 'reminderEnabled': return tableCell(r.reminderEnabled ? 'yes' : 'no', r.reminderEnabled ? 'YES' : 'NO');
+      case 'actions': return tableCell('', `<button class="small secondary" data-edit="${escapeAttr(r.id)}">编辑</button> <button class="small danger" data-history="${escapeAttr(r.id)}">移入历史</button>`);
+      default: return tableCell('', '');
+    }
+  }
+
+  function activeFootHtml(records) {
+    const t = records.reduce((acc, r) => {
+      const c = getCalc(r);
+      acc.principalTry += n(r.principalTry);
+      acc.interestTry += c.interestTry;
+      acc.principalPlusInterestTry += c.principalPlusInterestTry;
+      acc.principalCny += c.principalCny;
+      acc.principalUsd += c.principalUsd;
+      acc.principalPlusInterestCny += c.principalPlusInterestCny;
+      acc.principalPlusInterestUsd += c.principalPlusInterestUsd;
+      acc.gainTry += c.gainTry;
+      acc.gainCny += c.gainCny;
+      acc.gainUsd += c.gainUsd;
+      return acc;
+    }, { principalTry:0, interestTry:0, principalPlusInterestTry:0, principalCny:0, principalUsd:0, principalPlusInterestCny:0, principalPlusInterestUsd:0, gainTry:0, gainCny:0, gainUsd:0 });
+
+    const totalMap = {
+      principalTry: fmt(t.principalTry),
+      interestTry: fmt(t.interestTry),
+      principalPlusInterestTry: fmt(t.principalPlusInterestTry),
+      principalCny: fmt(t.principalCny),
+      principalUsd: fmt(t.principalUsd),
+      principalPlusInterestCny: fmt(t.principalPlusInterestCny),
+      principalPlusInterestUsd: fmt(t.principalPlusInterestUsd),
+      gainTry: fmt(t.gainTry),
+      gainCny: fmt(t.gainCny),
+      gainUsd: fmt(t.gainUsd)
+    };
+
+    return footRowHtml('active', totalMap);
+  }
+
+  function renderHistoryTable() {
+    const records = getFilteredRecords(appData.historyRecords);
+    const head = tableHeadHtml('history');
+    const visibleCount = getVisibleColumns('history').length;
+    const body = records.map((r, index) => historyRowHtml(r, index)).join('') || `<tr><td colspan="${visibleCount}" class="muted">暂无历史记录。</td></tr>`;
+    const foot = historyFootHtml(records);
+    $('#historyTable').html(head + '<tbody>' + body + '</tbody>' + foot);
+
+    $('#historyTable [data-edit-history]').off().on('click', function () { openEditModal($(this).data('edit-history'), 'history'); });
+    $('#historyTable [data-restore]').off().on('click', function () { restoreFromHistory($(this).data('restore')); });
+    $('#historyTable [data-delete-history]').off().on('click', function () { deleteHistoryForever($(this).data('delete-history')); });
+  }
+
+  function historyRowHtml(r, index) {
+    const c = getCalc(r);
+    const cells = getVisibleColumns('history').map(col => historyCellHtml(col.key, r, c, index));
+    return `<tr>${cells.join('')}</tr>`;
+  }
+
+  function historyCellHtml(key, r, c, index) {
+    switch (key) {
+      case 'seq': return tableCell('seq-col', index + 1);
+      case 'deletedAt': return tableCell('', escapeHtml(formatDateTime(r.deletedAt)));
+      case 'deleteReason': return tableCell('', escapeHtml(r.deleteReason || ''));
+      case 'remainingDays': return tableCell('', c.remainingDays);
+      case 'bank': return tableCell('', `<strong>${escapeHtml(r.bank)}</strong>`);
+      case 'openDate': return tableCell('money-red', escapeHtml(r.openDate || ''));
+      case 'usdCnyOpen': return tableCell('open-rate', fmtRate(r.usdCnyOpen));
+      case 'tryCnyOpen': return tableCell('open-rate', fmtRate(r.tryCnyOpen));
+      case 'startDate': return tableCell('money-red', escapeHtml(r.startDate || ''));
+      case 'endDate': return tableCell('money-red', escapeHtml(r.endDate || ''));
+      case 'usdCnyNow': return tableCell('now-rate', fmtRate(r.usdCnyNow));
+      case 'tryCnyNow': return tableCell('now-rate', fmtRate(r.tryCnyNow));
+      case 'principalTry': return tableCell('money-red', fmt(r.principalTry));
+      case 'interestTry': return tableCell('', fmt(c.interestTry));
+      case 'principalPlusInterestTry': return tableCell('money-red', fmt(c.principalPlusInterestTry));
+      case 'depositDays': return tableCell('', c.depositDays);
+      case 'annualRateTry': return tableCell('money-red', `${fmt(r.annualRateTry, 2)}%`);
+      case 'annualRateCny': return tableCell('', `${fmt(c.annualRateCny, 2)}%`);
+      case 'principalCny': return tableCell('', fmt(c.principalCny));
+      case 'principalUsd': return tableCell('', fmt(c.principalUsd));
+      case 'principalPlusInterestCny': return tableCell('', fmt(c.principalPlusInterestCny));
+      case 'principalPlusInterestUsd': return tableCell('', fmt(c.principalPlusInterestUsd));
+      case 'gainTry': return tableCell('', fmt(c.gainTry));
+      case 'gainCny': return tableCell('gain-green', fmt(c.gainCny));
+      case 'gainUsd': return tableCell('', fmt(c.gainUsd));
+      case 'exchangeTry': return tableCell('', fmt(r.exchangeTry));
+      case 'exchangeCny': return tableCell('', fmt(r.exchangeCny));
+      case 'exchangeReason': return tableCell('', escapeHtml(r.exchangeReason || ''));
+      case 'remark': return tableCell('', escapeHtml(r.remark || ''));
+      case 'actions': return tableCell('', `<button class="small secondary" data-edit-history="${escapeAttr(r.id)}">编辑</button> <button class="small green" data-restore="${escapeAttr(r.id)}">恢复</button> <button class="small danger" data-delete-history="${escapeAttr(r.id)}">永久删除</button>`);
+      default: return tableCell('', '');
+    }
+  }
+
+  function historyFootHtml(records) {
+    const t = records.reduce((acc, r) => {
+      const c = getCalc(r);
+      acc.principalTry += n(r.principalTry);
+      acc.interestTry += c.interestTry;
+      acc.principalPlusInterestTry += c.principalPlusInterestTry;
+      acc.principalCny += c.principalCny;
+      acc.principalUsd += c.principalUsd;
+      acc.principalPlusInterestCny += c.principalPlusInterestCny;
+      acc.principalPlusInterestUsd += c.principalPlusInterestUsd;
+      acc.gainTry += c.gainTry;
+      acc.gainCny += c.gainCny;
+      acc.gainUsd += c.gainUsd;
+      acc.exchangeTry += n(r.exchangeTry);
+      acc.exchangeCny += n(r.exchangeCny);
+      return acc;
+    }, { principalTry:0, interestTry:0, principalPlusInterestTry:0, principalCny:0, principalUsd:0, principalPlusInterestCny:0, principalPlusInterestUsd:0, gainTry:0, gainCny:0, gainUsd:0, exchangeTry:0, exchangeCny:0 });
+
+    const totalMap = {
+      principalTry: fmt(t.principalTry),
+      interestTry: fmt(t.interestTry),
+      principalPlusInterestTry: fmt(t.principalPlusInterestTry),
+      principalCny: fmt(t.principalCny),
+      principalUsd: fmt(t.principalUsd),
+      principalPlusInterestCny: fmt(t.principalPlusInterestCny),
+      principalPlusInterestUsd: fmt(t.principalPlusInterestUsd),
+      gainTry: fmt(t.gainTry),
+      gainCny: fmt(t.gainCny),
+      gainUsd: fmt(t.gainUsd),
+      exchangeTry: fmt(t.exchangeTry),
+      exchangeCny: fmt(t.exchangeCny)
+    };
+
+    return footRowHtml('history', totalMap);
+  }
+
+  function footRowHtml(type, totalMap) {
+    let labelPlaced = false;
+    const html = getVisibleColumns(type).map(col => {
+      if (totalMap[col.key] !== undefined) {
+        const cls = col.key === 'gainCny' ? 'gain-green' : '';
+        return tableCell(cls, totalMap[col.key]);
+      }
+      if (!labelPlaced) {
+        labelPlaced = true;
+        return tableCell('', '合计：');
+      }
+      return tableCell('', '');
+    }).join('');
+    return `<tfoot><tr>${html}</tr></tfoot>`;
+  }
+
+  function openColumnModal() {
+    renderColumnConfigBox('active');
+    renderColumnConfigBox('history');
+    $('#columnModal').show();
+  }
+
+  function renderColumnConfigBox(type) {
+    const box = type === 'active' ? '#activeColumnBox' : '#historyColumnBox';
+    const html = getTableColumns(type)
+      .filter(col => !col.locked)
+      .map(col => `<label><input type="checkbox" data-column-table="${type}" value="${escapeAttr(col.key)}" ${isColumnVisible(type, col.key) ? 'checked' : ''} />${escapeHtml(columnLabelText(col.label))}</label>`)
+      .join('');
+    $(box).html(html);
+  }
+
+  function saveColumnSetting() {
+    const next = defaultColumnVisibility();
+    ['active', 'history'].forEach(type => {
+      getTableColumns(type).forEach(col => {
+        if (col.locked) return;
+        const checked = $(`#columnModal input[data-column-table="${type}"][value="${col.key}"]`).prop('checked');
+        if (!checked) next[type][col.key] = false;
+      });
+    });
+    appData.settings.columnVisibility = next;
+    $('#columnModal').hide();
+    persistData();
+    updateStatus('列配置已保存并同步');
+  }
+
+  function resetColumnSetting() {
+    if (!confirm('确定恢复当前定存和历史记录的默认列显示吗？')) return;
+    appData.settings.columnVisibility = defaultColumnVisibility();
+    renderColumnConfigBox('active');
+    renderColumnConfigBox('history');
+    persistData();
+    updateStatus('列配置已恢复默认并同步');
+  }
+
+  function columnLabelText(label) {
+    return String(label)
+      .replace(/<br\s*\/?\s*>/gi, ' ')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&gt;/g, '>')
+      .replace(/&lt;/g, '<')
+      .replace(/&amp;/g, '&')
+      .trim();
+  }
+
+  function renderMobileLists() {
+    renderMobileList('#activeMobileList', getFilteredRecords(appData.activeRecords), 'active');
+    renderMobileList('#historyMobileList', getFilteredRecords(appData.historyRecords), 'history');
+  }
+
+  function renderMobileList(selector, records, type) {
+    if (!records.length) {
+      $(selector).html(`<div class="mobile-card muted">${type === 'active' ? '暂无当前定存。' : '暂无历史记录。'}</div>`);
+      return;
+    }
+
+    const html = records.map(r => {
+      const c = getCalc(r);
+      const status = c.remainingDays <= 0 ? 'expired' : (c.remainingDays <= 7 ? 'soon' : '');
+      const statusText = type === 'history' ? '历史' : (c.remainingDays <= 0 ? '已到期' : `${c.remainingDays}天`);
+      const actions = type === 'active'
+        ? `<button class="small secondary" data-edit="${escapeAttr(r.id)}">编辑</button><button class="small danger" data-history="${escapeAttr(r.id)}">移入历史</button>`
+        : `<button class="small secondary" data-edit-history="${escapeAttr(r.id)}">编辑</button><button class="small green" data-restore="${escapeAttr(r.id)}">恢复</button><button class="small danger" data-delete-history="${escapeAttr(r.id)}">永久删除</button>`;
+
+      return `<div class="mobile-card ${status}">
+        <div class="mobile-title">
+          <strong>${escapeHtml(r.bank)} · ${fmt(r.principalTry)} TRY</strong>
+          <span class="pill ${status}">${escapeHtml(statusText)}</span>
+        </div>
+        <div class="mobile-grid">
+          ${mobileField('开始/结束', `${r.startDate || ''} → ${r.endDate || ''}`)}
+          ${mobileField('利息 TRY', fmt(c.interestTry))}
+          ${mobileField('年利率 TRY', `${fmt(r.annualRateTry, 2)}%`)}
+          ${mobileField('年利率 CNY', `${fmt(c.annualRateCny, 2)}%`)}
+          ${mobileField('本金 CNY', fmt(c.principalCny))}
+          ${mobileField('获得 CNY', fmt(c.gainCny))}
+          ${type === 'history' ? mobileField('删除原因', r.deleteReason || '') : mobileField('提醒', r.reminderEnabled ? 'YES' : 'NO')}
+          ${type === 'history' ? mobileField('兑换 TRY', fmt(r.exchangeTry)) : ''}
+          ${type === 'history' ? mobileField('兑换 CNY', fmt(r.exchangeCny)) : ''}
+          ${type === 'history' ? mobileField('兑换原因', r.exchangeReason || '-') : ''}
+          ${mobileField('备注', r.remark || '-')}
+        </div>
+        <div class="mobile-actions">${actions}</div>
+      </div>`;
+    }).join('');
+
+    $(selector).html(html);
+    $(`${selector} [data-edit]`).off().on('click', function () { openEditModal($(this).data('edit'), 'active'); });
+    $(`${selector} [data-history]`).off().on('click', function () { moveToHistory($(this).data('history')); });
+    $(`${selector} [data-edit-history]`).off().on('click', function () { openEditModal($(this).data('edit-history'), 'history'); });
+    $(`${selector} [data-restore]`).off().on('click', function () { restoreFromHistory($(this).data('restore')); });
+    $(`${selector} [data-delete-history]`).off().on('click', function () { deleteHistoryForever($(this).data('delete-history')); });
+  }
+
+  function mobileField(k, v) {
+    return `<div class="mobile-field"><div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(String(v))}</div></div>`;
+  }
+
+  function getCalc(r) {
+    const depositDays = Math.max(dateDiffDays(r.startDate, r.endDate), 0);
+    const remainingDays = dateDiffDays(todayString(), r.endDate);
+    const principalTry = n(r.principalTry);
+    const storedTotal = n(r.principalPlusInterestTry);
+    const legacyInterest = n(r.interestTry);
+    const principalPlusInterestTry = storedTotal > 0 ? storedTotal : principalTry + legacyInterest;
+    const interestTry = principalPlusInterestTry - principalTry;
+    const principalCny = principalTry * n(r.tryCnyOpen);
+    const principalUsd = safeDiv(principalCny, n(r.usdCnyOpen));
+    const principalPlusInterestCny = principalPlusInterestTry * n(r.tryCnyNow);
+    const principalPlusInterestUsd = safeDiv(principalPlusInterestCny, n(r.usdCnyNow));
+    const gainTry = interestTry;
+    const gainCny = principalPlusInterestCny - principalCny;
+    const gainUsd = principalPlusInterestUsd - principalUsd;
+    const annualRateCny = depositDays > 0 && principalCny > 0 ? gainCny / principalCny / depositDays * 365 * 100 : 0;
+
+    return {
+      depositDays,
+      remainingDays,
+      interestTry,
+      principalPlusInterestTry,
+      principalCny,
+      principalUsd,
+      principalPlusInterestCny,
+      principalPlusInterestUsd,
+      gainTry,
+      gainCny,
+      gainUsd,
+      annualRateCny
+    };
+  }
+
+  function updateFormPreview() {
+    const startDate = $('#startDate').val();
+    const endDate = $('#endDate').val();
+    const principalTry = numberValue('#principalTry');
+    const totalTry = numberValue('#principalPlusInterestTry');
+    const interestTry = totalTry - principalTry;
+    const depositDays = Math.max(dateDiffDays(startDate, endDate), 0);
+    const remainingDays = endDate ? dateDiffDays(todayString(), endDate) : 0;
+    const usdOpen = numberValue('#usdCnyOpen');
+    const tryOpen = numberValue('#tryCnyOpen');
+    const usdEnd = numberValue('#usdCnyNow');
+    const tryEnd = numberValue('#tryCnyNow');
+    $('#interestTry').val(Number.isFinite(interestTry) ? toInput(interestTry, 2) : '');
+
+    const principalCny = principalTry * tryOpen;
+    const totalCny = totalTry * tryEnd;
+    const gainCny = totalCny - principalCny;
+    const principalUsd = safeDiv(principalCny, usdOpen);
+    const totalUsd = safeDiv(totalCny, usdEnd);
+    const gainUsd = totalUsd - principalUsd;
+    const annualRateCny = depositDays > 0 && principalCny > 0 ? gainCny / principalCny / depositDays * 365 * 100 : 0;
+
+    $('#calcPreview').html(`
+      <div><strong>自动计算：</strong></div>
+      <div>存款天数：${depositDays || '-'} 天；剩余天数：${endDate ? remainingDays : '-'} 天；利息 TRY：${fmt(interestTry)}</div>
+      <div>开户汇率：USD→CNY ${fmt(usdOpen, 4)}，TRY→CNY ${fmt(tryOpen, 4)}</div>
+      <div>结束汇率：USD→CNY ${fmt(usdEnd, 4)}，TRY→CNY ${fmt(tryEnd, 4)}</div>
+      <div>本金 CNY：${fmt(principalCny)}；本金+利息 CNY：${fmt(totalCny)}；获得 CNY：${fmt(gainCny)}</div>
+      <div>本金 USD：${fmt(principalUsd)}；本金+利息 USD：${fmt(totalUsd)}；获得 USD：${fmt(gainUsd)}；CNY 年化：${fmt(annualRateCny, 2)}%</div>
+    `);
+  }
+
+  function defaultEmailReminder() {
+    return {
+      enabled: false,
+      mailTo: '',
+      advanceDays: [],
+      dueTodayIntervalHours: '',
+      onlyEnabledRecords: true,
+      fields: ['bank', 'principalTry', 'endDate', 'remainingDays', 'principalPlusInterestTry'],
+      subjectTemplate: '定存到期提醒：{{bank}} {{principalTry}} TRY',
+      bodyTemplate: '你的定期存款即将到期：\n\n银行：{{bank}}\n本金：{{principalTry}} TRY\n本金+利息：{{principalPlusInterestTry}} TRY\n到期日：{{endDate}}\n剩余天数：{{remainingDays}} 天\n\n请及时处理。'
+    };
+  }
+
+  function normalizeAdvanceDays(value) {
+    if (value === null || value === undefined || String(value).trim() === '') return [];
+    let arr = Array.isArray(value) ? value : String(value || '').split(',');
+    arr = arr.map(x => parseInt(String(x).trim(), 10)).filter(x => Number.isFinite(x) && x >= 0);
+    return Array.from(new Set(arr)).sort((a, b) => b - a);
+  }
+
+  function normalizeDueTodayIntervalHours(value) {
+    if (value === null || value === undefined || String(value).trim() === '') return '';
+    const n = parseInt(String(value).trim(), 10);
+    return Number.isFinite(n) && n > 0 ? n : '';
+  }
+
+  function normalizeMailFields(fields) {
+    const allowed = ['bank','principalTry','endDate','remainingDays','principalPlusInterestTry','gainCny','annualRateTry','annualRateCny','remark'];
+    const arr = Array.isArray(fields) ? fields : [];
+    const out = arr.filter(x => allowed.includes(x));
+    return out.length ? out : defaultEmailReminder().fields;
+  }
+
+  function openMailModal() {
+    loadMailSettingToForm();
+    previewMailReminder(null, true);
+    $('#mailModal').show();
+  }
+
+  function loadMailSettingToForm() {
+    const cfg = Object.assign(defaultEmailReminder(), appData.settings.emailReminder || {});
+    cfg.advanceDays = normalizeAdvanceDays(cfg.advanceDays);
+    cfg.fields = normalizeMailFields(cfg.fields);
+    $('#mailEnabled').val(cfg.enabled ? 'YES' : 'NO');
+    $('#mailTo').val(cfg.mailTo || '');
+    $('#mailAdvanceDays').val(cfg.advanceDays.join(','));
+    $('#mailDueTodayIntervalHours').val(cfg.dueTodayIntervalHours || '');
+    $('#mailOnlyEnabledRecords').val(cfg.onlyEnabledRecords ? 'YES' : 'NO');
+    $('#mailSubjectTemplate').val(cfg.subjectTemplate || defaultEmailReminder().subjectTemplate);
+    $('#mailBodyTemplate').val(cfg.bodyTemplate || defaultEmailReminder().bodyTemplate);
+    $('#mailFieldsBox input[type=checkbox]').each(function () {
+      $(this).prop('checked', cfg.fields.includes($(this).val()));
+    });
+  }
+
+  function readMailSettingFromForm() {
+    const fields = $('#mailFieldsBox input[type=checkbox]:checked').map(function () { return $(this).val(); }).get();
+    return {
+      enabled: $('#mailEnabled').val() === 'YES',
+      mailTo: $('#mailTo').val().trim(),
+      advanceDays: normalizeAdvanceDays($('#mailAdvanceDays').val()),
+      dueTodayIntervalHours: normalizeDueTodayIntervalHours($('#mailDueTodayIntervalHours').val()),
+      onlyEnabledRecords: $('#mailOnlyEnabledRecords').val() === 'YES',
+      fields: normalizeMailFields(fields),
+      subjectTemplate: $('#mailSubjectTemplate').val().trim() || defaultEmailReminder().subjectTemplate,
+      bodyTemplate: $('#mailBodyTemplate').val() || defaultEmailReminder().bodyTemplate
+    };
+  }
+
+  function saveMailSetting(e) {
+    if (e) e.preventDefault();
+    const cfg = readMailSettingFromForm();
+    const hasAnyRule = cfg.advanceDays.length > 0 || Boolean(cfg.dueTodayIntervalHours);
+    if (cfg.enabled && hasAnyRule && !cfg.mailTo) {
+      alert('启用邮件提醒且配置了推送规则时，请填写收件邮箱。');
+      return;
+    }
+    appData.settings.emailReminder = cfg;
+    saveLocalData();
+    persistData();
+    $('#mailModal').hide();
+    updateStatus('邮件提醒设置已保存');
+  }
+
+  function previewMailReminder(e, silent) {
+    if (e) e.preventDefault();
+    const cfg = readMailSettingFromForm();
+    const matches = getReminderCandidates(cfg);
+    const sample = matches[0];
+    if (!sample) {
+      $('#mailPreview').text('当前没有符合提醒条件的定存。\n例如设置提前 7 天，只有剩余天数等于 7 的记录才会进入邮件提醒。');
+      if (!silent) alert('当前没有符合提醒条件的记录。');
+      return;
+    }
+    const subject = renderMailTemplate(cfg.subjectTemplate, sample.r, sample.c);
+    const body = renderMailTemplate(cfg.bodyTemplate, sample.r, sample.c) + '\n\n' + buildSelectedFieldsText(cfg.fields, sample.r, sample.c);
+    $('#mailPreview').text('触发规则：' + (sample.triggerLabel || '提醒') + '\n标题：' + subject + '\n\n内容：\n' + body + (matches.length > 1 ? `\n\n共 ${matches.length} 条符合条件，实际推送时会逐条发送/合并处理。` : ''));
+  }
+
+  function getReminderCandidates(cfg) {
+    const days = normalizeAdvanceDays(cfg.advanceDays);
+    const dueInterval = normalizeDueTodayIntervalHours(cfg.dueTodayIntervalHours);
+    const out = [];
+    appData.activeRecords.forEach(r => {
+      const c = getCalc(r);
+      if (cfg.onlyEnabledRecords && !r.reminderEnabled) return;
+      if (days.includes(c.remainingDays)) {
+        out.push({ r, c, triggerType: 'advance', triggerLabel: `提前 ${c.remainingDays} 天推送` });
+      }
+      if (dueInterval && c.remainingDays === 0) {
+        out.push({ r, c, triggerType: 'dueHourly', triggerLabel: `到期当天每 ${dueInterval} 小时推送` });
+      }
+    });
+    return out;
+  }
+
+  function renderMailTemplate(template, r, c) {
+    const values = mailValueMap(r, c);
+    return String(template || '').replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, function (_, key) {
+      return values[key] ?? '';
+    });
+  }
+
+  function buildSelectedFieldsText(fields, r, c) {
+    const labels = {
+      bank: '银行', principalTry: '本金 TRY', endDate: '到期日期', remainingDays: '剩余天数',
+      principalPlusInterestTry: '本金+利息 TRY', gainCny: '获得 CNY', annualRateTry: '年利率 TRY', annualRateCny: '年利率 CNY', remark: '备注'
+    };
+    const values = mailValueMap(r, c);
+    return normalizeMailFields(fields).map(k => `${labels[k] || k}：${values[k] ?? ''}`).join('\n');
+  }
+
+  function mailValueMap(r, c) {
+    return {
+      bank: r.bank || '',
+      principalTry: fmt(r.principalTry),
+      endDate: r.endDate || '',
+      remainingDays: c.remainingDays,
+      principalPlusInterestTry: fmt(c.principalPlusInterestTry),
+      gainCny: fmt(c.gainCny),
+      annualRateTry: fmt(r.annualRateTry, 2) + '%',
+      annualRateCny: fmt(c.annualRateCny, 2) + '%',
+      remark: r.remark || ''
+    };
+  }
+
+
+  function getLocalEmailApiBase() {
+    if (window.location.protocol === 'http:' || window.location.protocol === 'https:') return '';
+    return 'http://localhost:8080';
+  }
+
+  async function postLocalEmailApi(path, payload) {
+    const url = getLocalEmailApiBase() + path;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    let data = null;
+    try { data = await res.json(); } catch (_) { data = {}; }
+    if (!res.ok || data.ok === false) {
+      throw new Error((data && data.error) || ('HTTP ' + res.status));
+    }
+    return data;
+  }
+
+  function buildMailMessage(cfg, item) {
+    const subject = renderMailTemplate(cfg.subjectTemplate, item.r, item.c);
+    const body = renderMailTemplate(cfg.bodyTemplate, item.r, item.c) + '\n\n' + buildSelectedFieldsText(cfg.fields, item.r, item.c);
+    return {
+      to: cfg.mailTo,
+      subject: subject,
+      body: '触发规则：' + (item.triggerLabel || '提醒') + '\n\n' + body
+    };
+  }
+
+  function buildFakeMailItem() {
+    const r = {
+      bank: '测试银行',
+      principalTry: 50000,
+      principalPlusInterestTry: 52000,
+      annualRateTry: 40,
+      endDate: todayString(),
+      remark: '这是一封本地测试邮件，不代表真实定存。'
+    };
+    const c = getCalc(r);
+    return { r, c, triggerType: 'test', triggerLabel: '本地测试邮件' };
+  }
+
+  async function sendLocalTestMail(e) {
+    if (e) e.preventDefault();
+    const cfg = readMailSettingFromForm();
+    if (!cfg.mailTo) {
+      alert('请先填写收件邮箱。');
+      return;
+    }
+    const sample = getReminderCandidates(cfg)[0] || buildFakeMailItem();
+    const msg = buildMailMessage(cfg, sample);
+    msg.subject = '[测试] ' + msg.subject;
+    msg.body = '这是一封本地测试邮件，用于验证 SMTP 配置是否可用。\n\n' + msg.body;
+    try {
+      $('#mailPreview').text('正在通过本地邮件服务发送测试邮件...');
+      const result = await postLocalEmailApi('/api/local-email/send', msg);
+      $('#mailPreview').text('测试邮件发送成功。\nmessageId：' + (result.messageId || '-') + '\n\n标题：' + msg.subject + '\n\n内容：\n' + msg.body);
+      updateStatus('测试邮件发送成功');
+    } catch (err) {
+      $('#mailPreview').text('测试邮件发送失败：' + err.message + '\n\n请确认：\n1. 已运行 node local-email-server.js\n2. 已配置 .env 里的 SMTP_HOST / SMTP_USER / SMTP_PASS\n3. 当前页面通过 http://localhost:8080 打开，或本地服务允许 file:// 调用');
+      alert('测试邮件发送失败：' + err.message);
+    }
+  }
+
+  async function sendLocalReminderOnce(e) {
+    if (e) e.preventDefault();
+    const cfg = readMailSettingFromForm();
+    const hasAnyRule = cfg.advanceDays.length > 0 || Boolean(cfg.dueTodayIntervalHours);
+    if (!cfg.enabled) {
+      alert('请先启用邮件提醒。');
+      return;
+    }
+    if (!hasAnyRule) {
+      alert('请至少配置一种推送规则：提前几天推送，或到期当天每 X 小时推送。');
+      return;
+    }
+    if (!cfg.mailTo) {
+      alert('请先填写收件邮箱。');
+      return;
+    }
+    const matches = getReminderCandidates(cfg);
+    if (!matches.length) {
+      $('#mailPreview').text('当前没有符合提醒条件的记录。');
+      alert('当前没有符合提醒条件的记录。');
+      return;
+    }
+    if (!confirm('本次将发送 ' + matches.length + ' 封提醒邮件，确定继续？')) return;
+    const messages = matches.map(item => buildMailMessage(cfg, item));
+    try {
+      $('#mailPreview').text('正在通过本地邮件服务发送 ' + messages.length + ' 封提醒邮件...');
+      const result = await postLocalEmailApi('/api/local-email/send-batch', { messages });
+      $('#mailPreview').text('本地执行提醒完成。\n成功：' + (result.sent || 0) + ' 封\n失败：' + (result.failed || 0) + ' 封\n\n' + (result.details || []).map((x, i) => `${i + 1}. ${x.ok ? '成功' : '失败'} - ${x.subject || ''} ${x.error ? ' - ' + x.error : ''}`).join('\n'));
+      updateStatus('本地邮件提醒执行完成');
+    } catch (err) {
+      $('#mailPreview').text('本地执行提醒失败：' + err.message + '\n\n请确认 local-email-server.js 正在运行且 .env 配置正确。');
+      alert('本地执行提醒失败：' + err.message);
+    }
+  }
+
+  function exportJson() {
+    const payload = buildVisibleExportPayload(currentTab);
+    downloadFile('deposit-' + currentTab + '-visible-' + todayString() + '.json', JSON.stringify(payload, null, 2), 'application/json');
+  }
+
+  function exportBackupJson() {
+    downloadFile('deposit-backup-' + todayString() + '.json', JSON.stringify(appData, null, 2), 'application/json');
+  }
+
+  function exportCsv() {
+    const type = currentTab;
+    const columns = getExportColumns(type);
+    const rows = getExportRows(type);
+    const lines = [columns.map(col => columnLabelText(col.label))];
+
+    rows.forEach((r, index) => {
+      const c = getCalc(r);
+      lines.push(columns.map(col => exportCellValue(type, col.key, r, c, index)));
+    });
+
+    const summary = buildExportSummaryRow(type, rows, columns);
+    if (summary) lines.push(summary);
+
+    const csv = '\ufeff' + lines.map(row => row.map(csvCell).join(',')).join('\n');
+    downloadFile('deposit-' + type + '-visible-' + todayString() + '.csv', csv, 'text/csv;charset=utf-8');
+  }
+
+  function buildVisibleExportPayload(type) {
+    const columns = getExportColumns(type);
+    const rows = getExportRows(type);
+    const tableName = type === 'active' ? '当前定存' : '历史记录';
+    return {
+      exportMode: 'visible-columns-report',
+      table: tableName,
+      exportedAt: new Date().toISOString(),
+      columnScope: '当前表格显示的列，不包含操作列',
+      rowScope: '当前表格全部记录，不受搜索框和银行筛选影响',
+      columns: columns.map(col => ({ key: col.key, label: columnLabelText(col.label) })),
+      records: rows.map((r, index) => {
+        const c = getCalc(r);
+        const obj = {};
+        columns.forEach(col => {
+          obj[columnLabelText(col.label)] = exportCellValue(type, col.key, r, c, index);
+        });
+        return obj;
+      }),
+      summary: buildExportSummaryObject(type, rows, columns)
+    };
+  }
+
+  function getExportRows(type) {
+    return type === 'active' ? appData.activeRecords.slice() : appData.historyRecords.slice();
+  }
+
+  function getExportColumns(type) {
+    return getVisibleColumns(type).filter(col => col.key !== 'actions');
+  }
+
+  function exportCellValue(type, key, r, c, index) {
+    switch (key) {
+      case 'seq': return index + 1;
+      case 'deletedAt': return formatDateTime(r.deletedAt);
+      case 'deleteReason': return r.deleteReason || '';
+      case 'remainingDays': return c.remainingDays;
+      case 'bank': return r.bank || '';
+      case 'openDate': return r.openDate || '';
+      case 'usdCnyOpen': return fmtRate(r.usdCnyOpen);
+      case 'tryCnyOpen': return fmtRate(r.tryCnyOpen);
+      case 'startDate': return r.startDate || '';
+      case 'endDate': return r.endDate || '';
+      case 'usdCnyNow': return fmtRate(r.usdCnyNow);
+      case 'tryCnyNow': return fmtRate(r.tryCnyNow);
+      case 'principalTry': return fmt(r.principalTry);
+      case 'interestTry': return fmt(c.interestTry);
+      case 'principalPlusInterestTry': return fmt(c.principalPlusInterestTry);
+      case 'depositDays': return c.depositDays;
+      case 'annualRateTry': return fmt(r.annualRateTry, 2) + '%';
+      case 'annualRateCny': return fmt(c.annualRateCny, 2) + '%';
+      case 'principalCny': return fmt(c.principalCny);
+      case 'principalUsd': return fmt(c.principalUsd);
+      case 'principalPlusInterestCny': return fmt(c.principalPlusInterestCny);
+      case 'principalPlusInterestUsd': return fmt(c.principalPlusInterestUsd);
+      case 'gainTry': return fmt(c.gainTry);
+      case 'gainCny': return fmt(c.gainCny);
+      case 'gainUsd': return fmt(c.gainUsd);
+      case 'reminderEnabled': return r.reminderEnabled ? 'YES' : 'NO';
+      case 'exchangeTry': return fmt(r.exchangeTry);
+      case 'exchangeCny': return fmt(r.exchangeCny);
+      case 'exchangeReason': return r.exchangeReason || '';
+      case 'remark': return r.remark || '';
+      default: return '';
+    }
+  }
+
+  function buildExportTotals(type, rows) {
+    return rows.reduce((acc, r) => {
+      const c = getCalc(r);
+      acc.principalTry += n(r.principalTry);
+      acc.interestTry += c.interestTry;
+      acc.principalPlusInterestTry += c.principalPlusInterestTry;
+      acc.principalCny += c.principalCny;
+      acc.principalUsd += c.principalUsd;
+      acc.principalPlusInterestCny += c.principalPlusInterestCny;
+      acc.principalPlusInterestUsd += c.principalPlusInterestUsd;
+      acc.gainTry += c.gainTry;
+      acc.gainCny += c.gainCny;
+      acc.gainUsd += c.gainUsd;
+      if (type === 'history') {
+        acc.exchangeTry += n(r.exchangeTry);
+        acc.exchangeCny += n(r.exchangeCny);
+      }
+      return acc;
+    }, { principalTry:0, interestTry:0, principalPlusInterestTry:0, principalCny:0, principalUsd:0, principalPlusInterestCny:0, principalPlusInterestUsd:0, gainTry:0, gainCny:0, gainUsd:0, exchangeTry:0, exchangeCny:0 });
+  }
+
+  function buildExportTotalMap(type, rows) {
+    const t = buildExportTotals(type, rows);
+    const map = {
+      principalTry: fmt(t.principalTry),
+      interestTry: fmt(t.interestTry),
+      principalPlusInterestTry: fmt(t.principalPlusInterestTry),
+      principalCny: fmt(t.principalCny),
+      principalUsd: fmt(t.principalUsd),
+      principalPlusInterestCny: fmt(t.principalPlusInterestCny),
+      principalPlusInterestUsd: fmt(t.principalPlusInterestUsd),
+      gainTry: fmt(t.gainTry),
+      gainCny: fmt(t.gainCny),
+      gainUsd: fmt(t.gainUsd)
+    };
+    if (type === 'history') {
+      map.exchangeTry = fmt(t.exchangeTry);
+      map.exchangeCny = fmt(t.exchangeCny);
+    }
+    return map;
+  }
+
+  function buildExportSummaryObject(type, rows, columns) {
+    const totalMap = buildExportTotalMap(type, rows);
+    const summary = {};
+    columns.forEach(col => {
+      if (totalMap[col.key] !== undefined) {
+        summary[columnLabelText(col.label)] = totalMap[col.key];
+      }
+    });
+    return summary;
+  }
+
+  function buildExportSummaryRow(type, rows, columns) {
+    if (!rows.length) return null;
+    const totalMap = buildExportTotalMap(type, rows);
+    let labelPlaced = false;
+    return columns.map(col => {
+      if (totalMap[col.key] !== undefined) return totalMap[col.key];
+      if (!labelPlaced) {
+        labelPlaced = true;
+        return '合计：';
+      }
+      return '';
+    });
+  }
+
+  function importJson(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function () {
+      try {
+        const imported = normalizeData(JSON.parse(reader.result));
+        if (!confirm('导入会覆盖当前本地数据，确定继续吗？')) return;
+        appData = imported;
+        saveLocalData();
+        setGlobalRateInputs();
+        persistData();
+      } catch (err) {
+        alert('导入失败：JSON 文件格式不正确。');
+      } finally {
+        $('#importFile').val('');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function downloadFile(filename, content, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function updateStatus(text) {
+    const cfg = getConfig();
+    const mode = cfg.apiUrl ? '云端同步模式' : '本地模式';
+    $('#statusLine').text(`${mode} · ${text}`);
+  }
+
+  function numberValue(selector) {
+    const v = parseFloat($(selector).val());
+    return Number.isFinite(v) ? v : 0;
+  }
+
+  function n(v) {
+    const x = Number(v);
+    return Number.isFinite(x) ? x : 0;
+  }
+
+  function safeDiv(a, b) { return b ? a / b : 0; }
+
+  function fmt(v, digits = 2) {
+    const x = n(v);
+    return x.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  }
+
+  function toInput(v, digits = 2) {
+    if (v === null || v === undefined || v === '') return '';
+    const x = n(v);
+    return Number.isFinite(x) ? x.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1') : '';
+  }
+
+  function todayString() {
+    const d = new Date();
+    d.setHours(0,0,0,0);
+    return dateToString(d);
+  }
+
+  function addDaysString(dateStr, days) {
+    const d = parseDate(dateStr);
+    d.setDate(d.getDate() + days);
+    return dateToString(d);
+  }
+
+  function parseDate(str) {
+    if (!str) return new Date(NaN);
+    const parts = str.split('-').map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+
+
+  function parseDateLocal(str) {
+    return parseDate(str);
+  }
+
+  function formatDateYmd(d) {
+    return dateToString(d);
+  }
+
+  function dateToString(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function dateDiffDays(startStr, endStr) {
+    const s = parseDate(startStr);
+    const e = parseDate(endStr);
+    if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return 0;
+    const ms = e.getTime() - s.getTime();
+    return Math.round(ms / 86400000);
+  }
+
+  function generateId() {
+    return 'DEP-' + new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14) + '-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+  }
+
+  function formatDateTime(v) {
+    if (!v) return '';
+    const d = v instanceof Date ? v : new Date(v);
+    if (Number.isNaN(d.getTime())) return String(v);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${day} ${hh}:${mm}`;
+  }
+
+  function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+
+  function csvCell(v) {
+    const s = String(v === null || v === undefined ? '' : v);
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+
+  function escapeHtml(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function escapeAttr(s) { return escapeHtml(s); }
+})();
+</script>
+</body>
+</html>
