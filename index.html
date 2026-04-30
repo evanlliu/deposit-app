@@ -416,6 +416,50 @@
     }
 
 
+    .mail-variable-box {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: #f8fbff;
+    }
+    .mail-variable-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .mail-variable-head strong { font-size: 14px; }
+    .mail-variable-head span { color: var(--muted); font-size: 12px; }
+    .mail-variable-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .mail-var-btn {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--line);
+      box-shadow: none;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+    .mail-var-btn:hover {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+    }
+    .mail-variable-note {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+
+
     @media (max-width: 1100px) {
       .summary-grid { grid-template-columns: repeat(3, 1fr); }
       .form-grid { grid-template-columns: repeat(2, 1fr); }
@@ -810,7 +854,20 @@
           </div>
           <div class="form-field full">
             <label>邮件内容模板</label>
-            <textarea id="mailBodyTemplate" placeholder="支持变量：{{bank}}、{{principalTry}}、{{endDate}}、{{remainingDays}}、{{principalPlusInterestTry}}、{{gainCny}}"></textarea>
+            <textarea id="mailBodyTemplate" placeholder="你可以直接点击下面的变量按钮插入，例如选择“银行”会插入 {{bank}}"></textarea>
+          </div>
+          <div class="form-field full">
+            <label>模板变量</label>
+            <div class="mail-variable-box">
+              <div class="mail-variable-head">
+                <strong>点击变量，自动插入到标题或内容的光标位置</strong>
+                <span>例如点击“银行”会插入 {{bank}}</span>
+              </div>
+              <div class="mail-variable-grid" id="mailVariableBox"></div>
+              <div class="mail-variable-note">
+                说明：“利息 CNY”= 利息 TRY × 结束 TRY→CNY 汇率；“获得 CNY”= 本金+利息按结束汇率折算后减去本金按开户汇率折算后的结果，包含汇率变化影响。
+              </div>
+            </div>
           </div>
           <div class="form-field full">
             <label>邮件预览</label>
@@ -818,7 +875,7 @@
           </div>
         </div>
         <div class="hint">
-          邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；邮件正文只发送“邮件内容模板”里的内容，不会再额外追加字段，想显示哪些信息请直接在模板里用变量配置。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；两个规则都填写时会同时生效。
+          邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；邮件正文只发送“邮件内容模板”里的内容，不会再额外追加字段。你可以点击“模板变量”按钮插入字段，例如点击“银行”会插入 {{bank}}。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；两个规则都填写时会同时生效。
         </div>
       </div>
       <div class="modal-foot">
@@ -905,6 +962,34 @@
     { key: 'actions', label: '操作', locked: true }
   ];
 
+  const MAIL_TEMPLATE_VARIABLES = [
+    { key: 'bank', label: '银行', desc: '银行名称' },
+    { key: 'principalTry', label: '本金 TRY', desc: '本金金额' },
+    { key: 'interestTry', label: '利息 TRY', desc: '本金+利息 - 本金' },
+    { key: 'principalPlusInterestTry', label: '本金+利息 TRY', desc: '到期总金额' },
+    { key: 'openDate', label: '开户日期', desc: '开户日期' },
+    { key: 'startDate', label: '开始日期', desc: '计息开始日期' },
+    { key: 'endDate', label: '到期日期', desc: '结束日期/到期日期' },
+    { key: 'depositDays', label: '存款天数', desc: '结束日期 - 开始日期' },
+    { key: 'remainingDays', label: '剩余天数', desc: '到期日期 - 今天' },
+    { key: 'tryCnyOpen', label: '开户 TRY→CNY', desc: '开户日 TRY 对 CNY 汇率' },
+    { key: 'tryCnyEnd', label: '结束 TRY→CNY', desc: '结束日 TRY 对 CNY 汇率' },
+    { key: 'usdCnyOpen', label: '开户 USD→CNY', desc: '开户日 USD 对 CNY 汇率' },
+    { key: 'usdCnyEnd', label: '结束 USD→CNY', desc: '结束日 USD 对 CNY 汇率' },
+    { key: 'principalCny', label: '本金 CNY', desc: '本金按开户汇率折算' },
+    { key: 'principalUsd', label: '本金 USD', desc: '本金折算 USD' },
+    { key: 'principalPlusInterestCny', label: '本金+利息 CNY', desc: '到期总额按结束汇率折算' },
+    { key: 'principalPlusInterestUsd', label: '本金+利息 USD', desc: '到期总额折算 USD' },
+    { key: 'interestCny', label: '利息 CNY', desc: '利息 TRY × 结束 TRY→CNY 汇率' },
+    { key: 'gainCny', label: '获得 CNY', desc: '考虑汇率变化后的 CNY 收益' },
+    { key: 'gainUsd', label: '获得 USD', desc: '考虑汇率变化后的 USD 收益' },
+    { key: 'annualRateTry', label: '年利率 TRY', desc: '手动录入的 TRY 年利率' },
+    { key: 'annualRateCny', label: '年利率 CNY', desc: '按 CNY 收益计算' },
+    { key: 'remark', label: '备注', desc: '记录备注' }
+  ];
+
+  let lastMailTemplateTarget = null;
+
   $(init);
 
   function init() {
@@ -934,6 +1019,8 @@
     $('#btnPreviewMail').on('click', previewMailReminder);
     $('#btnSendTestMail').on('click', sendCloudTestMail);
     $('#btnSendLocalReminder').on('click', runCloudReminderOnce);
+    $('#mailSubjectTemplate, #mailBodyTemplate').on('focus click', function () { lastMailTemplateTarget = this; });
+    $(document).on('click', '.mail-var-btn', function (e) { e.preventDefault(); insertMailVariable($(this).data('var')); });
     $('#btnSaveSync').on('click', saveSyncSetting);
     $('#btnRefresh').on('click', loadCloudData);
     $('#btnFetchRates').on('click', refreshAllRatesByOpenAndEndDate);
@@ -2662,15 +2749,41 @@
 
   function normalizeMailFields(fields) {
     // v20 起邮件正文只使用“邮件内容模板”，不再额外追加勾选字段。
-    const allowed = ['bank','principalTry','endDate','remainingDays','principalPlusInterestTry','gainCny','annualRateTry','annualRateCny','remark'];
+    const allowed = MAIL_TEMPLATE_VARIABLES.map(x => x.key);
     const arr = Array.isArray(fields) ? fields : [];
     return arr.filter(x => allowed.includes(x));
   }
 
   function openMailModal() {
+    renderMailVariableButtons();
     loadMailSettingToForm();
     previewMailReminder(null, true);
     $('#mailModal').show();
+    lastMailTemplateTarget = document.getElementById('mailBodyTemplate');
+  }
+
+  function renderMailVariableButtons() {
+    const html = MAIL_TEMPLATE_VARIABLES.map(v => {
+      return `<button type="button" class="mail-var-btn" data-var="${escapeAttr(v.key)}" title="${escapeAttr(v.desc)}">${escapeHtml(v.label)}</button>`;
+    }).join('');
+    $('#mailVariableBox').html(html);
+  }
+
+  function insertMailVariable(key) {
+    const variable = '{{' + key + '}}';
+    let el = lastMailTemplateTarget;
+    if (!el || !$(el).is('#mailSubjectTemplate, #mailBodyTemplate')) {
+      el = document.getElementById('mailBodyTemplate');
+    }
+    const $el = $(el);
+    const current = String($el.val() || '');
+    const start = typeof el.selectionStart === 'number' ? el.selectionStart : current.length;
+    const end = typeof el.selectionEnd === 'number' ? el.selectionEnd : current.length;
+    const next = current.slice(0, start) + variable + current.slice(end);
+    $el.val(next).focus();
+    const pos = start + variable.length;
+    if (typeof el.setSelectionRange === 'function') el.setSelectionRange(pos, pos);
+    previewMailReminder(null, true);
   }
 
   function loadMailSettingToForm() {
@@ -2767,13 +2880,28 @@
   }
 
   function mailValueMap(r, c) {
+    const interestCny = n(c.interestTry) * n(r.tryCnyNow);
     return {
       bank: r.bank || '',
-      principalTry: fmt(r.principalTry),
+      openDate: r.openDate || '',
+      startDate: r.startDate || '',
       endDate: r.endDate || '',
+      depositDays: c.depositDays,
       remainingDays: c.remainingDays,
+      usdCnyOpen: r.usdCnyOpen ?? '',
+      tryCnyOpen: r.tryCnyOpen ?? '',
+      usdCnyEnd: r.usdCnyNow ?? '',
+      tryCnyEnd: r.tryCnyNow ?? '',
+      principalTry: fmt(r.principalTry),
+      interestTry: fmt(c.interestTry),
       principalPlusInterestTry: fmt(c.principalPlusInterestTry),
+      principalCny: fmt(c.principalCny),
+      principalUsd: fmt(c.principalUsd),
+      principalPlusInterestCny: fmt(c.principalPlusInterestCny),
+      principalPlusInterestUsd: fmt(c.principalPlusInterestUsd),
+      interestCny: fmt(interestCny),
       gainCny: fmt(c.gainCny),
+      gainUsd: fmt(c.gainUsd),
       annualRateTry: fmt(r.annualRateTry, 2) + '%',
       annualRateCny: fmt(c.annualRateCny, 2) + '%',
       remark: r.remark || ''
