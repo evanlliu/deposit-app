@@ -112,6 +112,20 @@
     .mobile-fold-title { font-weight: 800; }
     .mobile-fold-subtitle { color: var(--muted); font-size: 12px; font-weight: 600; }
 
+    .language-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .language-control select {
+      min-height: 38px;
+      padding: 8px 28px 8px 10px;
+      min-width: 118px;
+    }
+
     button, .btn {
       border: 1px solid transparent;
       background: var(--primary);
@@ -640,7 +654,8 @@
       .title h1 { font-size: 18px; }
       .toolbar, .filterbar, .ratebar { width: 100%; }
       .toolbar, .filterbar { display: grid; grid-template-columns: 1fr; gap: 10px; }
-      .toolbar > button, .filterbar > input, .filterbar > select, .ratebar input, .ratebar button { width: 100%; }
+      .toolbar > button, .filterbar > input, .filterbar > select, .ratebar input, .ratebar button, .language-control, .language-control select { width: 100%; }
+      .language-control { justify-content: space-between; }
       .ratebar { align-items: stretch; }
       .ratebar label { width: 100%; justify-content: space-between; }
       .rate-info { line-height: 1.5; }
@@ -664,13 +679,13 @@
       }
       .mobile-fold > summary::-webkit-details-marker { display: none; }
       .mobile-fold > summary::after {
-        content: '展开';
+        content: attr(data-expand-label);
         flex: 0 0 auto;
         color: var(--primary);
         font-size: 12px;
         font-weight: 800;
       }
-      .mobile-fold[open] > summary::after { content: '收起'; }
+      .mobile-fold[open] > summary::after { content: attr(data-collapse-label); }
       .mobile-fold-content {
         display: grid;
         grid-template-columns: 1fr;
@@ -714,6 +729,7 @@
       <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
         <button id="btnRefresh" class="secondary">从云端刷新</button>
+        <label class="language-control"><span id="languageText">语言</span><select id="languageSelect"><option value="zh">中文</option><option value="en">English</option><option value="tr">Türkçe</option></select></label>
         <details class="mobile-fold action-fold" open>
           <summary>
             <span class="mobile-fold-title">设置 / 更多</span>
@@ -1217,6 +1233,251 @@
 
   let lastMailTemplateTarget = null;
 
+
+  const I18N = {
+    zh: {
+      appTitle: '定期存款管理系统', shortTitle: '定期存款', appSubtitle: '当前定存 + 历史记录；只需录入关键字段，汇率和收益自动计算。',
+      language: { label: '语言', zh: '中文', en: 'English', tr: 'Türkçe' },
+      fold: { settingsTitle: '设置 / 更多', settingsSub: '同步、邮件、列、汇率', exportTitle: '导出 / 备份', exportSub: 'JSON、CSV、备份、导入', expand: '展开', collapse: '收起' },
+      buttons: { add: '新增定存', refreshCloud: '从云端刷新', sync: '同步设置', mail: '邮件提醒', columns: '列配置', rate: '汇率设置', refreshRates: '刷新汇率', exportJson: '导出JSON', exportCsv: '导出CSV', backupJson: '备份JSON', importBackup: '导入备份', current: '当前定存', history: '历史记录', close: '关闭', cancel: '取消', save: '保存', edit: '编辑', moveHistory: '移入历史', restore: '恢复', deleteForever: '永久删除', resetColumns: '恢复默认列', previewMail: '预览提醒邮件', sendCloudTestMail: '发送云端测试邮件', cloudTestReminder: '云端测试一次提醒', saveMail: '保存邮件设置', saveSync: '保存同步设置', saveRate: '保存汇率设置', estimateInterest: '估算利息', fetchOpenRates: '按开户日期获取汇率', fetchEndRates: '按结束日期获取汇率', fetchAllRates: '自动填入全部汇率' },
+      tabs: { active: '当前定存', history: '历史记录' },
+      common: { allBanks: '全部银行', localMode: '本地模式', total: '合计：', none: '-', yes: 'YES', no: 'NO', days: '天', records: '笔', code: 'code' },
+      placeholders: { search: '搜索银行 / 备注 / 日期', bank: '例如 YAP(G)', principalTry: '例如 400000', principalPlusInterestTry: '例如 412295.89', annualRateTry: '例如 40', remark: '例如：一个月定期、已续存、资金来源说明等', deleteReason: '例如：已到期、手动删除、提前取出', exchangeTry: '例如 393820', exchangeCny: '例如 59722', exchangeReason: '例如：和 OPPO 苏建明换', apiUrl: 'https://你的worker.workers.dev/data', apiPassword: '和 Worker 里的 APP_PASSWORD 一样', mailTo: '例如 you@example.com', mailAdvanceDays: '例如 1 或 3，留空则不提前推送', dueHours: '例如 1 或 2，留空则不当天循环推送', mailSubject: '例如：定存到期提醒：{{bank}} {{principalTry}} TRY', mailBody: '你可以直接点击下面的变量按钮插入，例如选择“银行”会插入 {{bank}}', exchangeRateApiKey: '不填则使用 open.er-api.com 最新汇率；历史日期需要付费历史接口权限', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key；支持 live / historical / timeframe', currencyApiKey: 'currencyapi.com 需要 API Key；支持 latest / historical' },
+      summary: { count: '当前笔数', principalTry: '本金合计 TRY', interestTry: '利息合计 TRY', principalCny: '本金合计 CNY', gainCny: '获得 CNY', reminder: '提醒', reminderValue: '7天内 {soon} / 到期 {expired}' },
+      record: { addTitle: '新增定存', editTitle: '编辑定存', bank: '银行', openDate: '开户日期', startDate: '开始日期', endDate: '结束日期', principalTry: '本金 TRY', principalPlusInterestTry: '本金+利息 TRY', annualRateTry: '年利率 TRY %', taxRate: '税率 %', interestTry: '利息 TRY', reminderEnabled: '是否创建提醒', autoEstimateInterest: '自动估算利息', noAutoCover: '不自动覆盖', autoCover: '根据年利率自动覆盖本金+利息', rateAuto: '汇率自动获取', openUsdCny: '开户 USD→CNY 汇率', openTryCny: '开户 TRY→CNY 汇率', endUsdCny: '结束 USD→CNY 汇率', endTryCny: '结束 TRY→CNY 汇率', remark: '备注', historyExtra: '历史记录补充', deleteReason: '删除原因', exchangeTry: '兑换 TRY', exchangeCny: '兑换 CNY', exchangeReason: '兑换原因', hint: '说明：现在只需要手动录入开户日期、开始日期、结束日期、本金 TRY、本金+利息 TRY、年利率 TRY。利息、存款天数、剩余天数、CNY/USD 换算、CNY 年化收益率都会自动计算。结束日期如果是未来日期，系统会暂时使用最新可用汇率，等到结束日期后可以点击“刷新汇率”重新按开户日期和结束日期更新汇率。', calcTitle: '自动计算：', calcLine1: '存款天数：{depositDays} 天；剩余天数：{remainingDays} 天；利息 TRY：{interestTry}', calcOpenRate: '开户汇率：USD→CNY {usdOpen}，TRY→CNY {tryOpen}', calcEndRate: '结束汇率：USD→CNY {usdEnd}，TRY→CNY {tryEnd}', calcCny: '本金 CNY：{principalCny}；本金+利息 CNY：{totalCny}；获得 CNY：{gainCny}', calcUsd: '本金 USD：{principalUsd}；本金+利息 USD：{totalUsd}；获得 USD：{gainUsd}；CNY 年化：{annualRateCny}%' },
+      sync: { title: '同步设置', apiUrl: 'Cloudflare Worker API 地址', password: '访问密码', hint: 'API 地址和访问密码会写入云端配置/备份 JSON。任意设备保存一次后，其他设备打开页面会自动读取云端配置和数据。你仍然可以在这里自定义 Worker 地址和访问密码。' },
+      rate: { historyRange: '历史刷新范围', title: '汇率设置', provider: '默认汇率来源', fallback: '失败时自动切换备用来源', tcmbType: 'TCMB 汇率类型', exchangeRateApiKey: 'ExchangeRate-API Key，可选', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'exchangerate.host 获取最新 API 返回数据', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: '是否把汇率 API Key 同步到云端', optYesRefresh: 'YES，每次刷新时都重新调用 API 获取并覆盖 GitHub 今日汇率缓存', optNoRefresh: 'NO，优先使用 GitHub 里今天已缓存的汇率；如果今天没有缓存，才调用 API 获取', optNoKeys: 'NO，不同步密钥，推荐更安全', optYesKeys: 'YES，同步到 GitHub data.json，换设备不用重新填写', hint: '开户汇率和结束汇率都会按这里选择的来源获取。TCMB 更适合 TRY 场景；Frankfurter 无需 Key；ExchangeRate-API 不填 Key 时只使用开放最新汇率；exchangerate.host 和 currencyapi.com 需要 API Key。exchangerate.host 会把当天获取到的最近一年汇率缓存到 GitHub 的 data.json；如果“获取最新 API 返回数据”选择 NO，则当天后续刷新优先使用 GitHub 缓存，避免重复消耗 API 次数；如果选择 YES，则每次刷新都会重新调用 API 并覆盖今天的缓存。' },
+      column: { title: '列配置', activeTitle: '当前定存列配置', historyTitle: '历史记录列配置', activeHint: '当前定存表和历史记录表独立保存配置。可以隐藏列，也可以修改显示列名；字段 code 不会变化。', historyHint: '历史记录可以单独修改列名，例如把“银行”改成“土耳其银行”，不会影响当前定存表。', bottomHint: '“序号”列也可以隐藏/显示；“操作”列固定显示。列名配置会和列显示配置一起保存到云端，多设备同步。比如 code 仍然是 bank，但显示名称可以改成“土耳其银行”。', displayName: '显示名称：{name}' },
+      mail: { title: '邮件提醒设置', enabled: '是否启用邮件提醒', to: '收件邮箱', advanceDays: '提前几天推送', dueHours: '到期当天每几小时推送', onlyEnabled: '只提醒已开启提醒的记录', subject: '邮件标题模板', body: '邮件内容模板', variables: '模板变量', varHead: '点击变量，自动插入到标题或内容的光标位置', varSub: '例如点击“银行”会插入 {{bank}}', varNote: '说明：“利息 CNY”= 利息 TRY × 结束 TRY→CNY 汇率；“获得 CNY”= 本金+利息按结束汇率折算后减去本金按开户汇率折算后的结果，包含汇率变化影响。', preview: '邮件预览', previewButtonHint: '点击“预览提醒邮件”。', hint: '邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；邮件正文只发送“邮件内容模板”里的内容，不会再额外追加字段。你可以点击“模板变量”按钮插入字段，例如点击“银行”会插入 {{bank}}。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；两个规则都填写时会同时生效。', noMatch: '当前没有符合提醒条件的定存。\n例如设置提前 7 天，只有剩余天数等于 7 的记录才会进入邮件提醒。', previewSubject: '标题：{subject}\n\n内容：\n{body}', previewMore: '\n\n共 {count} 条符合条件，实际推送时会逐条发送。' },
+      mobile: { startEnd: '开始/结束', interestTry: '利息 TRY', annualRateTry: '年利率 TRY', annualRateCny: '年利率 CNY', principalCny: '本金 CNY', gainCny: '获得 CNY', deleteReason: '删除原因', reminder: '提醒', exchangeTry: '兑换 TRY', exchangeCny: '兑换 CNY', exchangeReason: '兑换原因', remark: '备注', history: '历史', expired: '已到期' },
+      empty: { active: '暂无当前定存，点击“新增定存”开始。', history: '暂无历史记录。', mobileActive: '暂无当前定存。', mobileHistory: '暂无历史记录。' },
+      columns: {}, mailVars: {}, messages: { statusLoaded: '已加载本地数据，正在尝试自动云端同步...', rateInfo: '刷新汇率会更新当前定存全部记录；历史记录只更新近 {days} 天内的记录。', savedColumns: '列配置和列名已保存并同步', resetColumns: '列配置和列名已恢复默认并同步' }
+    },
+    en: {
+      appTitle: 'Time Deposit Manager', shortTitle: 'Deposits', appSubtitle: 'Active deposits + history; enter key fields only, rates and returns are calculated automatically.',
+      language: { label: 'Language', zh: '中文', en: 'English', tr: 'Türkçe' },
+      fold: { settingsTitle: 'Settings / More', settingsSub: 'Sync, mail, columns, rates', exportTitle: 'Export / Backup', exportSub: 'JSON, CSV, backup, import', expand: 'Expand', collapse: 'Collapse' },
+      buttons: { add: 'Add Deposit', refreshCloud: 'Refresh from Cloud', sync: 'Sync Settings', mail: 'Email Reminder', columns: 'Column Settings', rate: 'Rate Settings', refreshRates: 'Refresh Rates', exportJson: 'Export JSON', exportCsv: 'Export CSV', backupJson: 'Backup JSON', importBackup: 'Import Backup', current: 'Active Deposits', history: 'History', close: 'Close', cancel: 'Cancel', save: 'Save', edit: 'Edit', moveHistory: 'Move to History', restore: 'Restore', deleteForever: 'Delete Forever', resetColumns: 'Reset Columns', previewMail: 'Preview Email', sendCloudTestMail: 'Send Cloud Test Email', cloudTestReminder: 'Run Cloud Test Reminder', saveMail: 'Save Email Settings', saveSync: 'Save Sync Settings', saveRate: 'Save Rate Settings', estimateInterest: 'Estimate Interest', fetchOpenRates: 'Fetch Open-Date Rates', fetchEndRates: 'Fetch End-Date Rates', fetchAllRates: 'Auto Fill All Rates' },
+      tabs: { active: 'Active Deposits', history: 'History' },
+      common: { allBanks: 'All Banks', localMode: 'Local Mode', total: 'Total:', none: '-', yes: 'YES', no: 'NO', days: 'days', records: 'records', code: 'code' },
+      placeholders: { search: 'Search bank / note / date', bank: 'e.g. YAP(G)', principalTry: 'e.g. 400000', principalPlusInterestTry: 'e.g. 412295.89', annualRateTry: 'e.g. 40', remark: 'e.g. one-month deposit, renewed, source of funds', deleteReason: 'e.g. matured, manual delete, early withdrawal', exchangeTry: 'e.g. 393820', exchangeCny: 'e.g. 59722', exchangeReason: 'e.g. exchanged with OPPO Su Jianming', apiUrl: 'https://your-worker.workers.dev/data', apiPassword: 'Same as APP_PASSWORD in Worker', mailTo: 'e.g. you@example.com', mailAdvanceDays: 'e.g. 1 or 3; blank = no advance reminder', dueHours: 'e.g. 1 or 2; blank = no due-day repeating reminder', mailSubject: 'e.g. Deposit reminder: {{bank}} {{principalTry}} TRY', mailBody: 'Click variable buttons below to insert, e.g. Bank inserts {{bank}}', exchangeRateApiKey: 'Leave blank to use open.er-api.com latest rates; historical dates need paid access', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key; supports live / historical / timeframe', currencyApiKey: 'currencyapi.com API Key; supports latest / historical' },
+      summary: { count: 'Active Count', principalTry: 'Total Principal TRY', interestTry: 'Total Interest TRY', principalCny: 'Total Principal CNY', gainCny: 'Gain CNY', reminder: 'Reminder', reminderValue: 'within 7 days {soon} / due {expired}' },
+      record: { addTitle: 'Add Deposit', editTitle: 'Edit Deposit', bank: 'Bank', openDate: 'Opening Date', startDate: 'Start Date', endDate: 'End Date', principalTry: 'Principal TRY', principalPlusInterestTry: 'Principal + Interest TRY', annualRateTry: 'Annual Rate TRY %', taxRate: 'Tax Rate %', interestTry: 'Interest TRY', reminderEnabled: 'Create Reminder', autoEstimateInterest: 'Auto Estimate Interest', noAutoCover: 'Do not auto overwrite', autoCover: 'Overwrite principal+interest by annual rate', rateAuto: 'Rate Auto Fetch', openUsdCny: 'Open USD→CNY Rate', openTryCny: 'Open TRY→CNY Rate', endUsdCny: 'End USD→CNY Rate', endTryCny: 'End TRY→CNY Rate', remark: 'Note', historyExtra: 'History Extra Info', deleteReason: 'Delete Reason', exchangeTry: 'Exchange TRY', exchangeCny: 'Exchange CNY', exchangeReason: 'Exchange Reason', hint: 'Note: now you only need to manually enter opening date, start date, end date, principal TRY, principal+interest TRY, and annual rate TRY. Interest, deposit days, remaining days, CNY/USD conversion and CNY annualized return are calculated automatically.', calcTitle: 'Auto calculation:', calcLine1: 'Deposit days: {depositDays} days; remaining days: {remainingDays} days; interest TRY: {interestTry}', calcOpenRate: 'Open rate: USD→CNY {usdOpen}, TRY→CNY {tryOpen}', calcEndRate: 'End rate: USD→CNY {usdEnd}, TRY→CNY {tryEnd}', calcCny: 'Principal CNY: {principalCny}; Principal+Interest CNY: {totalCny}; Gain CNY: {gainCny}', calcUsd: 'Principal USD: {principalUsd}; Principal+Interest USD: {totalUsd}; Gain USD: {gainUsd}; CNY Annualized: {annualRateCny}%' },
+      sync: { title: 'Sync Settings', apiUrl: 'Cloudflare Worker API URL', password: 'Access Password', hint: 'The API URL and password are saved to cloud configuration / backup JSON. After one device saves them, other devices can automatically load cloud configuration and data. You can still customize the Worker URL and password here.' },
+      rate: { historyRange: 'History refresh range', title: 'Rate Settings', provider: 'Default Rate Provider', fallback: 'Auto fallback on failure', tcmbType: 'TCMB Rate Type', exchangeRateApiKey: 'ExchangeRate-API Key, optional', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'Fetch latest API response from exchangerate.host', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: 'Sync rate API keys to cloud', optYesRefresh: 'YES, call API every refresh and overwrite today’s GitHub rate cache', optNoRefresh: 'NO, use today’s GitHub cache first; call API only if no cache exists today', optNoKeys: 'NO, do not sync keys, safer', optYesKeys: 'YES, sync to GitHub data.json for other devices', hint: 'Opening and ending rates are fetched from the selected source. exchangerate.host caches the last-year rates in GitHub data.json to reduce API calls.' },
+      column: { title: 'Column Settings', activeTitle: 'Active Deposit Columns', historyTitle: 'History Columns', activeHint: 'Active and history tables keep independent settings. You can hide columns and rename display labels; field codes do not change.', historyHint: 'History column names can be customized separately without affecting active deposits.', bottomHint: 'The sequence column can also be hidden/shown; the action column is fixed. Column labels and visibility are synced across devices.', displayName: 'Display name: {name}' },
+      mail: { title: 'Email Reminder Settings', enabled: 'Enable Email Reminder', to: 'Recipient Email', advanceDays: 'Advance Reminder Days', dueHours: 'Due-day Repeat Every X Hours', onlyEnabled: 'Only records with reminder enabled', subject: 'Email Subject Template', body: 'Email Body Template', variables: 'Template Variables', varHead: 'Click a variable to insert it at the cursor position', varSub: 'For example, Bank inserts {{bank}}', varNote: 'Note: Interest CNY = Interest TRY × end TRY→CNY rate; Gain CNY includes FX impact.', preview: 'Email Preview', previewButtonHint: 'Click “Preview Email”.', hint: 'Email rules are saved to the cloud. Sending is performed by Cloudflare Worker + Resend. The email body only uses your body template and does not append extra fields.', noMatch: 'No matching deposits for reminder.\nFor example, if advance days is 7, only records with 7 remaining days match.', previewSubject: 'Subject: {subject}\n\nBody:\n{body}', previewMore: '\n\n{count} matching records. Actual sending will send one email per record.' },
+      mobile: { startEnd: 'Start/End', interestTry: 'Interest TRY', annualRateTry: 'Annual Rate TRY', annualRateCny: 'Annual Rate CNY', principalCny: 'Principal CNY', gainCny: 'Gain CNY', deleteReason: 'Delete Reason', reminder: 'Reminder', exchangeTry: 'Exchange TRY', exchangeCny: 'Exchange CNY', exchangeReason: 'Exchange Reason', remark: 'Note', history: 'History', expired: 'Due' },
+      empty: { active: 'No active deposits. Click “Add Deposit” to start.', history: 'No history records.', mobileActive: 'No active deposits.', mobileHistory: 'No history records.' },
+      columns: {}, mailVars: {}, messages: { statusLoaded: 'Local data loaded, trying automatic cloud sync...', rateInfo: 'Refresh rates updates all active records; history only updates records within the last {days} days.', savedColumns: 'Column settings and labels saved and synced', resetColumns: 'Column settings and labels reset and synced' }
+    },
+    tr: {
+      appTitle: 'Vadeli Mevduat Yönetimi', shortTitle: 'Mevduat', appSubtitle: 'Aktif mevduatlar + geçmiş; yalnızca temel alanları girin, kurlar ve getiriler otomatik hesaplanır.',
+      language: { label: 'Dil', zh: '中文', en: 'English', tr: 'Türkçe' },
+      fold: { settingsTitle: 'Ayarlar / Daha fazla', settingsSub: 'Senkron, e-posta, sütun, kur', exportTitle: 'Dışa Aktar / Yedek', exportSub: 'JSON, CSV, yedek, içe aktar', expand: 'Aç', collapse: 'Kapat' },
+      buttons: { add: 'Mevduat Ekle', refreshCloud: 'Buluttan Yenile', sync: 'Senkron Ayarları', mail: 'E-posta Hatırlatma', columns: 'Sütun Ayarları', rate: 'Kur Ayarları', refreshRates: 'Kurları Yenile', exportJson: 'JSON Dışa Aktar', exportCsv: 'CSV Dışa Aktar', backupJson: 'JSON Yedekle', importBackup: 'Yedek İçe Aktar', current: 'Aktif Mevduatlar', history: 'Geçmiş', close: 'Kapat', cancel: 'İptal', save: 'Kaydet', edit: 'Düzenle', moveHistory: 'Geçmişe Taşı', restore: 'Geri Al', deleteForever: 'Kalıcı Sil', resetColumns: 'Sütunları Sıfırla', previewMail: 'E-postayı Önizle', sendCloudTestMail: 'Bulut Test E-postası Gönder', cloudTestReminder: 'Bulut Test Hatırlatması', saveMail: 'E-posta Ayarlarını Kaydet', saveSync: 'Senkron Ayarlarını Kaydet', saveRate: 'Kur Ayarlarını Kaydet', estimateInterest: 'Faizi Hesapla', fetchOpenRates: 'Açılış Tarihi Kurunu Al', fetchEndRates: 'Bitiş Tarihi Kurunu Al', fetchAllRates: 'Tüm Kurları Otomatik Doldur' },
+      tabs: { active: 'Aktif Mevduatlar', history: 'Geçmiş' },
+      common: { allBanks: 'Tüm Bankalar', localMode: 'Yerel Mod', total: 'Toplam:', none: '-', yes: 'YES', no: 'NO', days: 'gün', records: 'kayıt', code: 'code' },
+      placeholders: { search: 'Banka / not / tarih ara', bank: 'örn. YAP(G)', principalTry: 'örn. 400000', principalPlusInterestTry: 'örn. 412295.89', annualRateTry: 'örn. 40', remark: 'örn. bir aylık mevduat, yenilendi, fon kaynağı', deleteReason: 'örn. vadesi doldu, manuel silindi, erken çekim', exchangeTry: 'örn. 393820', exchangeCny: 'örn. 59722', exchangeReason: 'örn. OPPO Su Jianming ile değişim', apiUrl: 'https://worker.workers.dev/data', apiPassword: 'Worker içindeki APP_PASSWORD ile aynı', mailTo: 'örn. you@example.com', mailAdvanceDays: 'örn. 1 veya 3; boşsa erken hatırlatma yok', dueHours: 'örn. 1 veya 2; boşsa vade günü tekrar yok', mailSubject: 'örn. Mevduat hatırlatma: {{bank}} {{principalTry}} TRY', mailBody: 'Aşağıdaki değişken düğmelerine tıklayarak ekleyin', exchangeRateApiKey: 'Boş bırakılırsa open.er-api.com güncel kuru kullanılır; geçmiş tarih ücretli yetki gerektirir', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key', currencyApiKey: 'currencyapi.com API Key' },
+      summary: { count: 'Aktif Kayıt', principalTry: 'Toplam Ana Para TRY', interestTry: 'Toplam Faiz TRY', principalCny: 'Toplam Ana Para CNY', gainCny: 'Getiri CNY', reminder: 'Hatırlatma', reminderValue: '7 gün içinde {soon} / vadesi dolan {expired}' },
+      record: { addTitle: 'Mevduat Ekle', editTitle: 'Mevduatı Düzenle', bank: 'Banka', openDate: 'Açılış Tarihi', startDate: 'Başlangıç Tarihi', endDate: 'Bitiş Tarihi', principalTry: 'Ana Para TRY', principalPlusInterestTry: 'Ana Para + Faiz TRY', annualRateTry: 'Yıllık Oran TRY %', taxRate: 'Vergi Oranı %', interestTry: 'Faiz TRY', reminderEnabled: 'Hatırlatma Oluştur', autoEstimateInterest: 'Faizi Otomatik Hesapla', noAutoCover: 'Otomatik üzerine yazma', autoCover: 'Yıllık orana göre toplamı güncelle', rateAuto: 'Kur Otomatik Al', openUsdCny: 'Açılış USD→CNY Kuru', openTryCny: 'Açılış TRY→CNY Kuru', endUsdCny: 'Bitiş USD→CNY Kuru', endTryCny: 'Bitiş TRY→CNY Kuru', remark: 'Not', historyExtra: 'Geçmiş Ek Bilgi', deleteReason: 'Silme Nedeni', exchangeTry: 'Değişim TRY', exchangeCny: 'Değişim CNY', exchangeReason: 'Değişim Nedeni', hint: 'Not: yalnızca açılış tarihi, başlangıç tarihi, bitiş tarihi, ana para TRY, ana para+faiz TRY ve yıllık oran TRY girilir. Diğer değerler otomatik hesaplanır.', calcTitle: 'Otomatik hesaplama:', calcLine1: 'Mevduat günü: {depositDays}; kalan gün: {remainingDays}; faiz TRY: {interestTry}', calcOpenRate: 'Açılış kuru: USD→CNY {usdOpen}, TRY→CNY {tryOpen}', calcEndRate: 'Bitiş kuru: USD→CNY {usdEnd}, TRY→CNY {tryEnd}', calcCny: 'Ana para CNY: {principalCny}; Ana para+faiz CNY: {totalCny}; Getiri CNY: {gainCny}', calcUsd: 'Ana para USD: {principalUsd}; Ana para+faiz USD: {totalUsd}; Getiri USD: {gainUsd}; CNY yıllık: {annualRateCny}%' },
+      sync: { title: 'Senkron Ayarları', apiUrl: 'Cloudflare Worker API Adresi', password: 'Erişim Şifresi', hint: 'API adresi ve şifre bulut yapılandırmasına / yedek JSON’a kaydedilir. Bir cihazda kaydedildiğinde diğer cihazlar otomatik olarak bulut verilerini alabilir.' },
+      rate: { historyRange: 'Geçmiş yenileme aralığı', title: 'Kur Ayarları', provider: 'Varsayılan Kur Kaynağı', fallback: 'Hata olursa yedek kaynağa geç', tcmbType: 'TCMB Kur Tipi', exchangeRateApiKey: 'ExchangeRate-API Key, opsiyonel', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'exchangerate.host güncel API verisini al', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: 'Kur API key buluta senkronlansın mı', optYesRefresh: 'YES, her yenilemede API çağır ve bugünkü GitHub kur önbelleğini güncelle', optNoRefresh: 'NO, önce bugünkü GitHub önbelleğini kullan; yoksa API çağır', optNoKeys: 'NO, key senkronlama; daha güvenli', optYesKeys: 'YES, GitHub data.json içine senkronla', hint: 'Açılış ve bitiş kurları seçilen kaynaktan alınır. exchangerate.host son bir yıllık kurları GitHub data.json içinde önbelleğe alır.' },
+      column: { title: 'Sütun Ayarları', activeTitle: 'Aktif Mevduat Sütunları', historyTitle: 'Geçmiş Sütunları', activeHint: 'Aktif ve geçmiş tabloları bağımsız ayarlar tutar. Sütun gizleyebilir ve görünen adları değiştirebilirsiniz; field code değişmez.', historyHint: 'Geçmiş sütun adları aktif tabloyu etkilemeden ayrı düzenlenebilir.', bottomHint: 'Sıra sütunu da gizlenebilir/gösterilebilir; işlem sütunu sabittir. Ayarlar cihazlar arasında senkronlanır.', displayName: 'Görünen ad: {name}' },
+      mail: { title: 'E-posta Hatırlatma Ayarları', enabled: 'E-posta hatırlatmayı etkinleştir', to: 'Alıcı e-posta', advanceDays: 'Kaç gün önce hatırlat', dueHours: 'Vade günü kaç saatte bir', onlyEnabled: 'Yalnız hatırlatma açık kayıtlar', subject: 'E-posta başlık şablonu', body: 'E-posta içerik şablonu', variables: 'Şablon Değişkenleri', varHead: 'Değişkene tıklayın, imlecin olduğu yere eklensin', varSub: 'Örneğin Banka {{bank}} ekler', varNote: 'Not: Faiz CNY = Faiz TRY × bitiş TRY→CNY kuru; Getiri CNY kur etkisini içerir.', preview: 'E-posta Önizleme', previewButtonHint: '“E-postayı Önizle” düğmesine tıklayın.', hint: 'E-posta kuralları buluta kaydedilir. Gönderim Cloudflare Worker + Resend ile yapılır. İçerik yalnızca şablondaki metni kullanır.', noMatch: 'Hatırlatma koşuluna uyan mevduat yok.\nÖrn. 7 gün önce seçilirse yalnız kalan gün 7 olan kayıtlar eşleşir.', previewSubject: 'Başlık: {subject}\n\nİçerik:\n{body}', previewMore: '\n\n{count} kayıt eşleşti. Gönderimde her kayıt için ayrı e-posta gönderilir.' },
+      mobile: { startEnd: 'Başlangıç/Bitiş', interestTry: 'Faiz TRY', annualRateTry: 'Yıllık Oran TRY', annualRateCny: 'Yıllık Oran CNY', principalCny: 'Ana Para CNY', gainCny: 'Getiri CNY', deleteReason: 'Silme Nedeni', reminder: 'Hatırlatma', exchangeTry: 'Değişim TRY', exchangeCny: 'Değişim CNY', exchangeReason: 'Değişim Nedeni', remark: 'Not', history: 'Geçmiş', expired: 'Vadesi doldu' },
+      empty: { active: 'Aktif mevduat yok. Başlamak için “Mevduat Ekle” tıklayın.', history: 'Geçmiş kayıt yok.', mobileActive: 'Aktif mevduat yok.', mobileHistory: 'Geçmiş kayıt yok.' },
+      columns: {}, mailVars: {}, messages: { statusLoaded: 'Yerel veri yüklendi, otomatik bulut senkronu deneniyor...', rateInfo: 'Kurları yenilemek tüm aktif kayıtları günceller; geçmiş yalnız son {days} gün içindeki kayıtları günceller.', savedColumns: 'Sütun ayarları ve adları kaydedildi ve senkronlandı', resetColumns: 'Sütun ayarları ve adları sıfırlandı ve senkronlandı' }
+    }
+  };
+
+  const COLUMN_I18N = {
+    zh: { seq:'序号', remainingDays:'剩余<br>天数', bank:'银行', openDate:'开户日期', usdCnyOpen:'开户汇率<br>(USD=>CNY)', tryCnyOpen:'开户汇率<br>(TRY=>CNY)', startDate:'开始日期', endDate:'结束日期', usdCnyNow:'结束汇率<br>(USD=>CNY)', tryCnyNow:'结束汇率<br>(TRY=>CNY)', principalTry:'本金<br>(TRY)', interestTry:'利息<br>(TRY)', principalPlusInterestTry:'本金+利息<br>(TRY)', depositDays:'存款<br>(天)', annualRateTry:'年利率', annualRateCny:'年利率<br>(CNY)', principalCny:'本金(CNY)', principalUsd:'本金(USD)', principalPlusInterestCny:'本金+利息<br>(CNY)', principalPlusInterestUsd:'本金+利息<br>(USD)', gainTry:'获得<br>(TRY)', gainCny:'获得<br>(CNY)', gainUsd:'获得<br>(USD)', reminderEnabled:'是否创建<br>提醒', actions:'操作', deletedAt:'删除时间', deleteReason:'删除原因', exchangeTry:'兑换<br>(TRY)', exchangeCny:'兑换<br>(CNY)', exchangeReason:'兑换<br>(原因)', remark:'备注' },
+    en: { seq:'No.', remainingDays:'Remaining<br>Days', bank:'Bank', openDate:'Opening Date', usdCnyOpen:'Open Rate<br>(USD=>CNY)', tryCnyOpen:'Open Rate<br>(TRY=>CNY)', startDate:'Start Date', endDate:'End Date', usdCnyNow:'End Rate<br>(USD=>CNY)', tryCnyNow:'End Rate<br>(TRY=>CNY)', principalTry:'Principal<br>(TRY)', interestTry:'Interest<br>(TRY)', principalPlusInterestTry:'Principal+Interest<br>(TRY)', depositDays:'Deposit<br>Days', annualRateTry:'Annual Rate', annualRateCny:'Annual Rate<br>(CNY)', principalCny:'Principal(CNY)', principalUsd:'Principal(USD)', principalPlusInterestCny:'Principal+Interest<br>(CNY)', principalPlusInterestUsd:'Principal+Interest<br>(USD)', gainTry:'Gain<br>(TRY)', gainCny:'Gain<br>(CNY)', gainUsd:'Gain<br>(USD)', reminderEnabled:'Create<br>Reminder', actions:'Actions', deletedAt:'Deleted At', deleteReason:'Delete Reason', exchangeTry:'Exchange<br>(TRY)', exchangeCny:'Exchange<br>(CNY)', exchangeReason:'Exchange<br>Reason', remark:'Note' },
+    tr: { seq:'No.', remainingDays:'Kalan<br>Gün', bank:'Banka', openDate:'Açılış Tarihi', usdCnyOpen:'Açılış Kuru<br>(USD=>CNY)', tryCnyOpen:'Açılış Kuru<br>(TRY=>CNY)', startDate:'Başlangıç', endDate:'Bitiş', usdCnyNow:'Bitiş Kuru<br>(USD=>CNY)', tryCnyNow:'Bitiş Kuru<br>(TRY=>CNY)', principalTry:'Ana Para<br>(TRY)', interestTry:'Faiz<br>(TRY)', principalPlusInterestTry:'Ana Para+Faiz<br>(TRY)', depositDays:'Mevduat<br>Günü', annualRateTry:'Yıllık Oran', annualRateCny:'Yıllık Oran<br>(CNY)', principalCny:'Ana Para(CNY)', principalUsd:'Ana Para(USD)', principalPlusInterestCny:'Ana Para+Faiz<br>(CNY)', principalPlusInterestUsd:'Ana Para+Faiz<br>(USD)', gainTry:'Getiri<br>(TRY)', gainCny:'Getiri<br>(CNY)', gainUsd:'Getiri<br>(USD)', reminderEnabled:'Hatırlatma<br>Oluştur', actions:'İşlem', deletedAt:'Silme Zamanı', deleteReason:'Silme Nedeni', exchangeTry:'Değişim<br>(TRY)', exchangeCny:'Değişim<br>(CNY)', exchangeReason:'Değişim<br>Nedeni', remark:'Not' }
+  };
+
+  const MAIL_VAR_I18N = {
+    zh: { bank:['银行','银行名称'], principalTry:['本金 TRY','本金金额'], interestTry:['利息 TRY','本金+利息 - 本金'], principalPlusInterestTry:['本金+利息 TRY','到期总金额'], openDate:['开户日期','开户日期'], startDate:['开始日期','计息开始日期'], endDate:['到期日期','结束日期/到期日期'], depositDays:['存款天数','结束日期 - 开始日期'], remainingDays:['剩余天数','到期日期 - 今天'], tryCnyOpen:['开户 TRY→CNY','开户日 TRY 对 CNY 汇率'], tryCnyEnd:['结束 TRY→CNY','结束日 TRY 对 CNY 汇率'], usdCnyOpen:['开户 USD→CNY','开户日 USD 对 CNY 汇率'], usdCnyEnd:['结束 USD→CNY','结束日 USD 对 CNY 汇率'], principalCny:['本金 CNY','本金按开户汇率折算'], principalUsd:['本金 USD','本金折算 USD'], principalPlusInterestCny:['本金+利息 CNY','到期总额按结束汇率折算'], principalPlusInterestUsd:['本金+利息 USD','到期总额折算 USD'], interestCny:['利息 CNY','利息 TRY × 结束 TRY→CNY 汇率'], gainCny:['获得 CNY','考虑汇率变化后的 CNY 收益'], gainUsd:['获得 USD','考虑汇率变化后的 USD 收益'], annualRateTry:['年利率 TRY','手动录入的 TRY 年利率'], annualRateCny:['年利率 CNY','按 CNY 收益计算'], remark:['备注','记录备注'] },
+    en: { bank:['Bank','Bank name'], principalTry:['Principal TRY','Principal amount'], interestTry:['Interest TRY','Total - principal'], principalPlusInterestTry:['Principal+Interest TRY','Maturity total'], openDate:['Opening Date','Opening date'], startDate:['Start Date','Interest start date'], endDate:['Due Date','End / maturity date'], depositDays:['Deposit Days','End date - start date'], remainingDays:['Remaining Days','Due date - today'], tryCnyOpen:['Open TRY→CNY','TRY/CNY rate on opening date'], tryCnyEnd:['End TRY→CNY','TRY/CNY rate on end date'], usdCnyOpen:['Open USD→CNY','USD/CNY rate on opening date'], usdCnyEnd:['End USD→CNY','USD/CNY rate on end date'], principalCny:['Principal CNY','Principal converted by open rate'], principalUsd:['Principal USD','Principal converted to USD'], principalPlusInterestCny:['Principal+Interest CNY','Maturity total converted by end rate'], principalPlusInterestUsd:['Principal+Interest USD','Maturity total converted to USD'], interestCny:['Interest CNY','Interest TRY × end TRY→CNY rate'], gainCny:['Gain CNY','CNY gain including FX impact'], gainUsd:['Gain USD','USD gain including FX impact'], annualRateTry:['Annual Rate TRY','Manual TRY annual rate'], annualRateCny:['Annual Rate CNY','Calculated by CNY gain'], remark:['Note','Record note'] },
+    tr: { bank:['Banka','Banka adı'], principalTry:['Ana Para TRY','Ana para tutarı'], interestTry:['Faiz TRY','Toplam - ana para'], principalPlusInterestTry:['Ana Para+Faiz TRY','Vade toplamı'], openDate:['Açılış Tarihi','Açılış tarihi'], startDate:['Başlangıç Tarihi','Faiz başlangıcı'], endDate:['Vade Tarihi','Bitiş / vade tarihi'], depositDays:['Mevduat Günü','Bitiş - başlangıç'], remainingDays:['Kalan Gün','Vade - bugün'], tryCnyOpen:['Açılış TRY→CNY','Açılış günü TRY/CNY kuru'], tryCnyEnd:['Bitiş TRY→CNY','Bitiş günü TRY/CNY kuru'], usdCnyOpen:['Açılış USD→CNY','Açılış günü USD/CNY kuru'], usdCnyEnd:['Bitiş USD→CNY','Bitiş günü USD/CNY kuru'], principalCny:['Ana Para CNY','Açılış kuruyla çevrilen ana para'], principalUsd:['Ana Para USD','USD’ye çevrilen ana para'], principalPlusInterestCny:['Ana Para+Faiz CNY','Bitiş kuruyla çevrilen toplam'], principalPlusInterestUsd:['Ana Para+Faiz USD','USD’ye çevrilen toplam'], interestCny:['Faiz CNY','Faiz TRY × bitiş TRY→CNY kuru'], gainCny:['Getiri CNY','Kur etkisi dahil CNY getiri'], gainUsd:['Getiri USD','Kur etkisi dahil USD getiri'], annualRateTry:['Yıllık Oran TRY','Manuel TRY yıllık oran'], annualRateCny:['Yıllık Oran CNY','CNY getiriye göre hesaplanır'], remark:['Not','Kayıt notu'] }
+  };
+
+  function currentLanguage() {
+    const lang = appData && appData.settings ? appData.settings.language : 'zh';
+    return normalizeLanguage(lang);
+  }
+
+  function normalizeLanguage(lang) {
+    return ['zh', 'en', 'tr'].includes(lang) ? lang : 'zh';
+  }
+
+  function t(path, params) {
+    const lang = currentLanguage();
+    const value = path.split('.').reduce((acc, key) => acc && acc[key], I18N[lang]) ?? path.split('.').reduce((acc, key) => acc && acc[key], I18N.zh) ?? path;
+    return interpolate(String(value), params || {});
+  }
+
+  function interpolate(str, params) {
+    return str.replace(/\{(\w+)\}/g, (_, key) => params[key] === undefined ? '' : String(params[key]));
+  }
+
+  function setText(selector, key, params) { $(selector).text(t(key, params)); }
+  function setHtml(selector, key, params) { $(selector).html(t(key, params)); }
+  function setPlaceholder(selector, key) { $(selector).attr('placeholder', t(key)); }
+  function setFieldLabel(inputSelector, key) { $(inputSelector).closest('.form-field').find('label').first().text(t(key)); }
+
+  function getDefaultColumnLabelHtml(type, col) {
+    const labels = COLUMN_I18N[currentLanguage()] || COLUMN_I18N.zh;
+    return labels[col.key] || col.label;
+  }
+
+  function getDefaultColumnLabelText(type, col) {
+    return columnLabelText(getDefaultColumnLabelHtml(type, col));
+  }
+
+  function getMailVariableLabel(key) {
+    const data = (MAIL_VAR_I18N[currentLanguage()] || MAIL_VAR_I18N.zh)[key];
+    return data ? data[0] : key;
+  }
+
+  function getMailVariableDesc(key) {
+    const data = (MAIL_VAR_I18N[currentLanguage()] || MAIL_VAR_I18N.zh)[key];
+    return data ? data[1] : key;
+  }
+
+  function applyI18n() {
+    const lang = currentLanguage();
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : (lang === 'tr' ? 'tr' : 'en');
+    document.title = t('appTitle');
+    $('meta[name="application-name"]').attr('content', t('shortTitle'));
+    $('meta[name="apple-mobile-web-app-title"]').attr('content', t('shortTitle'));
+    $('#languageSelect').val(lang);
+
+    setText('.title h1', 'appTitle');
+    setText('.title p', 'appSubtitle');
+    setText('#languageText', 'language.label');
+    setText('#btnAdd', 'buttons.add');
+    setText('#btnRefresh', 'buttons.refreshCloud');
+    setText('#btnSyncSetting', 'buttons.sync');
+    setText('#btnMailSetting', 'buttons.mail');
+    setText('#btnColumnSetting', 'buttons.columns');
+    setText('#btnRateSetting', 'buttons.rate');
+    setText('#btnFetchRates', 'buttons.refreshRates');
+    setText('#btnExportJson', 'buttons.exportJson');
+    setText('#btnExportCsv', 'buttons.exportCsv');
+    setText('#btnExportBackupJson', 'buttons.backupJson');
+    setText('#btnImport', 'buttons.importBackup');
+    $('.tab-btn[data-tab="active"]').text(t('tabs.active'));
+    $('.tab-btn[data-tab="history"]').text(t('tabs.history'));
+    $('.action-fold .mobile-fold-title').text(t('fold.settingsTitle'));
+    $('.action-fold .mobile-fold-subtitle').text(t('fold.settingsSub'));
+    $('.export-fold .mobile-fold-title').text(t('fold.exportTitle'));
+    $('.export-fold .mobile-fold-subtitle').text(t('fold.exportSub'));
+    $('.mobile-fold').attr('data-expand-label', t('fold.expand')).attr('data-collapse-label', t('fold.collapse'));
+    setPlaceholder('#searchInput', 'placeholders.search');
+    $('#bankFilter option[value=""]').text(t('common.allBanks'));
+    const histDays = getHistoryRateRefreshDays ? getHistoryRateRefreshDays() : 30;
+    $('#rateInfo').text(t('messages.rateInfo', { days: histDays }));
+    $('#historyRateRefreshDays').closest('label').contents().filter(function(){ return this.nodeType === 3; }).first().replaceWith(t('rate.historyRange') || '');
+
+    applyRecordI18n();
+    applySyncI18n();
+    applyRateI18n();
+    applyColumnI18n();
+    applyMailI18n();
+  }
+
+  function applyRecordI18n() {
+    $('#recordModalTitle').text(editingMode === 'edit' ? t('record.editTitle') : t('record.addTitle'));
+    setFieldLabel('#bank', 'record.bank'); setPlaceholder('#bank', 'placeholders.bank');
+    setFieldLabel('#openDate', 'record.openDate'); setFieldLabel('#startDate', 'record.startDate'); setFieldLabel('#endDate', 'record.endDate');
+    setFieldLabel('#principalTry', 'record.principalTry'); setPlaceholder('#principalTry', 'placeholders.principalTry');
+    setFieldLabel('#principalPlusInterestTry', 'record.principalPlusInterestTry'); setPlaceholder('#principalPlusInterestTry', 'placeholders.principalPlusInterestTry');
+    setFieldLabel('#annualRateTry', 'record.annualRateTry'); setPlaceholder('#annualRateTry', 'placeholders.annualRateTry');
+    setFieldLabel('#taxRate', 'record.taxRate'); setFieldLabel('#interestTry', 'record.interestTry');
+    setFieldLabel('#reminderEnabled', 'record.reminderEnabled'); setFieldLabel('#autoEstimateInterest', 'record.autoEstimateInterest');
+    $('#autoEstimateInterest option[value="NO"]').text(t('record.noAutoCover'));
+    $('#autoEstimateInterest option[value="YES"]').text(t('record.autoCover'));
+    setFieldLabel('#usdCnyOpen', 'record.openUsdCny'); setFieldLabel('#tryCnyOpen', 'record.openTryCny');
+    setFieldLabel('#usdCnyNow', 'record.endUsdCny'); setFieldLabel('#tryCnyNow', 'record.endTryCny');
+    setText('#btnFetchOpenRates', 'buttons.fetchOpenRates'); setText('#btnFetchNowRatesToForm', 'buttons.fetchEndRates'); setText('#btnFetchAllRatesToForm', 'buttons.fetchAllRates'); setText('#btnEstimateInterest', 'buttons.estimateInterest');
+    setFieldLabel('#remark', 'record.remark'); setPlaceholder('#remark', 'placeholders.remark');
+    setFieldLabel('#deleteReason', 'record.deleteReason'); setPlaceholder('#deleteReason', 'placeholders.deleteReason');
+    setFieldLabel('#exchangeTry', 'record.exchangeTry'); setPlaceholder('#exchangeTry', 'placeholders.exchangeTry');
+    setFieldLabel('#exchangeCny', 'record.exchangeCny'); setPlaceholder('#exchangeCny', 'placeholders.exchangeCny');
+    setFieldLabel('#exchangeReason', 'record.exchangeReason'); setPlaceholder('#exchangeReason', 'placeholders.exchangeReason');
+    $('#recordModal .modal-foot [data-close]').text(t('buttons.cancel'));
+    $('#btnSaveRecord').text(t('buttons.save'));
+    $('#recordModal .modal-head [data-close]').text(t('buttons.close'));
+    const hints = $('#recordModal .hint');
+    hints.last().text(t('record.hint'));
+  }
+
+  function applySyncI18n() {
+    $('#syncModal h2').text(t('sync.title'));
+    $('#syncModal .modal-head [data-close]').text(t('buttons.close'));
+    setFieldLabel('#apiUrl', 'sync.apiUrl'); setPlaceholder('#apiUrl', 'placeholders.apiUrl');
+    setFieldLabel('#apiPassword', 'sync.password'); setPlaceholder('#apiPassword', 'placeholders.apiPassword');
+    $('#syncModal .hint').text(t('sync.hint'));
+    $('#syncModal .modal-foot [data-close]').text(t('buttons.cancel'));
+    $('#btnSaveSync').text(t('buttons.saveSync'));
+  }
+
+  function applyRateI18n() {
+    $('#rateModal h2').text(t('rate.title'));
+    $('#rateModal .modal-head [data-close]').text(t('buttons.close'));
+    setFieldLabel('#rateProvider', 'rate.provider'); setFieldLabel('#rateFallbackEnabled', 'rate.fallback'); setFieldLabel('#tcmbRateType', 'rate.tcmbType');
+    setFieldLabel('#exchangeRateApiKey', 'rate.exchangeRateApiKey'); setPlaceholder('#exchangeRateApiKey', 'placeholders.exchangeRateApiKey');
+    setFieldLabel('#exchangeRateHostApiKey', 'rate.exchangeRateHostApiKey'); setPlaceholder('#exchangeRateHostApiKey', 'placeholders.exchangeRateHostApiKey');
+    setFieldLabel('#exchangeRateHostRefreshLatestApi', 'rate.exchangeRateHostRefreshLatestApi');
+    $('#exchangeRateHostRefreshLatestApi option[value="YES"]').text(t('rate.optYesRefresh'));
+    $('#exchangeRateHostRefreshLatestApi option[value="NO"]').text(t('rate.optNoRefresh'));
+    setFieldLabel('#currencyApiKey', 'rate.currencyApiKey'); setPlaceholder('#currencyApiKey', 'placeholders.currencyApiKey');
+    setFieldLabel('#rateApiKeysCloudSync', 'rate.cloudSyncKeys');
+    $('#rateApiKeysCloudSync option[value="NO"]').text(t('rate.optNoKeys'));
+    $('#rateApiKeysCloudSync option[value="YES"]').text(t('rate.optYesKeys'));
+    $('#rateModal .hint').text(t('rate.hint'));
+    $('#rateModal .modal-foot [data-close]').text(t('buttons.cancel'));
+    $('#btnSaveRateSetting').text(t('buttons.saveRate'));
+  }
+
+  function applyColumnI18n() {
+    $('#columnModal h2').text(t('column.title'));
+    $('#columnModal .modal-head [data-close]').text(t('buttons.close'));
+    $('#columnModal .column-config-box').eq(0).find('h3').text(t('column.activeTitle'));
+    $('#columnModal .column-config-box').eq(1).find('h3').text(t('column.historyTitle'));
+    $('#columnModal .column-config-box').eq(0).find('.hint').text(t('column.activeHint'));
+    $('#columnModal .column-config-box').eq(1).find('.hint').text(t('column.historyHint'));
+    $('#columnModal .modal-body > .hint').text(t('column.bottomHint'));
+    $('#btnResetColumns').text(t('buttons.resetColumns'));
+    $('#columnModal .modal-foot [data-close]').text(t('buttons.cancel'));
+    $('#btnSaveColumnSetting').text(t('buttons.save'));
+  }
+
+  function applyMailI18n() {
+    $('#mailModal h2').text(t('mail.title'));
+    $('#mailModal .modal-head [data-close]').text(t('buttons.close'));
+    setFieldLabel('#mailEnabled', 'mail.enabled'); setFieldLabel('#mailTo', 'mail.to'); setPlaceholder('#mailTo', 'placeholders.mailTo');
+    setFieldLabel('#mailAdvanceDays', 'mail.advanceDays'); setPlaceholder('#mailAdvanceDays', 'placeholders.mailAdvanceDays');
+    setFieldLabel('#mailDueTodayIntervalHours', 'mail.dueHours'); setPlaceholder('#mailDueTodayIntervalHours', 'placeholders.dueHours');
+    setFieldLabel('#mailOnlyEnabledRecords', 'mail.onlyEnabled');
+    setFieldLabel('#mailSubjectTemplate', 'mail.subject'); setPlaceholder('#mailSubjectTemplate', 'placeholders.mailSubject');
+    setFieldLabel('#mailBodyTemplate', 'mail.body'); setPlaceholder('#mailBodyTemplate', 'placeholders.mailBody');
+    $('#mailVariableBox').closest('.form-field').find('label').first().text(t('mail.variables'));
+    $('.mail-variable-head strong').text(t('mail.varHead'));
+    $('.mail-variable-head span').text(t('mail.varSub'));
+    $('.mail-variable-note').text(t('mail.varNote'));
+    $('#mailPreview').closest('.form-field').find('label').first().text(t('mail.preview'));
+    if (($('#mailPreview').text() || '').includes('点击') || ($('#mailPreview').text() || '').includes('Click')) $('#mailPreview').text(t('mail.previewButtonHint'));
+    $('#mailModal .hint').text(t('mail.hint'));
+    $('#btnPreviewMail').text(t('buttons.previewMail'));
+    $('#btnSendTestMail').text(t('buttons.sendCloudTestMail'));
+    $('#btnSendLocalReminder').text(t('buttons.cloudTestReminder'));
+    $('#mailModal .modal-foot [data-close]').text(t('buttons.cancel'));
+    $('#btnSaveMailSetting').text(t('buttons.saveMail'));
+  }
+
   $(init);
 
   function init() {
@@ -1224,9 +1485,10 @@
     bindEvents();
     loadConfigToForm();
     loadLocalData();
+    applyI18n();
     setGlobalRateInputs();
     renderAll();
-    updateStatus('已加载本地数据，正在尝试自动云端同步...');
+    updateStatus(t('messages.statusLoaded'));
     autoCloudSyncOnStart();
   }
 
@@ -1246,7 +1508,17 @@
     else mq.addListener(apply);
   }
 
+  function changeLanguage() {
+    const lang = normalizeLanguage($('#languageSelect').val());
+    appData.settings.language = lang;
+    saveLocalData();
+    applyI18n();
+    renderAll();
+    persistSettingsSoon();
+  }
+
   function bindEvents() {
+    $('#languageSelect').on('change', changeLanguage);
     $('#btnAdd').on('click', openAddModal);
     $('#btnSaveRecord').on('click', saveRecordFromForm);
     $('#btnEstimateInterest').on('click', function (e) { e.preventDefault(); estimateInterestToForm(); });
@@ -1285,7 +1557,7 @@
     $('#historyRateRefreshDays').on('input change', function () {
       appData.settings.historyRateRefreshDays = getHistoryRateRefreshDays();
       saveLocalData();
-      $('#rateInfo').text(`刷新汇率会更新当前定存全部记录；历史记录只更新近 ${appData.settings.historyRateRefreshDays} 天内的记录。`);
+      $('#rateInfo').text(t('messages.rateInfo', { days: appData.settings.historyRateRefreshDays }));
       persistSettingsSoon();
     });
 
@@ -1322,6 +1594,7 @@
         currentUsdCny: 6.8375,
         currentTryCny: 0.1517,
         defaultTaxRate: 17.5,
+        language: 'zh',
         rateProvider: 'TCMB',
         rateFallbackEnabled: 'YES',
         tcmbRateType: 'ForexBuying',
@@ -1361,6 +1634,7 @@
     settings.rateApiKeysCloudSync = settings.rateApiKeysCloudSync === 'YES' ? 'YES' : 'NO';
     settings.rateApiKeys = settings.rateApiKeys && typeof settings.rateApiKeys === 'object' ? settings.rateApiKeys : {};
     settings.syncSettings = settings.syncSettings && typeof settings.syncSettings === 'object' ? settings.syncSettings : { apiUrl: '' };
+    settings.language = normalizeLanguage(settings.language);
     return {
       activeRecords: Array.isArray(d.activeRecords) ? d.activeRecords : [],
       historyRecords: Array.isArray(d.historyRecords) ? d.historyRecords : [],
@@ -1733,7 +2007,7 @@
   function openAddModal() {
     editingMode = 'add';
     editingRecordId = null;
-    $('#recordModalTitle').text('新增定存');
+    $('#recordModalTitle').text(t('record.addTitle'));
     $('#recordForm')[0].reset();
     $('#recordId').val('');
     $('#openDate').val(todayString());
@@ -2702,6 +2976,7 @@
   }
 
   function renderAll() {
+    applyI18n();
     appData.activeRecords.sort((a, b) => (a.endDate || '').localeCompare(b.endDate || ''));
     renderSummary();
     renderBankFilter();
@@ -2725,12 +3000,12 @@
     }, { principalTry: 0, interestTry: 0, principalCny: 0, gainCny: 0, gainUsd: 0, soon: 0, expired: 0 });
 
     const items = [
-      ['当前笔数', active.length + ' 笔'],
-      ['本金合计 TRY', fmt(totals.principalTry)],
-      ['利息合计 TRY', fmt(totals.interestTry)],
-      ['本金合计 CNY', fmt(totals.principalCny)],
-      ['获得 CNY', fmt(totals.gainCny)],
-      ['提醒', `7天内 ${totals.soon} / 到期 ${totals.expired}`]
+      [t('summary.count'), active.length + ' ' + t('common.records')],
+      [t('summary.principalTry'), fmt(totals.principalTry)],
+      [t('summary.interestTry'), fmt(totals.interestTry)],
+      [t('summary.principalCny'), fmt(totals.principalCny)],
+      [t('summary.gainCny'), fmt(totals.gainCny)],
+      [t('summary.reminder'), t('summary.reminderValue', { soon: totals.soon, expired: totals.expired })]
     ];
 
     $('#summaryGrid').html(items.map(x => `
@@ -2755,7 +3030,7 @@
   function renderBankFilter() {
     const selected = $('#bankFilter').val() || '';
     const banks = Array.from(new Set([...appData.activeRecords, ...appData.historyRecords].map(x => x.bank).filter(Boolean))).sort();
-    const html = '<option value="">全部银行</option>' + banks.map(b => `<option value="${escapeAttr(b)}">${escapeHtml(b)}</option>`).join('');
+    const html = '<option value="">' + escapeHtml(t('common.allBanks')) + '</option>' + banks.map(b => `<option value="${escapeAttr(b)}">${escapeHtml(b)}</option>`).join('');
     $('#bankFilter').html(html).val(selected);
   }
 
@@ -2780,7 +3055,7 @@
       getTableColumns(type).forEach(col => {
         if (col.locked) return;
         const custom = typeof src[col.key] === 'string' ? src[col.key].trim() : '';
-        if (custom && custom !== columnLabelText(col.label)) result[type][col.key] = custom;
+        if (custom && custom !== getDefaultColumnLabelText(type, col)) result[type][col.key] = custom;
       });
     });
     return result;
@@ -2826,7 +3101,7 @@
     const records = getFilteredRecords(appData.activeRecords);
     const head = tableHeadHtml('active');
     const visibleCount = getVisibleColumns('active').length;
-    const body = records.map((r, index) => activeRowHtml(r, index)).join('') || `<tr><td colspan="${visibleCount}" class="muted">暂无当前定存，点击“新增定存”开始。</td></tr>`;
+    const body = records.map((r, index) => activeRowHtml(r, index)).join('') || `<tr><td colspan="${visibleCount}" class="muted">${escapeHtml(t('empty.active'))}</td></tr>`;
     const foot = activeFootHtml(records);
     $('#activeTable').html(head + '<tbody>' + body + '</tbody>' + foot);
 
@@ -2867,7 +3142,7 @@
       case 'gainCny': return tableCell('gain-green', fmt(c.gainCny));
       case 'gainUsd': return tableCell('', fmt(c.gainUsd));
       case 'reminderEnabled': return tableCell(r.reminderEnabled ? 'yes' : 'no', r.reminderEnabled ? 'YES' : 'NO');
-      case 'actions': return tableCell('', `<button class="small secondary" data-edit="${escapeAttr(r.id)}">编辑</button> <button class="small danger" data-history="${escapeAttr(r.id)}">移入历史</button>`);
+      case 'actions': return tableCell('', `<button class="small secondary" data-edit="${escapeAttr(r.id)}">${escapeHtml(t('buttons.edit'))}</button> <button class="small danger" data-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.moveHistory'))}</button>`);
       default: return tableCell('', '');
     }
   }
@@ -2908,7 +3183,7 @@
     const records = getFilteredRecords(appData.historyRecords);
     const head = tableHeadHtml('history');
     const visibleCount = getVisibleColumns('history').length;
-    const body = records.map((r, index) => historyRowHtml(r, index)).join('') || `<tr><td colspan="${visibleCount}" class="muted">暂无历史记录。</td></tr>`;
+    const body = records.map((r, index) => historyRowHtml(r, index)).join('') || `<tr><td colspan="${visibleCount}" class="muted">${escapeHtml(t('empty.history'))}</td></tr>`;
     const foot = historyFootHtml(records);
     $('#historyTable').html(head + '<tbody>' + body + '</tbody>' + foot);
 
@@ -2954,7 +3229,7 @@
       case 'exchangeCny': return tableCell('', fmt(r.exchangeCny));
       case 'exchangeReason': return tableCell('', escapeHtml(r.exchangeReason || ''));
       case 'remark': return tableCell('', escapeHtml(r.remark || ''));
-      case 'actions': return tableCell('', `<button class="small secondary" data-edit-history="${escapeAttr(r.id)}">编辑</button> <button class="small green" data-restore="${escapeAttr(r.id)}">恢复</button> <button class="small danger" data-delete-history="${escapeAttr(r.id)}">永久删除</button>`);
+      case 'actions': return tableCell('', `<button class="small secondary" data-edit-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.edit'))}</button> <button class="small green" data-restore="${escapeAttr(r.id)}">${escapeHtml(t('buttons.restore'))}</button> <button class="small danger" data-delete-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.deleteForever'))}</button>`);
       default: return tableCell('', '');
     }
   }
@@ -3004,7 +3279,7 @@
       }
       if (!labelPlaced) {
         labelPlaced = true;
-        return tableCell('', '合计：');
+        return tableCell('', escapeHtml(t('common.total')));
       }
       return tableCell('', '');
     }).join('');
@@ -3022,15 +3297,15 @@
     const html = getTableColumns(type)
       .filter(col => !col.locked)
       .map(col => {
-        const defaultLabel = columnLabelText(col.label);
+        const defaultLabel = getDefaultColumnLabelText(type, col);
         const customLabel = getCustomColumnLabel(type, col.key);
         return `<div class="column-config-item">
           <label class="column-visible-row">
             <input type="checkbox" data-column-table="${type}" value="${escapeAttr(col.key)}" ${isColumnVisible(type, col.key) ? 'checked' : ''} />
             <span>${escapeHtml(defaultLabel)}</span>
           </label>
-          <div class="column-code">code: ${escapeHtml(col.key)}</div>
-          <input class="column-label-input" data-column-label-table="${type}" data-column-label-key="${escapeAttr(col.key)}" value="${escapeAttr(customLabel)}" placeholder="显示名称：${escapeAttr(defaultLabel)}" />
+          <div class="column-code">${escapeHtml(t('common.code'))}: ${escapeHtml(col.key)}</div>
+          <input class="column-label-input" data-column-label-table="${type}" data-column-label-key="${escapeAttr(col.key)}" value="${escapeAttr(customLabel)}" placeholder="${escapeAttr(t('column.displayName', { name: defaultLabel }))}" />
         </div>`;
       })
       .join('');
@@ -3046,7 +3321,7 @@
         const checked = $(`#columnModal input[data-column-table="${type}"][value="${col.key}"]`).prop('checked');
         if (!checked) next[type][col.key] = false;
 
-        const defaultLabel = columnLabelText(col.label);
+        const defaultLabel = getDefaultColumnLabelText(type, col);
         const customLabel = ($(`#columnModal input[data-column-label-table="${type}"][data-column-label-key="${col.key}"]`).val() || '').trim();
         if (customLabel && customLabel !== defaultLabel) nextLabels[type][col.key] = customLabel;
       });
@@ -3055,7 +3330,7 @@
     appData.settings.columnLabels = nextLabels;
     $('#columnModal').hide();
     persistData();
-    updateStatus('列配置和列名已保存并同步');
+    updateStatus(t('messages.savedColumns'));
   }
 
   function resetColumnSetting() {
@@ -3065,7 +3340,7 @@
     renderColumnConfigBox('active');
     renderColumnConfigBox('history');
     persistData();
-    updateStatus('列配置和列名已恢复默认并同步');
+    updateStatus(t('messages.resetColumns'));
   }
 
   function getCustomColumnLabel(type, key) {
@@ -3075,12 +3350,12 @@
   }
 
   function getColumnLabelText(type, col) {
-    return getCustomColumnLabel(type, col.key) || columnLabelText(col.label);
+    return getCustomColumnLabel(type, col.key) || getDefaultColumnLabelText(type, col);
   }
 
   function columnLabelHtml(type, col) {
     const custom = getCustomColumnLabel(type, col.key);
-    return custom ? escapeHtml(custom) : col.label;
+    return custom ? escapeHtml(custom) : getDefaultColumnLabelHtml(type, col);
   }
 
   function columnLabelText(label) {
@@ -3100,17 +3375,17 @@
 
   function renderMobileList(selector, records, type) {
     if (!records.length) {
-      $(selector).html(`<div class="mobile-card muted">${type === 'active' ? '暂无当前定存。' : '暂无历史记录。'}</div>`);
+      $(selector).html(`<div class="mobile-card muted">${escapeHtml(type === 'active' ? t('empty.mobileActive') : t('empty.mobileHistory'))}</div>`);
       return;
     }
 
     const html = records.map(r => {
       const c = getCalc(r);
       const status = c.remainingDays <= 0 ? 'expired' : (c.remainingDays <= 7 ? 'soon' : '');
-      const statusText = type === 'history' ? '历史' : (c.remainingDays <= 0 ? '已到期' : `${c.remainingDays}天`);
+      const statusText = type === 'history' ? t('mobile.history') : (c.remainingDays <= 0 ? t('mobile.expired') : `${c.remainingDays}${t('common.days')}`);
       const actions = type === 'active'
-        ? `<button class="small secondary" data-edit="${escapeAttr(r.id)}">编辑</button><button class="small danger" data-history="${escapeAttr(r.id)}">移入历史</button>`
-        : `<button class="small secondary" data-edit-history="${escapeAttr(r.id)}">编辑</button><button class="small green" data-restore="${escapeAttr(r.id)}">恢复</button><button class="small danger" data-delete-history="${escapeAttr(r.id)}">永久删除</button>`;
+        ? `<button class="small secondary" data-edit="${escapeAttr(r.id)}">${escapeHtml(t('buttons.edit'))}</button><button class="small danger" data-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.moveHistory'))}</button>`
+        : `<button class="small secondary" data-edit-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.edit'))}</button><button class="small green" data-restore="${escapeAttr(r.id)}">${escapeHtml(t('buttons.restore'))}</button><button class="small danger" data-delete-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.deleteForever'))}</button>`;
 
       return `<div class="mobile-card ${status}">
         <div class="mobile-title">
@@ -3118,17 +3393,17 @@
           <span class="pill ${status}">${escapeHtml(statusText)}</span>
         </div>
         <div class="mobile-grid">
-          ${mobileField('开始/结束', `${r.startDate || ''} → ${r.endDate || ''}`)}
-          ${mobileField('利息 TRY', fmt(c.interestTry))}
-          ${mobileField('年利率 TRY', `${fmt(r.annualRateTry, 2)}%`)}
-          ${mobileField('年利率 CNY', `${fmt(c.annualRateCny, 2)}%`)}
-          ${mobileField('本金 CNY', fmt(c.principalCny))}
-          ${mobileField('获得 CNY', fmt(c.gainCny))}
-          ${type === 'history' ? mobileField('删除原因', r.deleteReason || '') : mobileField('提醒', r.reminderEnabled ? 'YES' : 'NO')}
-          ${type === 'history' ? mobileField('兑换 TRY', fmt(r.exchangeTry)) : ''}
-          ${type === 'history' ? mobileField('兑换 CNY', fmt(r.exchangeCny)) : ''}
-          ${type === 'history' ? mobileField('兑换原因', r.exchangeReason || '-') : ''}
-          ${mobileField('备注', r.remark || '-')}
+          ${mobileField(t('mobile.startEnd'), `${r.startDate || ''} → ${r.endDate || ''}`)}
+          ${mobileField(t('mobile.interestTry'), fmt(c.interestTry))}
+          ${mobileField(t('mobile.annualRateTry'), `${fmt(r.annualRateTry, 2)}%`)}
+          ${mobileField(t('mobile.annualRateCny'), `${fmt(c.annualRateCny, 2)}%`)}
+          ${mobileField(t('mobile.principalCny'), fmt(c.principalCny))}
+          ${mobileField(t('mobile.gainCny'), fmt(c.gainCny))}
+          ${type === 'history' ? mobileField(t('mobile.deleteReason'), r.deleteReason || '') : mobileField(t('mobile.reminder'), r.reminderEnabled ? 'YES' : 'NO')}
+          ${type === 'history' ? mobileField(t('mobile.exchangeTry'), fmt(r.exchangeTry)) : ''}
+          ${type === 'history' ? mobileField(t('mobile.exchangeCny'), fmt(r.exchangeCny)) : ''}
+          ${type === 'history' ? mobileField(t('mobile.exchangeReason'), r.exchangeReason || '-') : ''}
+          ${mobileField(t('mobile.remark'), r.remark || '-')}
         </div>
         <div class="mobile-actions">${actions}</div>
       </div>`;
@@ -3202,12 +3477,12 @@
     const annualRateCny = depositDays > 0 && principalCny > 0 ? gainCny / principalCny / depositDays * 365 * 100 : 0;
 
     $('#calcPreview').html(`
-      <div><strong>自动计算：</strong></div>
-      <div>存款天数：${depositDays || '-'} 天；剩余天数：${endDate ? remainingDays : '-'} 天；利息 TRY：${fmt(interestTry)}</div>
-      <div>开户汇率：USD→CNY ${fmt(usdOpen, 4)}，TRY→CNY ${fmt(tryOpen, 4)}</div>
-      <div>结束汇率：USD→CNY ${fmt(usdEnd, 4)}，TRY→CNY ${fmt(tryEnd, 4)}</div>
-      <div>本金 CNY：${fmt(principalCny)}；本金+利息 CNY：${fmt(totalCny)}；获得 CNY：${fmt(gainCny)}</div>
-      <div>本金 USD：${fmt(principalUsd)}；本金+利息 USD：${fmt(totalUsd)}；获得 USD：${fmt(gainUsd)}；CNY 年化：${fmt(annualRateCny, 2)}%</div>
+      <div><strong>${escapeHtml(t('record.calcTitle'))}</strong></div>
+      <div>${escapeHtml(t('record.calcLine1', { depositDays: depositDays || '-', remainingDays: endDate ? remainingDays : '-', interestTry: fmt(interestTry) }))}</div>
+      <div>${escapeHtml(t('record.calcOpenRate', { usdOpen: fmt(usdOpen, 4), tryOpen: fmt(tryOpen, 4) }))}</div>
+      <div>${escapeHtml(t('record.calcEndRate', { usdEnd: fmt(usdEnd, 4), tryEnd: fmt(tryEnd, 4) }))}</div>
+      <div>${escapeHtml(t('record.calcCny', { principalCny: fmt(principalCny), totalCny: fmt(totalCny), gainCny: fmt(gainCny) }))}</div>
+      <div>${escapeHtml(t('record.calcUsd', { principalUsd: fmt(principalUsd), totalUsd: fmt(totalUsd), gainUsd: fmt(gainUsd), annualRateCny: fmt(annualRateCny, 2) }))}</div>
     `);
   }
 
@@ -3254,7 +3529,7 @@
 
   function renderMailVariableButtons() {
     const html = MAIL_TEMPLATE_VARIABLES.map(v => {
-      return `<button type="button" class="mail-var-btn" data-var="${escapeAttr(v.key)}" title="${escapeAttr(v.desc)}">${escapeHtml(v.label)}</button>`;
+      return `<button type="button" class="mail-var-btn" data-var="${escapeAttr(v.key)}" title="${escapeAttr(getMailVariableDesc(v.key))}">${escapeHtml(getMailVariableLabel(v.key))}</button>`;
     }).join('');
     $('#mailVariableBox').html(html);
   }
@@ -3327,13 +3602,13 @@
     const matches = getReminderCandidates(cfg);
     const sample = matches[0];
     if (!sample) {
-      $('#mailPreview').text('当前没有符合提醒条件的定存。\n例如设置提前 7 天，只有剩余天数等于 7 的记录才会进入邮件提醒。');
+      $('#mailPreview').text(t('mail.noMatch'));
       if (!silent) alert('当前没有符合提醒条件的记录。');
       return;
     }
     const subject = renderMailTemplate(cfg.subjectTemplate, sample.r, sample.c);
     const body = renderMailTemplate(cfg.bodyTemplate, sample.r, sample.c);
-    $('#mailPreview').text('标题：' + subject + '\n\n内容：\n' + body + (matches.length > 1 ? `\n\n共 ${matches.length} 条符合条件，实际推送时会逐条发送。` : ''));
+    $('#mailPreview').text(t('mail.previewSubject', { subject, body }) + (matches.length > 1 ? t('mail.previewMore', { count: matches.length }) : ''));
   }
 
   function getReminderCandidates(cfg) {
@@ -3344,10 +3619,10 @@
       const c = getCalc(r);
       if (cfg.onlyEnabledRecords && !r.reminderEnabled) return;
       if (days.includes(c.remainingDays)) {
-        out.push({ r, c, triggerType: 'advance', triggerLabel: `提前 ${c.remainingDays} 天推送` });
+        out.push({ r, c, triggerType: 'advance', triggerLabel: `${t('mail.advanceDays')} ${c.remainingDays}` });
       }
       if (dueInterval && c.remainingDays === 0) {
-        out.push({ r, c, triggerType: 'dueHourly', triggerLabel: `到期当天每 ${dueInterval} 小时推送` });
+        out.push({ r, c, triggerType: 'dueHourly', triggerLabel: `${t('mail.dueHours')} ${dueInterval}` });
       }
     });
     return out;
@@ -3801,6 +4076,7 @@
 
   function escapeAttr(s) { return escapeHtml(s); }
 })();
+
 </script>
 </body>
 </html>
