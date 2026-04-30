@@ -799,22 +799,11 @@
             <label>exchangerate.host API Key</label>
             <input id="exchangeRateHostApiKey" type="password" placeholder="exchangerate.host / APILayer access_key；支持 live / historical / timeframe" />
           </div>
-          <div class="form-field">
-            <label>exchangerate.host 批量获取历史汇率</label>
-            <select id="exchangeRateHostBatchEnabled">
-              <option value="YES">YES，刷新时优先用 timeframe 批量获取</option>
-              <option value="NO">NO，每个日期单独获取</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label>批量单次最大天数</label>
-            <input id="exchangeRateHostBatchWindowDays" type="number" min="1" max="365" step="1" placeholder="默认 365" />
-          </div>
           <div class="form-field full">
-            <label>批量失败后允许单日接口兜底</label>
-            <select id="exchangeRateHostAllowSingleFallback">
-              <option value="NO">NO，停止刷新，避免消耗次数</option>
-              <option value="YES">YES，继续单日请求兜底</option>
+            <label>exchangerate.host 获取最新 API 返回数据</label>
+            <select id="exchangeRateHostRefreshLatestApi">
+              <option value="YES">YES，每次刷新时都重新调用 API 获取并覆盖 GitHub 今日汇率缓存</option>
+              <option value="NO">NO，优先使用 GitHub 里今天已缓存的汇率；如果今天没有缓存，才调用 API 获取</option>
             </select>
           </div>
           <div class="form-field full">
@@ -830,7 +819,7 @@
           </div>
         </div>
         <div class="hint">
-          开户汇率和结束汇率都会按这里选择的来源获取。TCMB 更适合 TRY 场景；Frankfurter 无需 Key；ExchangeRate-API 不填 Key 时只使用开放最新汇率；exchangerate.host 和 currencyapi.com 需要 API Key。exchangerate.host 已支持 timeframe 批量获取历史汇率，刷新大量记录时会优先按日期区间缓存，减少 API 调用次数。默认情况下密钥只保存在当前浏览器本地配置；如果选择“同步 API Key 到云端”，会写入 GitHub 私有仓库的 data.json，换设备可自动带出。汇率值不再强制保留 4 位小数，会尽量保留接口返回的精度。
+          开户汇率和结束汇率都会按这里选择的来源获取。TCMB 更适合 TRY 场景；Frankfurter 无需 Key；ExchangeRate-API 不填 Key 时只使用开放最新汇率；exchangerate.host 和 currencyapi.com 需要 API Key。exchangerate.host 会把当天获取到的最近一年汇率缓存到 GitHub 的 data.json；如果“获取最新 API 返回数据”选择 NO，则当天后续刷新优先使用 GitHub 缓存，避免重复消耗 API 次数；如果选择 YES，则每次刷新都会重新调用 API 并覆盖今天的缓存。默认情况下密钥只保存在当前浏览器本地配置；如果选择“同步 API Key 到云端”，会写入 GitHub 私有仓库的 data.json，换设备可自动带出。汇率值不再强制保留 4 位小数，会尽量保留接口返回的精度。
         </div>
       </div>
       <div class="modal-foot">
@@ -1148,9 +1137,8 @@
         rateProvider: 'TCMB',
         rateFallbackEnabled: 'YES',
         tcmbRateType: 'ForexBuying',
-        exchangeRateHostBatchEnabled: 'YES',
+        exchangeRateHostRefreshLatestApi: 'NO',
         exchangeRateHostBatchWindowDays: 365,
-        exchangeRateHostAllowSingleFallback: 'NO',
         rateApiKeysCloudSync: 'NO',
         rateApiKeys: {},
         syncSettings: { apiUrl: DEFAULT_SYNC_API_URL, apiPassword: DEFAULT_SYNC_API_PASSWORD },
@@ -1180,9 +1168,8 @@
     settings.rateProvider = normalizeRateProvider(settings.rateProvider);
     settings.rateFallbackEnabled = settings.rateFallbackEnabled === 'NO' ? 'NO' : 'YES';
     settings.tcmbRateType = normalizeTcmRateType(settings.tcmbRateType);
-    settings.exchangeRateHostBatchEnabled = settings.exchangeRateHostBatchEnabled === 'NO' ? 'NO' : 'YES';
-    settings.exchangeRateHostBatchWindowDays = Math.min(365, Math.max(1, normalizePositiveInt(settings.exchangeRateHostBatchWindowDays, 365)));
-    settings.exchangeRateHostAllowSingleFallback = settings.exchangeRateHostAllowSingleFallback === 'YES' ? 'YES' : 'NO';
+    settings.exchangeRateHostRefreshLatestApi = settings.exchangeRateHostRefreshLatestApi === 'YES' ? 'YES' : 'NO';
+    settings.exchangeRateHostBatchWindowDays = 365;
     settings.rateApiKeysCloudSync = settings.rateApiKeysCloudSync === 'YES' ? 'YES' : 'NO';
     settings.rateApiKeys = settings.rateApiKeys && typeof settings.rateApiKeys === 'object' ? settings.rateApiKeys : {};
     settings.syncSettings = settings.syncSettings && typeof settings.syncSettings === 'object' ? settings.syncSettings : { apiUrl: '' };
@@ -1500,9 +1487,7 @@
     $('#rateProvider').val(normalizeRateProvider(appData.settings.rateProvider || rc.rateProvider || 'TCMB'));
     $('#rateFallbackEnabled').val(appData.settings.rateFallbackEnabled === 'NO' ? 'NO' : 'YES');
     $('#tcmbRateType').val(normalizeTcmRateType(appData.settings.tcmbRateType || rc.tcmbRateType || 'ForexBuying'));
-    $('#exchangeRateHostBatchEnabled').val(appData.settings.exchangeRateHostBatchEnabled === 'NO' ? 'NO' : 'YES');
-    $('#exchangeRateHostBatchWindowDays').val(Math.min(365, Math.max(1, normalizePositiveInt(appData.settings.exchangeRateHostBatchWindowDays, 365))));
-    $('#exchangeRateHostAllowSingleFallback').val(appData.settings.exchangeRateHostAllowSingleFallback === 'YES' ? 'YES' : 'NO');
+    $('#exchangeRateHostRefreshLatestApi').val(appData.settings.exchangeRateHostRefreshLatestApi === 'YES' ? 'YES' : 'NO');
     $('#rateApiKeysCloudSync').val(appData.settings.rateApiKeysCloudSync === 'YES' ? 'YES' : 'NO');
     $('#exchangeRateApiKey').val(rc.exchangeRateApiKey || '');
     $('#exchangeRateHostApiKey').val(rc.exchangeRateHostApiKey || '');
@@ -1514,9 +1499,8 @@
     appData.settings.rateProvider = normalizeRateProvider($('#rateProvider').val());
     appData.settings.rateFallbackEnabled = $('#rateFallbackEnabled').val() === 'NO' ? 'NO' : 'YES';
     appData.settings.tcmbRateType = normalizeTcmRateType($('#tcmbRateType').val());
-    appData.settings.exchangeRateHostBatchEnabled = $('#exchangeRateHostBatchEnabled').val() === 'NO' ? 'NO' : 'YES';
-    appData.settings.exchangeRateHostBatchWindowDays = Math.min(365, Math.max(1, normalizePositiveInt($('#exchangeRateHostBatchWindowDays').val(), 365)));
-    appData.settings.exchangeRateHostAllowSingleFallback = $('#exchangeRateHostAllowSingleFallback').val() === 'YES' ? 'YES' : 'NO';
+    appData.settings.exchangeRateHostRefreshLatestApi = $('#exchangeRateHostRefreshLatestApi').val() === 'YES' ? 'YES' : 'NO';
+    appData.settings.exchangeRateHostBatchWindowDays = 365;
     appData.settings.rateApiKeysCloudSync = $('#rateApiKeysCloudSync').val() === 'YES' ? 'YES' : 'NO';
     const apiKeys = {
       exchangeRateApiKey: $('#exchangeRateApiKey').val().trim(),
@@ -1789,6 +1773,26 @@
       }
 
       btn.prop('disabled', true).text('刷新中...');
+
+      if (normalizeRateProvider(appData.settings.rateProvider) === 'ExchangeRateHost' && getWorkerBaseUrl()) {
+        updateStatus('正在通过 Cloudflare Worker 刷新 exchangerate.host 汇率，并优先使用 GitHub 今日缓存...');
+        const payload = await postWorkerApi('/refresh-rates', { historyDays });
+        appData = normalizeData(payload.data);
+        saveLocalData();
+        setGlobalRateInputs();
+        renderAll();
+        const s = payload.summary || {};
+        const notes = [];
+        if (s.cacheFetchedOn) notes.push('缓存日期 ' + s.cacheFetchedOn);
+        if (s.cacheJustFetched) notes.push('已调用 API 并覆盖今日缓存');
+        else notes.push('使用 GitHub 今日缓存');
+        if (s.missingDates && s.missingDates.length) notes.push('缺少 ' + s.missingDates.length + ' 个日期');
+        if (s.skippedHistoryCount) notes.push('历史记录跳过 ' + s.skippedHistoryCount + ` 条（超过 ${historyDays} 天）`);
+        $('#rateInfo').text(`已刷新：当前 ${s.activeSuccessCount || 0} 条，历史 ${s.historySuccessCount || 0} 条；${notes.join('；')}`);
+        updateStatus('云端汇率刷新完成：' + formatDateTime(new Date()));
+        return;
+      }
+
       updateStatus(`正在刷新汇率：当前 ${activeRecords.length} 条，历史近 ${historyDays} 天 ${eligibleHistoryRecords.length} 条...`);
 
       const refreshItems = [
@@ -1798,7 +1802,7 @@
 
       let preloadInfo = null;
       if (shouldPreloadExchangeRateHostTimeframe()) {
-        updateStatus('正在使用 exchangerate.host timeframe 批量缓存历史汇率，减少 API 调用次数...');
+        updateStatus('正在使用 exchangerate.host 缓存逻辑刷新汇率...');
         preloadInfo = await preloadExchangeRateHostRatesForItems(refreshItems);
       }
 
@@ -1808,7 +1812,7 @@
       setGlobalRateInputs();
 
       const notes = [];
-      if (result.preloadInfo && result.preloadInfo.callCount) notes.push(`exchangerate.host 批量接口 ${result.preloadInfo.callCount} 次，缓存 ${result.preloadInfo.cachedDateCount} 天汇率`);
+      if (result.preloadInfo && result.preloadInfo.callCount) notes.push(`exchangerate.host API ${result.preloadInfo.callCount} 次，缓存 ${result.preloadInfo.cachedDateCount} 天汇率`);
       if (result.openFutureCount) notes.push(result.openFutureCount + ' 条开户日期未到，开户汇率暂用最新汇率');
       if (result.endFutureCount) notes.push(result.endFutureCount + ' 条结束日期未到，结束汇率暂用最新汇率');
       if (skippedHistoryCount) notes.push('历史记录跳过 ' + skippedHistoryCount + ` 条（超过 ${historyDays} 天）`);
@@ -1959,12 +1963,11 @@
 
 
   function shouldPreloadExchangeRateHostTimeframe() {
-    return normalizeRateProvider(appData.settings.rateProvider) === 'ExchangeRateHost'
-      && appData.settings.exchangeRateHostBatchEnabled !== 'NO';
+    return normalizeRateProvider(appData.settings.rateProvider) === 'ExchangeRateHost';
   }
 
   function getExchangeRateHostBatchWindowDays() {
-    return Math.min(365, Math.max(1, normalizePositiveInt(appData.settings.exchangeRateHostBatchWindowDays, 365)));
+    return 365;
   }
 
   async function preloadExchangeRateHostRatesForItems(items) {
@@ -1986,11 +1989,7 @@
     try {
       return await preloadExchangeRateHostDates(dateList);
     } catch (e) {
-      if (appData.settings.exchangeRateHostAllowSingleFallback === 'YES') {
-        updateStatus('exchangerate.host timeframe 批量获取失败，已按设置继续单日接口兜底：' + e.message);
-        return { callCount: 0, cachedDateCount: 0, skipped: dateList.length, error: e.message, singleFallback: true };
-      }
-      throw new Error('exchangerate.host timeframe 批量获取失败。已停止刷新，避免自动改用单日接口消耗次数。原因：' + e.message);
+      throw new Error('exchangerate.host 汇率缓存获取失败：' + e.message);
     }
   }
 
@@ -2323,17 +2322,47 @@
     const apiKey = (rc.exchangeRateHostApiKey || '').trim();
     if (!apiKey) throw new Error('请先在“汇率设置”里填写 exchangerate.host API Key');
 
-    const endpoint = dateParam ? 'historical' : 'live';
+    if (!dateParam) {
+      return await fetchLatestRatesFromExchangeRateHostWithCache(apiKey);
+    }
+
+    const params = new URLSearchParams({
+      access_key: apiKey,
+      source: 'USD',
+      currencies: 'CNY,TRY',
+      date: dateParam
+    });
+
+    const url = `https://api.exchangerate.host/historical?${params.toString()}`;
+    const payload = await fetchJsonStrict(url);
+    return parseUsdBasedRates(payload, 'exchangerate.host historical 单日接口', dateParam);
+  }
+
+  async function fetchLatestRatesFromExchangeRateHostWithCache(apiKey) {
+    const today = todayString();
+    const settings = appData.settings || (appData.settings = {});
+    const cache = settings.exchangeRateHostLatestCache;
+    const forceApi = settings.exchangeRateHostRefreshLatestApi === 'YES';
+    if (!forceApi && cache && cache.fetchedOn === today && cache.latest) {
+      return Object.assign({}, cache.latest, { source: 'exchangerate.host GitHub 今日缓存' });
+    }
+
     const params = new URLSearchParams({
       access_key: apiKey,
       source: 'USD',
       currencies: 'CNY,TRY'
     });
-    if (dateParam) params.set('date', dateParam);
-
-    const url = `https://api.exchangerate.host/${endpoint}?${params.toString()}`;
+    const url = `https://api.exchangerate.host/live?${params.toString()}`;
     const payload = await fetchJsonStrict(url);
-    return parseUsdBasedRates(payload, dateParam ? 'exchangerate.host historical 单日接口' : 'exchangerate.host live', dateParam);
+    const latest = parseUsdBasedRates(payload, 'exchangerate.host live', '');
+    settings.exchangeRateHostLatestCache = {
+      fetchedOn: today,
+      fetchedAt: new Date().toISOString(),
+      latest
+    };
+    settings.lastRateFetchDate = today;
+    saveLocalData();
+    return latest;
   }
 
   async function fetchRatesFromCurrencyAPI(dateParam) {
