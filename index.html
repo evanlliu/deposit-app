@@ -832,13 +832,13 @@
           </div>
         </div>
         <div class="hint">
-          本地模式会保存提醒规则并生成预览；如需本地真实发送邮件，请运行 local-email-server.js 并配置 .env 中的 SMTP 信息。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；两个规则都填写时会同时生效。
+          邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；请先在同步设置里配置 Worker API 地址和访问密码，并在 Cloudflare Worker 中配置 RESEND_API_KEY / MAIL_FROM。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；两个规则都填写时会同时生效。
         </div>
       </div>
       <div class="modal-foot">
         <button class="secondary" id="btnPreviewMail">预览提醒邮件</button>
-        <button class="secondary" id="btnSendTestMail">发送测试邮件</button>
-        <button class="secondary" id="btnSendLocalReminder">本地执行一次提醒</button>
+        <button class="secondary" id="btnSendTestMail">发送云端测试邮件</button>
+        <button class="secondary" id="btnSendLocalReminder">云端执行一次提醒</button>
         <button class="secondary" data-close="mailModal">取消</button>
         <button id="btnSaveMailSetting">保存邮件设置</button>
       </div>
@@ -946,8 +946,8 @@
     $('#btnSaveColumnSetting').on('click', saveColumnSetting);
     $('#btnResetColumns').on('click', resetColumnSetting);
     $('#btnPreviewMail').on('click', previewMailReminder);
-    $('#btnSendTestMail').on('click', sendLocalTestMail);
-    $('#btnSendLocalReminder').on('click', sendLocalReminderOnce);
+    $('#btnSendTestMail').on('click', sendCloudTestMail);
+    $('#btnSendLocalReminder').on('click', runCloudReminderOnce);
     $('#btnSaveSync').on('click', saveSyncSetting);
     $('#btnRefresh').on('click', loadCloudData);
     $('#btnFetchRates').on('click', refreshAllRatesByOpenAndEndDate);
@@ -2795,17 +2795,22 @@
   }
 
 
-  function getLocalEmailApiBase() {
-    if (window.location.protocol === 'http:' || window.location.protocol === 'https:') return '';
-    return 'http://localhost:8080';
+  function getWorkerBaseUrl() {
+    const cfg = getConfig();
+    const apiUrl = (cfg.apiUrl || '').trim();
+    if (!apiUrl) return '';
+    return apiUrl.replace(/\/data\/?$/, '').replace(/\/$/, '');
   }
 
-  async function postLocalEmailApi(path, payload) {
-    const url = getLocalEmailApiBase() + path;
-    const res = await fetch(url, {
+  async function postWorkerApi(path, payload) {
+    const cfg = getConfig();
+    const base = getWorkerBaseUrl();
+    if (!base) throw new Error('请先在“同步设置”中填写 Cloudflare Worker API 地址。');
+    if (!cfg.apiPassword) throw new Error('请先在“同步设置”中填写访问密码。');
+    const res = await fetch(base + path, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: { 'Content-Type': 'application/json', 'x-app-password': cfg.apiPassword || '' },
+      body: JSON.stringify(payload || {})
     });
     let data = null;
     try { data = await res.json(); } catch (_) { data = {}; }
@@ -2838,29 +2843,30 @@
     return { r, c, triggerType: 'test', triggerLabel: '本地测试邮件' };
   }
 
-  async function sendLocalTestMail(e) {
+
+  async function sendCloudTestMail(e) {
     if (e) e.preventDefault();
     const cfg = readMailSettingFromForm();
     if (!cfg.mailTo) {
       alert('请先填写收件邮箱。');
       return;
     }
-    const sample = getReminderCandidates(cfg)[0] || buildFakeMailItem();
-    const msg = buildMailMessage(cfg, sample);
-    msg.subject = '[测试] ' + msg.subject;
-    msg.body = '这是一封本地测试邮件，用于验证 SMTP 配置是否可用。\n\n' + msg.body;
+    appData.settings.emailReminder = cfg;
+    saveLocalData();
     try {
-      $('#mailPreview').text('正在通过本地邮件服务发送测试邮件...');
-      const result = await postLocalEmailApi('/api/local-email/send', msg);
-      $('#mailPreview').text('测试邮件发送成功。\nmessageId：' + (result.messageId || '-') + '\n\n标题：' + msg.subject + '\n\n内容：\n' + msg.body);
-      updateStatus('测试邮件发送成功');
+      $('#mailPreview').text('正在保存邮件设置并通过 Cloudflare Worker + Resend 发送测试邮件...');
+      await persistData();
+      const result = await postWorkerApi('/send-test-email', { mailTo: cfg.mailTo });
+      $('#mailPreview').text('云端测试邮件发送成功。\n收件人：' + (result.result && result.result.to ? result.result.to : cfg.mailTo) + '\n标题：' + (result.result && result.result.subject ? result.result.subject : '-') + '\n\n如果没有收到，请检查垃圾邮件，或确认 Resend 发信域名/收件邮箱权限。');
+      updateStatus('云端测试邮件发送成功');
     } catch (err) {
-      $('#mailPreview').text('测试邮件发送失败：' + err.message + '\n\n请确认：\n1. 已运行 node local-email-server.js\n2. 已配置 .env 里的 SMTP_HOST / SMTP_USER / SMTP_PASS\n3. 当前页面通过 http://localhost:8080 打开，或本地服务允许 file:// 调用');
-      alert('测试邮件发送失败：' + err.message);
+      $('#mailPreview').text('云端测试邮件发送失败：' + err.message + '\n\n请确认：\n1. 同步设置里的 Worker API 地址和访问密码正确\n2. Cloudflare Worker 已配置 RESEND_API_KEY 和 MAIL_FROM\n3. v19 worker.js 已部署到 Cloudflare\n4. Resend 发件人可用');
+      alert('云端测试邮件发送失败：' + err.message);
     }
   }
 
-  async function sendLocalReminderOnce(e) {
+
+  async function runCloudReminderOnce(e) {
     if (e) e.preventDefault();
     const cfg = readMailSettingFromForm();
     const hasAnyRule = cfg.advanceDays.length > 0 || Boolean(cfg.dueTodayIntervalHours);
@@ -2876,22 +2882,19 @@
       alert('请先填写收件邮箱。');
       return;
     }
-    const matches = getReminderCandidates(cfg);
-    if (!matches.length) {
-      $('#mailPreview').text('当前没有符合提醒条件的记录。');
-      alert('当前没有符合提醒条件的记录。');
-      return;
-    }
-    if (!confirm('本次将发送 ' + matches.length + ' 封提醒邮件，确定继续？')) return;
-    const messages = matches.map(item => buildMailMessage(cfg, item));
+    appData.settings.emailReminder = cfg;
+    saveLocalData();
+    if (!confirm('将由 Cloudflare Worker 按当前规则执行一次提醒检查。符合条件的记录会发送邮件，确定继续？')) return;
     try {
-      $('#mailPreview').text('正在通过本地邮件服务发送 ' + messages.length + ' 封提醒邮件...');
-      const result = await postLocalEmailApi('/api/local-email/send-batch', { messages });
-      $('#mailPreview').text('本地执行提醒完成。\n成功：' + (result.sent || 0) + ' 封\n失败：' + (result.failed || 0) + ' 封\n\n' + (result.details || []).map((x, i) => `${i + 1}. ${x.ok ? '成功' : '失败'} - ${x.subject || ''} ${x.error ? ' - ' + x.error : ''}`).join('\n'));
-      updateStatus('本地邮件提醒执行完成');
+      $('#mailPreview').text('正在保存邮件设置并由云端执行一次提醒检查...');
+      await persistData();
+      const result = await postWorkerApi('/run-reminders', {});
+      const r = result.result || {};
+      $('#mailPreview').text('云端提醒执行完成。\n匹配记录：' + (r.matched || 0) + ' 条\n成功发送：' + (r.sent || 0) + ' 封\n规则：提前 ' + ((r.rules && r.rules.advanceDays || []).join(',') || '-') + ' 天；到期当天每 ' + ((r.rules && r.rules.dueTodayIntervalHours) || '-') + ' 小时\n\n错误：\n' + ((r.errors || []).join('\n') || '无'));
+      updateStatus('云端邮件提醒执行完成');
     } catch (err) {
-      $('#mailPreview').text('本地执行提醒失败：' + err.message + '\n\n请确认 local-email-server.js 正在运行且 .env 配置正确。');
-      alert('本地执行提醒失败：' + err.message);
+      $('#mailPreview').text('云端执行提醒失败：' + err.message + '\n\n请确认 Worker、Resend 和云端 data.json 配置正确。');
+      alert('云端执行提醒失败：' + err.message);
     }
   }
 
