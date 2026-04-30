@@ -75,6 +75,25 @@
       gap: 8px;
     }
 
+    .mobile-fold {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .mobile-fold > summary { display: none; }
+
+    .mobile-fold-content {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .mobile-fold-title { font-weight: 800; }
+    .mobile-fold-subtitle { color: var(--muted); font-size: 12px; font-weight: 600; }
+
     button, .btn {
       border: 1px solid transparent;
       background: var(--primary);
@@ -521,9 +540,50 @@
 
     @media (max-width: 760px) {
       .wrap, .section { padding-left: 10px; padding-right: 10px; }
+      .topbar { align-items: stretch; }
+      .title { width: 100%; }
       .title h1 { font-size: 18px; }
       .toolbar, .filterbar, .ratebar { width: 100%; }
-      .toolbar button, .filterbar input, .filterbar select, .ratebar input, .ratebar button { flex: 1 1 auto; }
+      .toolbar, .filterbar { display: grid; grid-template-columns: 1fr; gap: 10px; }
+      .toolbar > button, .filterbar > input, .filterbar > select, .ratebar input, .ratebar button { width: 100%; }
+      .ratebar { align-items: stretch; }
+      .ratebar label { width: 100%; justify-content: space-between; }
+      .rate-info { line-height: 1.5; }
+      .mobile-fold {
+        width: 100%;
+        display: block;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: white;
+        overflow: hidden;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, .05);
+      }
+      .mobile-fold > summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 14px;
+        cursor: pointer;
+        list-style: none;
+      }
+      .mobile-fold > summary::-webkit-details-marker { display: none; }
+      .mobile-fold > summary::after {
+        content: '展开';
+        flex: 0 0 auto;
+        color: var(--primary);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .mobile-fold[open] > summary::after { content: '收起'; }
+      .mobile-fold-content {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 0 12px 12px;
+      }
+      .mobile-fold:not([open]) .mobile-fold-content { display: none; }
+      .mobile-fold-content button { width: 100%; }
       .summary-grid { grid-template-columns: repeat(2, 1fr); }
       .summary-item { padding: 10px; }
       .summary-item .value { font-size: 17px; }
@@ -556,13 +616,21 @@
         <h1>定期存款管理系统</h1>
         <p>当前定存 + 历史记录；只需录入关键字段，汇率和收益自动计算。</p>
       </div>
-      <div class="toolbar">
+      <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
         <button id="btnRefresh" class="secondary">从云端刷新</button>
-        <button id="btnSyncSetting" class="secondary">同步设置</button>
-        <button id="btnMailSetting" class="secondary">邮件提醒</button>
-        <button id="btnColumnSetting" class="secondary">列配置</button>
-        <button id="btnRateSetting" class="secondary">汇率设置</button>
+        <details class="mobile-fold action-fold" open>
+          <summary>
+            <span class="mobile-fold-title">设置 / 更多</span>
+            <span class="mobile-fold-subtitle">同步、邮件、列、汇率</span>
+          </summary>
+          <div class="mobile-fold-content">
+            <button id="btnSyncSetting" class="secondary">同步设置</button>
+            <button id="btnMailSetting" class="secondary">邮件提醒</button>
+            <button id="btnColumnSetting" class="secondary">列配置</button>
+            <button id="btnRateSetting" class="secondary">汇率设置</button>
+          </div>
+        </details>
       </div>
     </div>
   </header>
@@ -589,10 +657,18 @@
           <div class="filterbar">
             <input id="searchInput" placeholder="搜索银行 / 备注 / 日期" />
             <select id="bankFilter"><option value="">全部银行</option></select>
-            <button id="btnExportJson" class="secondary">导出JSON</button>
-            <button id="btnExportCsv" class="secondary">导出CSV</button>
-            <button id="btnExportBackupJson" class="secondary">备份JSON</button>
-            <button id="btnImport" class="secondary">导入备份</button>
+            <details class="mobile-fold export-fold" open>
+              <summary>
+                <span class="mobile-fold-title">导出 / 备份</span>
+                <span class="mobile-fold-subtitle">JSON、CSV、备份、导入</span>
+              </summary>
+              <div class="mobile-fold-content">
+                <button id="btnExportJson" class="secondary">导出JSON</button>
+                <button id="btnExportCsv" class="secondary">导出CSV</button>
+                <button id="btnExportBackupJson" class="secondary">备份JSON</button>
+                <button id="btnImport" class="secondary">导入备份</button>
+              </div>
+            </details>
             <input id="importFile" class="hidden-file" type="file" accept="application/json,.json" />
           </div>
           <div class="status-line" id="statusLine">本地模式</div>
@@ -1049,6 +1125,7 @@
   $(init);
 
   function init() {
+    setupMobileFolds();
     bindEvents();
     loadConfigToForm();
     loadLocalData();
@@ -1056,6 +1133,22 @@
     renderAll();
     updateStatus('已加载本地数据，正在尝试自动云端同步...');
     autoCloudSyncOnStart();
+  }
+
+  function setupMobileFolds() {
+    const mq = window.matchMedia('(max-width: 760px)');
+    const apply = () => {
+      $('.mobile-fold').each(function () {
+        if (mq.matches) {
+          this.removeAttribute('open');
+        } else {
+          this.setAttribute('open', 'open');
+        }
+      });
+    };
+    apply();
+    if (mq.addEventListener) mq.addEventListener('change', apply);
+    else mq.addListener(apply);
   }
 
   function bindEvents() {
