@@ -928,7 +928,7 @@
       <div class="modal-foot">
         <button class="secondary" id="btnPreviewMail">预览提醒邮件</button>
         <button class="secondary" id="btnSendTestMail">发送云端测试邮件</button>
-        <button class="secondary" id="btnSendLocalReminder">云端执行一次提醒</button>
+        <button class="secondary" id="btnSendLocalReminder">云端测试一次提醒</button>
         <button class="secondary" data-close="mailModal">取消</button>
         <button id="btnSaveMailSetting">保存邮件设置</button>
       </div>
@@ -3300,13 +3300,13 @@
     }
     appData.settings.emailReminder = cfg;
     saveLocalData();
-    if (!confirm('将由 Cloudflare Worker 按当前规则执行一次提醒检查。符合条件的记录会发送邮件，确定继续？')) return;
+    if (!confirm('将由 Cloudflare Worker 按当前规则手动测试一次提醒检查。符合条件的记录会发送邮件，但不会写入防重复发送记录；正式 Cron 仍会按规则推送。确定继续？')) return;
     try {
-      $('#mailPreview').text('正在保存邮件设置并由云端执行一次提醒检查...');
+      $('#mailPreview').text('正在保存邮件设置并由云端手动测试一次提醒检查...');
       await persistData();
       const result = await postWorkerApi('/run-reminders', {});
       const r = result.result || {};
-      $('#mailPreview').text('云端提醒执行完成。\n匹配记录：' + (r.matched || 0) + ' 条\n成功发送：' + (r.sent || 0) + ' 封\n规则：提前 ' + ((r.rules && r.rules.advanceDays || []).join(',') || '-') + ' 天；到期当天每 ' + ((r.rules && r.rules.dueTodayIntervalHours) || '-') + ' 小时\n\n错误：\n' + ((r.errors || []).join('\n') || '无'));
+      $('#mailPreview').text('云端手动测试执行完成。\n匹配记录：' + (r.matched || 0) + ' 条\n成功发送：' + (r.sent || 0) + ' 封\n规则：提前 ' + ((r.rules && r.rules.advanceDays || []).join(',') || '-') + ' 天；到期当天每 ' + ((r.rules && r.rules.dueTodayIntervalHours) || '-') + ' 小时\n\n错误：\n' + ((r.errors || []).join('\n') || '无'));
       updateStatus('云端邮件提醒执行完成');
     } catch (err) {
       $('#mailPreview').text('云端执行提醒失败：' + err.message + '\n\n请确认 Worker、Resend 和云端 data.json 配置正确。');
