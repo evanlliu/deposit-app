@@ -1226,22 +1226,62 @@
 
     try {
       updateStatus('正在保存到 GitHub...');
-      const res = await fetch(cfg.apiUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-app-password': cfg.apiPassword || ''
-        },
-        body: JSON.stringify({ data: appData })
-      });
-      const payload = await res.json();
-      if (!res.ok || !payload.ok) throw new Error(payload.error || '云端保存失败');
+      await assertSafeCloudOverwrite(cfg, appData);
+      await putCloudData(cfg, appData);
       updateStatus('云端保存成功：' + formatDateTime(new Date()));
     } catch (e) {
       updateStatus('云端保存失败，已先保存在本地：' + e.message);
       alert('云端保存失败，数据已经先保存在本地。\n' + e.message);
     }
     renderAll();
+  }
+
+  async function putCloudData(cfg, data) {
+    const res = await fetch(cfg.apiUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-app-password': cfg.apiPassword || ''
+      },
+      body: JSON.stringify({ data: normalizeData(data) })
+    });
+    const payload = await res.json();
+    if (!res.ok || !payload.ok) throw new Error(payload.error || '云端保存失败');
+    return payload;
+  }
+
+  async function readCloudDataByConfig(cfg) {
+    const res = await fetch(cfg.apiUrl, {
+      method: 'GET',
+      headers: { 'x-app-password': cfg.apiPassword || '' }
+    });
+    const payload = await res.json();
+    if (!res.ok || !payload.ok) throw new Error(payload.error || '读取失败');
+    return normalizeData(payload.data);
+  }
+
+  function totalRecordCount(data) {
+    const d = data || {};
+    return (Array.isArray(d.activeRecords) ? d.activeRecords.length : 0) +
+      (Array.isArray(d.historyRecords) ? d.historyRecords.length : 0);
+  }
+
+  function isEffectivelyEmptyData(data) {
+    return totalRecordCount(data) === 0;
+  }
+
+  async function assertSafeCloudOverwrite(cfg, nextData) {
+    // v25 安全保护：防止新设备/新浏览器的空本地数据覆盖云端已有定存记录。
+    if (!isEffectivelyEmptyData(nextData)) return;
+    try {
+      const cloudData = await readCloudDataByConfig(cfg);
+      if (!isEffectivelyEmptyData(cloudData)) {
+        throw new Error('检测到本地数据为空，但云端仍有 ' + totalRecordCount(cloudData) + ' 条记录，已阻止空数据覆盖云端。请先点击“从云端刷新”。');
+      }
+    } catch (e) {
+      if (String(e.message || '').includes('已阻止空数据覆盖云端')) throw e;
+      throw new Error('本地数据为空，为避免误覆盖云端，已取消保存。请先确认云端数据或导入备份。原错误：' + e.message);
+    }
   }
 
   async function autoCloudSyncOnStart() {
@@ -1282,7 +1322,16 @@
       });
       const payload = await res.json();
       if (!res.ok || !payload.ok) throw new Error(payload.error || '读取失败');
-      appData = normalizeData(payload.data);
+      const incomingData = normalizeData(payload.data);
+      if (isEffectivelyEmptyData(incomingData) && !isEffectivelyEmptyData(appData)) {
+        const msg = '云端数据当前为空，但本地还有 ' + totalRecordCount(appData) + ' 条记录。';
+        if (options.auto) {
+          updateStatus(msg + ' 已跳过自动覆盖，本地数据保持不变。');
+          return;
+        }
+        if (!confirm(msg + '\n\n是否确认用空云端数据覆盖本地？')) return;
+      }
+      appData = incomingData;
       saveLocalData();
       const cloudSync = appData.settings.syncSettings || {};
       const localCfg = getConfig();
@@ -1361,7 +1410,7 @@
     $('#syncModal').show();
   }
 
-  function saveSyncSetting() {
+  async function saveSyncSetting() {
     const cfg = {
       apiUrl: $('#apiUrl').val().trim(),
       apiPassword: $('#apiPassword').val()
@@ -1373,15 +1422,52 @@
     };
     saveLocalData();
     $('#syncModal').hide();
-    if (cfg.apiUrl) {
-      persistData();
-      updateStatus('同步设置已保存，API 地址和访问密码都会同步到云端；新设备打开页面会自动同步');
-    } else {
+    if (!cfg.apiUrl) {
       updateStatus('已切换为本地模式');
+      return;
     }
+    if (!cfg.apiPassword) {
+      updateStatus('同步设置已保存到本地，但缺少访问密码，不能自动云端同步');
+      return;
+    }
+    await saveSyncSettingSafely(cfg);
   }
 
+  async function saveSyncSettingSafely(cfg) {
+    const localBefore = normalizeData(appData);
+    try {
+      updateStatus('同步设置已保存本地，正在读取云端数据，避免空数据覆盖...');
+      const cloudData = await readCloudDataByConfig(cfg);
+      cloudData.settings.syncSettings = { apiUrl: cfg.apiUrl, apiPassword: cfg.apiPassword };
 
+      if (isEffectivelyEmptyData(cloudData) && !isEffectivelyEmptyData(localBefore)) {
+        const yes = confirm('云端 data.json 目前为空，但本地有 ' + totalRecordCount(localBefore) + ' 条记录。\n\n是否用本地数据初始化云端？\n选择“取消”则只保存本地同步设置，不覆盖云端。');
+        if (!yes) {
+          appData = localBefore;
+          saveLocalData();
+          renderAll();
+          updateStatus('同步设置已保存到本地，未覆盖空云端数据');
+          return;
+        }
+        appData = localBefore;
+        appData.settings.syncSettings = { apiUrl: cfg.apiUrl, apiPassword: cfg.apiPassword };
+        await putCloudData(cfg, appData);
+        updateStatus('已用本地数据初始化云端，并保存同步设置：' + formatDateTime(new Date()));
+        renderAll();
+        return;
+      }
+
+      appData = cloudData;
+      saveLocalData();
+      setGlobalRateInputs();
+      renderAll();
+      await putCloudData(cfg, appData);
+      updateStatus('同步设置已安全写入云端，并已从云端同步数据：' + formatDateTime(new Date()));
+    } catch (e) {
+      updateStatus('同步设置已保存到本地，但云端读取/保存失败：' + e.message);
+      alert('同步设置已保存到本地，但没有写入云端。\n\n为避免再次发生空数据覆盖，系统没有用本地数据覆盖云端。\n\n错误：' + e.message);
+    }
+  }
 
   function getRateLocalConfig() {
     const cfg = getConfig();
