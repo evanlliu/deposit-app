@@ -366,44 +366,98 @@
 
     .hidden-file { display: none; }
 
+    #columnModal .modal {
+      width: min(1520px, calc(100vw - 24px));
+      max-height: calc(100vh - 24px);
+      display: flex;
+      flex-direction: column;
+    }
+    #columnModal .modal-body {
+      overflow: auto;
+      max-height: calc(100vh - 170px);
+    }
     .column-config-layout {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
       align-items: start;
     }
     .column-config-box {
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
-      background: #f8fbff;
+      border-radius: 16px;
+      padding: 16px;
+      background: linear-gradient(180deg, #f8fbff 0%, #fdfefe 100%);
+      min-width: 0;
     }
     .column-config-box h3 {
       margin: 0 0 10px;
       font-size: 16px;
     }
     .column-config-box .hint {
-      margin-top: 10px;
+      margin-top: 12px;
     }
 
     .nested-grid { box-shadow: none; margin-top: 6px; }
     .checkbox-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(130px, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
       padding: 8px 0;
+      align-items: stretch;
     }
     .checkbox-grid label {
       display: flex;
       align-items: center;
-      gap: 7px;
-      padding: 8px 10px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: white;
+      gap: 8px;
       color: var(--text);
     }
-    .checkbox-grid input { width: auto; min-height: auto; }
+    .checkbox-grid input[type="checkbox"] {
+      width: auto;
+      min-height: auto;
+      flex: 0 0 auto;
+      margin-top: 2px;
+    }
+    .column-config-item {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+      color: var(--text);
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, .05);
+    }
+    .column-visible-row {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font-weight: 700;
+      align-items: flex-start;
+      line-height: 1.35;
+      min-width: 0;
+    }
+    .column-visible-row span {
+      min-width: 0;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .column-code {
+      margin: 8px 0 10px 24px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      word-break: break-all;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    .column-label-input {
+      width: 100%;
+      min-height: 38px;
+      padding: 8px 10px;
+      font-size: 13px;
+      margin-top: auto;
+    }
     .preview-box {
       white-space: pre-wrap;
       background: #f8fafc;
@@ -478,8 +532,10 @@
       .form-grid { grid-template-columns: 1fr; }
       .modal { margin: 0 auto; border-radius: 16px; }
       .modal-mask { padding: 8px; }
-      .checkbox-grid { grid-template-columns: 1fr 1fr; }
+      .checkbox-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .column-config-layout { grid-template-columns: 1fr; }
+      #columnModal .modal { width: min(100%, calc(100vw - 12px)); max-height: calc(100vh - 12px); }
+      #columnModal .modal-body { max-height: calc(100vh - 150px); }
       .mobile-grid { grid-template-columns: 1fr 1fr; }
     }
 
@@ -488,6 +544,8 @@
       .mobile-grid { grid-template-columns: 1fr; }
       button, input, select { width: 100%; }
       .checkbox-grid { grid-template-columns: 1fr; }
+      .column-config-box { padding: 12px; }
+      .column-config-item { padding: 10px; }
     }
   </style>
 </head>
@@ -794,16 +852,16 @@
           <div class="column-config-box">
             <h3>当前定存列配置</h3>
             <div class="checkbox-grid" id="activeColumnBox"></div>
-            <div class="hint">当前定存表和历史记录表独立保存配置。例如可以只隐藏当前定存的“本金(USD)”。</div>
+            <div class="hint">当前定存表和历史记录表独立保存配置。可以隐藏列，也可以修改显示列名；字段 code 不会变化。</div>
           </div>
           <div class="column-config-box">
             <h3>历史记录列配置</h3>
             <div class="checkbox-grid" id="historyColumnBox"></div>
-            <div class="hint">历史记录可以保留更多字段，例如删除时间、兑换原因、兑换金额等。</div>
+            <div class="hint">历史记录可以单独修改列名，例如把“银行”改成“土耳其银行”，不会影响当前定存表。</div>
           </div>
         </div>
         <div class="hint" style="margin-top:12px;">
-          “序号”列现在也可以隐藏/显示；“操作”列固定显示，避免隐藏后无法编辑或恢复记录。列配置会保存在本地数据中，后续同步到云端时也会一起保存。
+          “序号”列也可以隐藏/显示；“操作”列固定显示。列名配置会和列显示配置一起保存到云端，多设备同步。比如 code 仍然是 bank，但显示名称可以改成“土耳其银行”。
         </div>
       </div>
       <div class="modal-foot">
@@ -1090,7 +1148,8 @@
         historyRateRefreshDays: 30,
         emailReminder: defaultEmailReminder(),
         sentReminders: {},
-        columnVisibility: defaultColumnVisibility()
+        columnVisibility: defaultColumnVisibility(),
+        columnLabels: defaultColumnLabels()
       }
     };
   }
@@ -1106,6 +1165,7 @@
     settings.emailReminder.fields = normalizeMailFields(settings.emailReminder.fields);
     settings.sentReminders = rawSettings.sentReminders && typeof rawSettings.sentReminders === 'object' ? rawSettings.sentReminders : {};
     settings.columnVisibility = normalizeColumnVisibility(rawSettings.columnVisibility);
+    settings.columnLabels = normalizeColumnLabels(rawSettings.columnLabels);
     settings.historyRateRefreshDays = normalizePositiveInt(settings.historyRateRefreshDays, 30);
     settings.rateProvider = normalizeRateProvider(settings.rateProvider);
     settings.rateFallbackEnabled = settings.rateFallbackEnabled === 'NO' ? 'NO' : 'YES';
@@ -2329,6 +2389,25 @@
     return { active: {}, history: {} };
   }
 
+  function defaultColumnLabels() {
+    return { active: {}, history: {} };
+  }
+
+  function normalizeColumnLabels(value) {
+    const result = defaultColumnLabels();
+    if (!value || typeof value !== 'object') return result;
+    ['active', 'history'].forEach(type => {
+      const src = value[type];
+      if (!src || typeof src !== 'object') return;
+      getTableColumns(type).forEach(col => {
+        if (col.locked) return;
+        const custom = typeof src[col.key] === 'string' ? src[col.key].trim() : '';
+        if (custom && custom !== columnLabelText(col.label)) result[type][col.key] = custom;
+      });
+    });
+    return result;
+  }
+
   function normalizeColumnVisibility(value) {
     const result = defaultColumnVisibility();
     if (!value || typeof value !== 'object') return result;
@@ -2358,7 +2437,7 @@
 
   function tableHeadHtml(type) {
     const cols = getVisibleColumns(type);
-    return '<thead><tr>' + cols.map(col => `<th class="${escapeAttr(col.thClass || '')}">${col.label}</th>`).join('') + '</tr></thead>';
+    return '<thead><tr>' + cols.map(col => `<th class="${escapeAttr(col.thClass || '')}">${columnLabelHtml(type, col)}</th>`).join('') + '</tr></thead>';
   }
 
   function tableCell(className, html) {
@@ -2564,33 +2643,66 @@
     const box = type === 'active' ? '#activeColumnBox' : '#historyColumnBox';
     const html = getTableColumns(type)
       .filter(col => !col.locked)
-      .map(col => `<label><input type="checkbox" data-column-table="${type}" value="${escapeAttr(col.key)}" ${isColumnVisible(type, col.key) ? 'checked' : ''} />${escapeHtml(columnLabelText(col.label))}</label>`)
+      .map(col => {
+        const defaultLabel = columnLabelText(col.label);
+        const customLabel = getCustomColumnLabel(type, col.key);
+        return `<div class="column-config-item">
+          <label class="column-visible-row">
+            <input type="checkbox" data-column-table="${type}" value="${escapeAttr(col.key)}" ${isColumnVisible(type, col.key) ? 'checked' : ''} />
+            <span>${escapeHtml(defaultLabel)}</span>
+          </label>
+          <div class="column-code">code: ${escapeHtml(col.key)}</div>
+          <input class="column-label-input" data-column-label-table="${type}" data-column-label-key="${escapeAttr(col.key)}" value="${escapeAttr(customLabel)}" placeholder="显示名称：${escapeAttr(defaultLabel)}" />
+        </div>`;
+      })
       .join('');
     $(box).html(html);
   }
 
   function saveColumnSetting() {
     const next = defaultColumnVisibility();
+    const nextLabels = defaultColumnLabels();
     ['active', 'history'].forEach(type => {
       getTableColumns(type).forEach(col => {
         if (col.locked) return;
         const checked = $(`#columnModal input[data-column-table="${type}"][value="${col.key}"]`).prop('checked');
         if (!checked) next[type][col.key] = false;
+
+        const defaultLabel = columnLabelText(col.label);
+        const customLabel = ($(`#columnModal input[data-column-label-table="${type}"][data-column-label-key="${col.key}"]`).val() || '').trim();
+        if (customLabel && customLabel !== defaultLabel) nextLabels[type][col.key] = customLabel;
       });
     });
     appData.settings.columnVisibility = next;
+    appData.settings.columnLabels = nextLabels;
     $('#columnModal').hide();
     persistData();
-    updateStatus('列配置已保存并同步');
+    updateStatus('列配置和列名已保存并同步');
   }
 
   function resetColumnSetting() {
     if (!confirm('确定恢复当前定存和历史记录的默认列显示吗？')) return;
     appData.settings.columnVisibility = defaultColumnVisibility();
+    appData.settings.columnLabels = defaultColumnLabels();
     renderColumnConfigBox('active');
     renderColumnConfigBox('history');
     persistData();
-    updateStatus('列配置已恢复默认并同步');
+    updateStatus('列配置和列名已恢复默认并同步');
+  }
+
+  function getCustomColumnLabel(type, key) {
+    const labels = appData.settings.columnLabels || defaultColumnLabels();
+    const value = labels[type] && typeof labels[type][key] === 'string' ? labels[type][key].trim() : '';
+    return value;
+  }
+
+  function getColumnLabelText(type, col) {
+    return getCustomColumnLabel(type, col.key) || columnLabelText(col.label);
+  }
+
+  function columnLabelHtml(type, col) {
+    const custom = getCustomColumnLabel(type, col.key);
+    return custom ? escapeHtml(custom) : col.label;
   }
 
   function columnLabelText(label) {
@@ -3025,7 +3137,7 @@
     const type = currentTab;
     const columns = getExportColumns(type);
     const rows = getExportRows(type);
-    const lines = [columns.map(col => columnLabelText(col.label))];
+    const lines = [columns.map(col => getColumnLabelText(type, col))];
 
     rows.forEach((r, index) => {
       const c = getCalc(r);
@@ -3049,12 +3161,12 @@
       exportedAt: new Date().toISOString(),
       columnScope: '当前表格显示的列，不包含操作列',
       rowScope: '当前表格全部记录，不受搜索框和银行筛选影响',
-      columns: columns.map(col => ({ key: col.key, label: columnLabelText(col.label) })),
+      columns: columns.map(col => ({ key: col.key, label: getColumnLabelText(type, col) })),
       records: rows.map((r, index) => {
         const c = getCalc(r);
         const obj = {};
         columns.forEach(col => {
-          obj[columnLabelText(col.label)] = exportCellValue(type, col.key, r, c, index);
+          obj[getColumnLabelText(type, col)] = exportCellValue(type, col.key, r, c, index);
         });
         return obj;
       }),
@@ -3153,7 +3265,7 @@
     const summary = {};
     columns.forEach(col => {
       if (totalMap[col.key] !== undefined) {
-        summary[columnLabelText(col.label)] = totalMap[col.key];
+        summary[getColumnLabelText(type, col)] = totalMap[col.key];
       }
     });
     return summary;
