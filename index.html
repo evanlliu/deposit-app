@@ -813,26 +813,12 @@
             <textarea id="mailBodyTemplate" placeholder="支持变量：{{bank}}、{{principalTry}}、{{endDate}}、{{remainingDays}}、{{principalPlusInterestTry}}、{{gainCny}}"></textarea>
           </div>
           <div class="form-field full">
-            <label>选择推送内容字段</label>
-            <div class="checkbox-grid" id="mailFieldsBox">
-              <label><input type="checkbox" value="bank" />银行</label>
-              <label><input type="checkbox" value="principalTry" />本金 TRY</label>
-              <label><input type="checkbox" value="endDate" />到期日期</label>
-              <label><input type="checkbox" value="remainingDays" />剩余天数</label>
-              <label><input type="checkbox" value="principalPlusInterestTry" />本金+利息 TRY</label>
-              <label><input type="checkbox" value="gainCny" />获得 CNY</label>
-              <label><input type="checkbox" value="annualRateTry" />年利率 TRY</label>
-              <label><input type="checkbox" value="annualRateCny" />年利率 CNY</label>
-              <label><input type="checkbox" value="remark" />备注</label>
-            </div>
-          </div>
-          <div class="form-field full">
             <label>邮件预览</label>
             <div id="mailPreview" class="preview-box">点击“预览提醒邮件”。</div>
           </div>
         </div>
         <div class="hint">
-          邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；请先在同步设置里配置 Worker API 地址和访问密码，并在 Cloudflare Worker 中配置 RESEND_API_KEY / MAIL_FROM。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；两个规则都填写时会同时生效。
+          邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；邮件正文只发送“邮件内容模板”里的内容，不会再额外追加字段，想显示哪些信息请直接在模板里用变量配置。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；两个规则都填写时会同时生效。
         </div>
       </div>
       <div class="modal-foot">
@@ -2655,7 +2641,7 @@
       advanceDays: [],
       dueTodayIntervalHours: '',
       onlyEnabledRecords: true,
-      fields: ['bank', 'principalTry', 'endDate', 'remainingDays', 'principalPlusInterestTry'],
+      fields: [],
       subjectTemplate: '定存到期提醒：{{bank}} {{principalTry}} TRY',
       bodyTemplate: '你的定期存款即将到期：\n\n银行：{{bank}}\n本金：{{principalTry}} TRY\n本金+利息：{{principalPlusInterestTry}} TRY\n到期日：{{endDate}}\n剩余天数：{{remainingDays}} 天\n\n请及时处理。'
     };
@@ -2675,10 +2661,10 @@
   }
 
   function normalizeMailFields(fields) {
+    // v20 起邮件正文只使用“邮件内容模板”，不再额外追加勾选字段。
     const allowed = ['bank','principalTry','endDate','remainingDays','principalPlusInterestTry','gainCny','annualRateTry','annualRateCny','remark'];
     const arr = Array.isArray(fields) ? fields : [];
-    const out = arr.filter(x => allowed.includes(x));
-    return out.length ? out : defaultEmailReminder().fields;
+    return arr.filter(x => allowed.includes(x));
   }
 
   function openMailModal() {
@@ -2743,8 +2729,8 @@
       return;
     }
     const subject = renderMailTemplate(cfg.subjectTemplate, sample.r, sample.c);
-    const body = renderMailTemplate(cfg.bodyTemplate, sample.r, sample.c) + '\n\n' + buildSelectedFieldsText(cfg.fields, sample.r, sample.c);
-    $('#mailPreview').text('触发规则：' + (sample.triggerLabel || '提醒') + '\n标题：' + subject + '\n\n内容：\n' + body + (matches.length > 1 ? `\n\n共 ${matches.length} 条符合条件，实际推送时会逐条发送/合并处理。` : ''));
+    const body = renderMailTemplate(cfg.bodyTemplate, sample.r, sample.c);
+    $('#mailPreview').text('标题：' + subject + '\n\n内容：\n' + body + (matches.length > 1 ? `\n\n共 ${matches.length} 条符合条件，实际推送时会逐条发送。` : ''));
   }
 
   function getReminderCandidates(cfg) {
@@ -2822,11 +2808,11 @@
 
   function buildMailMessage(cfg, item) {
     const subject = renderMailTemplate(cfg.subjectTemplate, item.r, item.c);
-    const body = renderMailTemplate(cfg.bodyTemplate, item.r, item.c) + '\n\n' + buildSelectedFieldsText(cfg.fields, item.r, item.c);
+    const body = renderMailTemplate(cfg.bodyTemplate, item.r, item.c);
     return {
       to: cfg.mailTo,
       subject: subject,
-      body: '触发规则：' + (item.triggerLabel || '提醒') + '\n\n' + body
+      body: body
     };
   }
 
@@ -2860,7 +2846,7 @@
       $('#mailPreview').text('云端测试邮件发送成功。\n收件人：' + (result.result && result.result.to ? result.result.to : cfg.mailTo) + '\n标题：' + (result.result && result.result.subject ? result.result.subject : '-') + '\n\n如果没有收到，请检查垃圾邮件，或确认 Resend 发信域名/收件邮箱权限。');
       updateStatus('云端测试邮件发送成功');
     } catch (err) {
-      $('#mailPreview').text('云端测试邮件发送失败：' + err.message + '\n\n请确认：\n1. 同步设置里的 Worker API 地址和访问密码正确\n2. Cloudflare Worker 已配置 RESEND_API_KEY 和 MAIL_FROM\n3. v19 worker.js 已部署到 Cloudflare\n4. Resend 发件人可用');
+      $('#mailPreview').text('云端测试邮件发送失败：' + err.message + '\n\n请确认：\n1. 同步设置里的 Worker API 地址和访问密码正确\n2. Cloudflare Worker 已配置 RESEND_API_KEY 和 MAIL_FROM\n3. v20 worker.js 已部署到 Cloudflare\n4. Resend 发件人可用');
       alert('云端测试邮件发送失败：' + err.message);
     }
   }

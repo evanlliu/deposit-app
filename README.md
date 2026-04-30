@@ -181,3 +181,10 @@ v18 开始，以下配置会跟随 `data.json` 一起同步到 GitHub 云端：
 - `APP_PASSWORD` 不会写入云端，只保存在当前设备浏览器中。新手机/新电脑第一次使用时仍需手动输入一次访问密码。
 - 汇率 API Key 默认只保存在当前浏览器中。你可以在“汇率设置”里选择“是否把汇率 API Key 同步到云端 = YES”，这样会把 API Key 写入 GitHub 私有仓库的 `data.json`，方便换设备使用。
 - 如果你选择同步 API Key，请确保 `deposit-data` 仓库保持 Private，并且 GitHub Token 只授权该仓库 Contents Read/Write。
+
+
+## v20 更新
+
+- 邮件正文只发送“邮件内容模板”里的内容。
+- 不再额外追加“选择推送内容字段”和“触发规则”到邮件正文，避免内容重复。
+- 如需显示银行、本金、到期日等，请直接在邮件内容模板中使用变量：`{{bank}}`、`{{principalTry}}`、`{{principalPlusInterestTry}}`、`{{endDate}}`、`{{remainingDays}}`。
