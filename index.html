@@ -745,7 +745,7 @@
           </div>
         </div>
         <div class="hint">
-          不填写 API 地址时，系统使用本地模式，数据只保存在当前浏览器。填写后，手机和电脑会通过 GitHub 的 data.json 同步。API 地址会写入云端配置，方便换设备后识别；访问密码只保存在本机，不写入 data.json。
+          v24 起支持自动云端同步：API 地址和访问密码都会写入云端配置/备份 JSON。任意设备保存一次后，其他设备打开页面会自动读取云端配置和数据。你仍然可以在这里自定义 Worker 地址和访问密码。
         </div>
       </div>
       <div class="modal-foot">
@@ -947,10 +947,19 @@
   </div>
 
 <script>
+
 (function () {
   const STORAGE_KEY = 'deposit-manager-data-v1';
   const CONFIG_KEY = 'deposit-manager-config-v1';
   const RATE_CACHE_KEY = 'deposit-manager-rate-cache-v2';
+
+  // v24: 默认云端同步入口。这个地址会让新设备打开页面后自动尝试同步。
+  // 如果以后更换 Worker 地址，只需要修改这里并重新部署前端。
+  const DEFAULT_SYNC_API_URL = 'https://deposit-data-worker.287418456.workers.dev/data';
+  // 可选：如果你愿意把访问密码直接写进前端代码，也可以填这里。
+  // 更推荐的方式：在任意一台设备的“同步设置”里保存一次，系统会把密码同步到 data.json；
+  // 其他设备会通过 Worker 的 /bootstrap 自动读取这个云端同步配置。
+  const DEFAULT_SYNC_API_PASSWORD = '';
 
   let appData = defaultData();
   let currentTab = 'active';
@@ -1056,7 +1065,8 @@
     loadLocalData();
     setGlobalRateInputs();
     renderAll();
-    updateStatus('已加载本地数据');
+    updateStatus('已加载本地数据，正在尝试自动云端同步...');
+    autoCloudSyncOnStart();
   }
 
   function bindEvents() {
@@ -1143,7 +1153,7 @@
         exchangeRateHostAllowSingleFallback: 'NO',
         rateApiKeysCloudSync: 'NO',
         rateApiKeys: {},
-        syncSettings: { apiUrl: '' },
+        syncSettings: { apiUrl: DEFAULT_SYNC_API_URL, apiPassword: DEFAULT_SYNC_API_PASSWORD },
         lastRateFetchDate: '',
         historyRateRefreshDays: 30,
         emailReminder: defaultEmailReminder(),
@@ -1207,9 +1217,9 @@
 
   async function persistData() {
     saveLocalData();
-    const cfg = getConfig();
-    if (!cfg.apiUrl) {
-      updateStatus('本地保存成功：未配置云端同步');
+    const cfg = await ensureCloudConfig(false);
+    if (!cfg.apiUrl || !cfg.apiPassword) {
+      updateStatus('本地保存成功：云端同步未完成，缺少 API 地址或访问密码');
       renderAll();
       return;
     }
@@ -1234,16 +1244,38 @@
     renderAll();
   }
 
-  async function loadCloudData() {
+  async function autoCloudSyncOnStart() {
     const cfg = getConfig();
+    if (!cfg.apiUrl && !DEFAULT_SYNC_API_URL) return;
+    try {
+      await loadCloudData({ silent: true, auto: true });
+    } catch (_) {
+      // loadCloudData 内部已经处理状态提示
+    }
+  }
+
+  async function loadCloudData(options) {
+    options = options || {};
+    const cfg = await ensureCloudConfig(true);
     if (!cfg.apiUrl) {
-      alert('还没有填写 Cloudflare Worker API 地址。');
-      openSyncModal();
+      if (!options.silent) {
+        alert('还没有填写 Cloudflare Worker API 地址。');
+        openSyncModal();
+      }
+      return;
+    }
+    if (!cfg.apiPassword) {
+      const msg = '云端同步缺少访问密码。请先在任意一台设备的“同步设置”里填写并保存一次。';
+      updateStatus(msg);
+      if (!options.silent) {
+        alert(msg);
+        openSyncModal();
+      }
       return;
     }
 
     try {
-      updateStatus('正在从云端读取...');
+      updateStatus(options.auto ? '正在自动从云端同步...' : '正在从云端读取...');
       const res = await fetch(cfg.apiUrl, {
         method: 'GET',
         headers: { 'x-app-password': cfg.apiPassword || '' }
@@ -1253,34 +1285,74 @@
       appData = normalizeData(payload.data);
       saveLocalData();
       const cloudSync = appData.settings.syncSettings || {};
-      if (cloudSync.apiUrl) {
-        const localCfg = getConfig();
-        if (!localCfg.apiUrl || localCfg.apiUrl === cfg.apiUrl) {
-          saveConfig(Object.assign({}, localCfg, { apiUrl: cloudSync.apiUrl }));
-        }
-      }
+      const localCfg = getConfig();
+      saveConfig(Object.assign({}, localCfg, {
+        apiUrl: cloudSync.apiUrl || cfg.apiUrl,
+        apiPassword: cloudSync.apiPassword || cfg.apiPassword
+      }));
       setGlobalRateInputs();
       renderAll();
-      updateStatus('云端数据和配置读取成功：' + formatDateTime(new Date()));
+      updateStatus((options.auto ? '自动云端同步成功：' : '云端数据和配置读取成功：') + formatDateTime(new Date()));
     } catch (e) {
       updateStatus('云端读取失败：' + e.message);
-      alert('云端读取失败：\n' + e.message);
+      if (!options.silent) alert('云端读取失败：\n' + e.message);
+    }
+  }
+
+  async function ensureCloudConfig(tryBootstrap) {
+    let cfg = getConfig();
+    if (cfg.apiUrl && cfg.apiPassword) return cfg;
+    if (!tryBootstrap || !cfg.apiUrl) return cfg;
+
+    const boot = await fetchBootstrapConfig(cfg.apiUrl);
+    if (boot && (boot.apiUrl || boot.apiPassword)) {
+      const merged = Object.assign({}, cfg, {
+        apiUrl: boot.apiUrl || cfg.apiUrl,
+        apiPassword: boot.apiPassword || cfg.apiPassword || ''
+      });
+      saveConfig(merged);
+      if (!appData.settings) appData.settings = {};
+      appData.settings.syncSettings = Object.assign({}, appData.settings.syncSettings || {}, {
+        apiUrl: merged.apiUrl,
+        apiPassword: merged.apiPassword
+      });
+      saveLocalData();
+      return getConfig();
+    }
+    return cfg;
+  }
+
+  async function fetchBootstrapConfig(apiUrl) {
+    try {
+      const base = apiUrl.replace(/\/data\/?$/, '');
+      const res = await fetch(base + '/bootstrap', { method: 'GET' });
+      const payload = await res.json();
+      if (!res.ok || !payload.ok) return null;
+      return payload.syncSettings || {};
+    } catch (e) {
+      return null;
     }
   }
 
   function getConfig() {
-    try { return JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}'); }
-    catch { return {}; }
+    let local = {};
+    try { local = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}'); }
+    catch { local = {}; }
+    const cloudSync = (appData && appData.settings && appData.settings.syncSettings) || {};
+    return Object.assign({}, local, {
+      apiUrl: local.apiUrl || cloudSync.apiUrl || DEFAULT_SYNC_API_URL || '',
+      apiPassword: local.apiPassword || cloudSync.apiPassword || DEFAULT_SYNC_API_PASSWORD || '',
+      rateSettings: local.rateSettings || {}
+    });
   }
 
   function saveConfig(cfg) {
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg || {}));
   }
 
   function loadConfigToForm() {
     const cfg = getConfig();
-    const cloudSync = (appData.settings && appData.settings.syncSettings) || {};
-    $('#apiUrl').val(cfg.apiUrl || cloudSync.apiUrl || '');
+    $('#apiUrl').val(cfg.apiUrl || '');
     $('#apiPassword').val(cfg.apiPassword || '');
   }
 
@@ -1295,12 +1367,15 @@
       apiPassword: $('#apiPassword').val()
     };
     saveConfig(cfg);
-    appData.settings.syncSettings = { apiUrl: cfg.apiUrl };
+    appData.settings.syncSettings = {
+      apiUrl: cfg.apiUrl,
+      apiPassword: cfg.apiPassword
+    };
     saveLocalData();
     $('#syncModal').hide();
     if (cfg.apiUrl) {
       persistData();
-      updateStatus('同步设置已保存，API 地址会同步到云端；访问密码仅保存在本机');
+      updateStatus('同步设置已保存，API 地址和访问密码都会同步到云端；新设备打开页面会自动同步');
     } else {
       updateStatus('已切换为本地模式');
     }
@@ -3029,10 +3104,10 @@
   }
 
   async function postWorkerApi(path, payload) {
-    const cfg = getConfig();
+    const cfg = await ensureCloudConfig(true);
     const base = getWorkerBaseUrl();
     if (!base) throw new Error('请先在“同步设置”中填写 Cloudflare Worker API 地址。');
-    if (!cfg.apiPassword) throw new Error('请先在“同步设置”中填写访问密码。');
+    if (!cfg.apiPassword) throw new Error('请先在“同步设置”中填写访问密码，或先从云端自动引导同步配置。');
     const res = await fetch(base + path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-app-password': cfg.apiPassword || '' },
