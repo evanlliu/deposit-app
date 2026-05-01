@@ -651,21 +651,30 @@
       right: max(18px, calc(env(safe-area-inset-right) + 14px));
       z-index: 120;
     }
+    .top-language.dragging .top-language-toggle {
+      cursor: grabbing;
+      transform: scale(.98);
+    }
+    .top-language .top-language-toggle {
+      cursor: grab;
+    }
     .top-language-toggle {
       position: relative;
-      width: 58px;
-      height: 58px;
+      width: 44px;
+      height: 44px;
       border-radius: 999px;
       padding: 0;
-      border: 1px solid rgba(226, 232, 240, .9);
-      background: rgba(255,255,255,.94);
+      border: 1px solid rgba(226, 232, 240, .95);
+      background: rgba(255,255,255,.95);
       color: var(--text);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
-      box-shadow: 0 18px 42px rgba(15, 23, 42, .18);
-      backdrop-filter: blur(14px);
+      font-size: 22px;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, .14);
+      backdrop-filter: blur(12px);
+      touch-action: none;
+      user-select: none;
     }
     .top-language-toggle:hover {
       background: white;
@@ -676,33 +685,33 @@
     }
     .top-language-badge {
       position: absolute;
-      right: -5px;
-      bottom: -5px;
-      min-width: 28px;
-      height: 28px;
-      padding: 0 7px;
+      right: -4px;
+      bottom: -4px;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
       border-radius: 999px;
       background: var(--primary);
       color: white;
       border: 2px solid white;
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 900;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 8px 18px rgba(37,99,235,.28);
+      box-shadow: 0 6px 14px rgba(37,99,235,.24);
     }
     .top-language-panel {
       position: absolute;
-      top: 70px;
+      top: 54px;
       right: 0;
-      width: min(260px, calc(100vw - 32px));
-      padding: 16px;
+      width: min(210px, calc(100vw - 32px));
+      padding: 10px;
       border: 1px solid rgba(226, 232, 240, .92);
-      border-radius: 28px;
-      background: rgba(255,255,255,.96);
-      box-shadow: 0 26px 70px rgba(15, 23, 42, .22);
-      backdrop-filter: blur(18px);
+      border-radius: 18px;
+      background: rgba(255,255,255,.97);
+      box-shadow: 0 18px 48px rgba(15, 23, 42, .18);
+      backdrop-filter: blur(14px);
       display: none;
     }
     .top-language.open .top-language-panel {
@@ -720,11 +729,11 @@
       box-shadow: none;
       background: transparent;
       color: var(--text);
-      border-radius: 20px;
-      padding: 15px 18px;
+      border-radius: 13px;
+      padding: 11px 13px;
       text-align: left;
-      font-size: 22px;
-      font-weight: 900;
+      font-size: 16px;
+      font-weight: 800;
       line-height: 1.15;
       display: flex;
       align-items: center;
@@ -1696,11 +1705,95 @@
     persistSettingsSoon();
   }
 
+  let topLanguageDragBlockClick = false;
+
+  function initTopLanguageDrag() {
+    const wrap = document.getElementById('topLanguage');
+    const handle = document.getElementById('topLanguageToggle');
+    if (!wrap || !handle) return;
+
+    const storageKey = 'deposit_top_language_position_v1';
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function applySavedPosition() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+        if (!saved || typeof saved.left !== 'number' || typeof saved.top !== 'number') return;
+        const rect = wrap.getBoundingClientRect();
+        const maxLeft = Math.max(8, window.innerWidth - rect.width - 8);
+        const maxTop = Math.max(8, window.innerHeight - rect.height - 8);
+        wrap.style.left = clamp(saved.left, 8, maxLeft) + 'px';
+        wrap.style.top = clamp(saved.top, 8, maxTop) + 'px';
+        wrap.style.right = 'auto';
+        wrap.style.bottom = 'auto';
+      } catch (e) {}
+    }
+
+    applySavedPosition();
+    window.addEventListener('resize', applySavedPosition);
+
+    let drag = null;
+
+    handle.addEventListener('pointerdown', function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      const rect = wrap.getBoundingClientRect();
+      drag = {
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        left: rect.left,
+        top: rect.top,
+        moved: false
+      };
+      try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+
+    handle.addEventListener('pointermove', function (e) {
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      const dx = e.clientX - drag.startX;
+      const dy = e.clientY - drag.startY;
+      if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+
+      drag.moved = true;
+      wrap.classList.add('dragging');
+      wrap.classList.remove('open');
+
+      const rect = wrap.getBoundingClientRect();
+      const nextLeft = clamp(drag.left + dx, 8, window.innerWidth - rect.width - 8);
+      const nextTop = clamp(drag.top + dy, 8, window.innerHeight - rect.height - 8);
+      wrap.style.left = nextLeft + 'px';
+      wrap.style.top = nextTop + 'px';
+      wrap.style.right = 'auto';
+      wrap.style.bottom = 'auto';
+      e.preventDefault();
+    });
+
+    function finishDrag(e) {
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      if (drag.moved) {
+        topLanguageDragBlockClick = true;
+        const rect = wrap.getBoundingClientRect();
+        localStorage.setItem(storageKey, JSON.stringify({ left: rect.left, top: rect.top }));
+        setTimeout(function () { topLanguageDragBlockClick = false; }, 220);
+      }
+      wrap.classList.remove('dragging');
+      try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+      drag = null;
+    }
+
+    handle.addEventListener('pointerup', finishDrag);
+    handle.addEventListener('pointercancel', finishDrag);
+  }
+
   function bindEvents() {
     $('#languageSelect').on('change', changeLanguage);
     $('#topLanguageToggle').on('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
+      if (topLanguageDragBlockClick) return;
       $('#topLanguage').toggleClass('open');
     });
     $('#topLanguage .top-language-option').on('click', function (e) {
@@ -1713,6 +1806,7 @@
     });
     $('#topLanguage').on('click', function (e) { e.stopPropagation(); });
     $(document).on('click', function () { $('#topLanguage').removeClass('open'); });
+    initTopLanguageDrag();
     $('#btnAdd').on('click', openAddModal);
     $('#btnSaveRecord').on('click', saveRecordFromForm);
     $('#btnEstimateInterest').on('click', function (e) { e.preventDefault(); estimateInterestToForm(); });
