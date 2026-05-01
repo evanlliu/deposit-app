@@ -642,6 +642,57 @@
       }
     }
 
+
+
+    /* v35: floating language switcher */
+    .float-language {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 95;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .float-language-toggle {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 12px 28px rgba(37,99,235,.28);
+    }
+    .float-language-panel {
+      display: none;
+      min-width: 190px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.98);
+      box-shadow: 0 18px 42px rgba(15,23,42,.18);
+    }
+    .float-language.open .float-language-panel { display: block; }
+    .float-language-panel .language-control {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      margin: 0;
+    }
+    .float-language-panel .language-control select { width: 100%; min-width: 0; }
+
+    /* v35: dedicated mobile folds for rate refresh and search */
+    .rate-fold, .search-fold { width: 100%; }
+    .rate-fold .mobile-fold-content,
+    .search-fold .mobile-fold-content {
+      align-items: center;
+    }
+    .search-fold .mobile-fold-content input,
+    .search-fold .mobile-fold-content select { min-width: 0; }
+
     @media (max-width: 1100px) {
       .summary-grid { grid-template-columns: repeat(3, 1fr); }
       .form-grid { grid-template-columns: repeat(2, 1fr); }
@@ -653,12 +704,23 @@
       .title { width: 100%; }
       .title h1 { font-size: 18px; }
       .toolbar, .filterbar, .ratebar { width: 100%; }
-      .toolbar, .filterbar { display: grid; grid-template-columns: 1fr; gap: 10px; }
-      .toolbar > button, .filterbar > input, .filterbar > select, .ratebar input, .ratebar button, .language-control, .language-control select { width: 100%; }
-      .language-control { justify-content: space-between; }
+      .toolbar, .filterbar, .ratebar { display: grid; grid-template-columns: 1fr; gap: 10px; }
+      .toolbar > button { width: 100%; }
       .ratebar { align-items: stretch; }
       .ratebar label { width: 100%; justify-content: space-between; }
       .rate-info { line-height: 1.5; }
+      .float-language {
+        right: max(12px, env(safe-area-inset-right));
+        bottom: max(14px, calc(env(safe-area-inset-bottom) + 10px));
+      }
+      .float-language-toggle { width: 44px; height: 44px; }
+      .float-language-panel { min-width: 168px; }
+      .rate-fold .mobile-fold-content,
+      .search-fold .mobile-fold-content { grid-template-columns: 1fr; }
+      .rate-fold .mobile-fold-content button,
+      .rate-fold .mobile-fold-content input,
+      .search-fold .mobile-fold-content input,
+      .search-fold .mobile-fold-content select { width: 100%; }
       .mobile-fold {
         width: 100%;
         display: block;
@@ -729,7 +791,7 @@
       <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
         <button id="btnRefresh" class="secondary">从云端刷新</button>
-        <label class="language-control"><span id="languageText">语言</span><select id="languageSelect"><option value="zh">中文</option><option value="en">English</option><option value="tr">Türkçe</option></select></label>
+        
         <details class="mobile-fold action-fold" open>
           <summary>
             <span class="mobile-fold-title">设置 / 更多</span>
@@ -746,6 +808,14 @@
     </div>
   </header>
 
+
+  <div class="float-language" id="floatLanguage">
+    <div class="float-language-panel">
+      <label class="language-control"><span id="languageText">语言</span><select id="languageSelect"><option value="zh">中文</option><option value="en">English</option><option value="tr">Türkçe</option></select></label>
+    </div>
+    <button id="floatLanguageToggle" class="float-language-toggle" type="button" aria-label="Language">🌐</button>
+  </div>
+
   <main>
     <section class="section">
       <div class="summary-grid" id="summaryGrid"></div>
@@ -758,16 +828,32 @@
       <div class="card">
         <div class="panel-head">
           <div class="ratebar">
-            <button id="btnFetchRates" class="green">刷新汇率</button>
-            <label>历史刷新范围
-              <input id="historyRateRefreshDays" type="number" min="0" step="1" value="30" />
-              天
-            </label>
-            <span id="rateInfo" class="rate-info">刷新汇率会更新当前定存全部记录；历史记录只更新配置天数内的记录。</span>
+            <details class="mobile-fold rate-fold" open>
+              <summary>
+                <span class="mobile-fold-title">刷新汇率</span>
+                <span class="mobile-fold-subtitle">汇率、历史范围</span>
+              </summary>
+              <div class="mobile-fold-content">
+                <button id="btnFetchRates" class="green">刷新汇率</button>
+                <label>历史刷新范围
+                  <input id="historyRateRefreshDays" type="number" min="0" step="1" value="30" />
+                  天
+                </label>
+                <span id="rateInfo" class="rate-info">刷新汇率会更新当前定存全部记录；历史记录只更新配置天数内的记录。</span>
+              </div>
+            </details>
           </div>
           <div class="filterbar">
-            <input id="searchInput" placeholder="搜索银行 / 备注 / 日期" />
-            <select id="bankFilter"><option value="">全部银行</option></select>
+            <details class="mobile-fold search-fold" open>
+              <summary>
+                <span class="mobile-fold-title">查询 / 筛选</span>
+                <span class="mobile-fold-subtitle">搜索、银行筛选</span>
+              </summary>
+              <div class="mobile-fold-content">
+                <input id="searchInput" placeholder="搜索银行 / 备注 / 日期" />
+                <select id="bankFilter"><option value="">全部银行</option></select>
+              </div>
+            </details>
             <details class="mobile-fold export-fold" open>
               <summary>
                 <span class="mobile-fold-title">导出 / 备份</span>
@@ -1238,7 +1324,7 @@
     zh: {
       appTitle: '定期存款管理系统', shortTitle: '定期存款', appSubtitle: '当前定存 + 历史记录；只需录入关键字段，汇率和收益自动计算。',
       language: { label: '语言', zh: '中文', en: 'English', tr: 'Türkçe' },
-      fold: { settingsTitle: '设置 / 更多', settingsSub: '同步、邮件、列、汇率', exportTitle: '导出 / 备份', exportSub: 'JSON、CSV、备份、导入', expand: '展开', collapse: '收起' },
+      fold: { settingsTitle: '设置 / 更多', settingsSub: '同步、邮件、列、汇率', rateTitle: '刷新汇率', rateSub: '汇率、历史范围', searchTitle: '查询 / 筛选', searchSub: '搜索、银行筛选', exportTitle: '导出 / 备份', exportSub: 'JSON、CSV、备份、导入', expand: '展开', collapse: '收起' },
       buttons: { add: '新增定存', refreshCloud: '从云端刷新', sync: '同步设置', mail: '邮件提醒', columns: '列配置', rate: '汇率设置', refreshRates: '刷新汇率', exportJson: '导出JSON', exportCsv: '导出CSV', backupJson: '备份JSON', importBackup: '导入备份', current: '当前定存', history: '历史记录', close: '关闭', cancel: '取消', save: '保存', edit: '编辑', moveHistory: '移入历史', restore: '恢复', deleteForever: '永久删除', resetColumns: '恢复默认列', previewMail: '预览提醒邮件', sendCloudTestMail: '发送云端测试邮件', cloudTestReminder: '云端测试一次提醒', saveMail: '保存邮件设置', saveSync: '保存同步设置', saveRate: '保存汇率设置', estimateInterest: '估算利息', fetchOpenRates: '按开户日期获取汇率', fetchEndRates: '按结束日期获取汇率', fetchAllRates: '自动填入全部汇率' },
       tabs: { active: '当前定存', history: '历史记录' },
       common: { allBanks: '全部银行', localMode: '本地模式', total: '合计：', none: '-', yes: 'YES', no: 'NO', days: '天', records: '笔', code: 'code' },
@@ -1256,7 +1342,7 @@
     en: {
       appTitle: 'Time Deposit Manager', shortTitle: 'Deposits', appSubtitle: 'Active deposits + history; enter key fields only, rates and returns are calculated automatically.',
       language: { label: 'Language', zh: '中文', en: 'English', tr: 'Türkçe' },
-      fold: { settingsTitle: 'Settings / More', settingsSub: 'Sync, mail, columns, rates', exportTitle: 'Export / Backup', exportSub: 'JSON, CSV, backup, import', expand: 'Expand', collapse: 'Collapse' },
+      fold: { settingsTitle: 'Settings / More', settingsSub: 'Sync, mail, columns, rates', rateTitle: 'Refresh Rates', rateSub: 'Rates and history range', searchTitle: 'Search / Filter', searchSub: 'Search and bank filter', exportTitle: 'Export / Backup', exportSub: 'JSON, CSV, backup, import', expand: 'Expand', collapse: 'Collapse' },
       buttons: { add: 'Add Deposit', refreshCloud: 'Refresh from Cloud', sync: 'Sync Settings', mail: 'Email Reminder', columns: 'Column Settings', rate: 'Rate Settings', refreshRates: 'Refresh Rates', exportJson: 'Export JSON', exportCsv: 'Export CSV', backupJson: 'Backup JSON', importBackup: 'Import Backup', current: 'Active Deposits', history: 'History', close: 'Close', cancel: 'Cancel', save: 'Save', edit: 'Edit', moveHistory: 'Move to History', restore: 'Restore', deleteForever: 'Delete Forever', resetColumns: 'Reset Columns', previewMail: 'Preview Email', sendCloudTestMail: 'Send Cloud Test Email', cloudTestReminder: 'Run Cloud Test Reminder', saveMail: 'Save Email Settings', saveSync: 'Save Sync Settings', saveRate: 'Save Rate Settings', estimateInterest: 'Estimate Interest', fetchOpenRates: 'Fetch Open-Date Rates', fetchEndRates: 'Fetch End-Date Rates', fetchAllRates: 'Auto Fill All Rates' },
       tabs: { active: 'Active Deposits', history: 'History' },
       common: { allBanks: 'All Banks', localMode: 'Local Mode', total: 'Total:', none: '-', yes: 'YES', no: 'NO', days: 'days', records: 'records', code: 'code' },
@@ -1274,7 +1360,7 @@
     tr: {
       appTitle: 'Vadeli Mevduat Yönetimi', shortTitle: 'Mevduat', appSubtitle: 'Aktif mevduatlar + geçmiş; yalnızca temel alanları girin, kurlar ve getiriler otomatik hesaplanır.',
       language: { label: 'Dil', zh: '中文', en: 'English', tr: 'Türkçe' },
-      fold: { settingsTitle: 'Ayarlar / Daha fazla', settingsSub: 'Senkron, e-posta, sütun, kur', exportTitle: 'Dışa Aktar / Yedek', exportSub: 'JSON, CSV, yedek, içe aktar', expand: 'Aç', collapse: 'Kapat' },
+      fold: { settingsTitle: 'Ayarlar / Daha fazla', settingsSub: 'Senkron, e-posta, sütun, kur', rateTitle: 'Kurları Yenile', rateSub: 'Kur ve geçmiş aralığı', searchTitle: 'Ara / Filtrele', searchSub: 'Arama ve banka filtresi', exportTitle: 'Dışa Aktar / Yedek', exportSub: 'JSON, CSV, yedek, içe aktar', expand: 'Aç', collapse: 'Kapat' },
       buttons: { add: 'Mevduat Ekle', refreshCloud: 'Buluttan Yenile', sync: 'Senkron Ayarları', mail: 'E-posta Hatırlatma', columns: 'Sütun Ayarları', rate: 'Kur Ayarları', refreshRates: 'Kurları Yenile', exportJson: 'JSON Dışa Aktar', exportCsv: 'CSV Dışa Aktar', backupJson: 'JSON Yedekle', importBackup: 'Yedek İçe Aktar', current: 'Aktif Mevduatlar', history: 'Geçmiş', close: 'Kapat', cancel: 'İptal', save: 'Kaydet', edit: 'Düzenle', moveHistory: 'Geçmişe Taşı', restore: 'Geri Al', deleteForever: 'Kalıcı Sil', resetColumns: 'Sütunları Sıfırla', previewMail: 'E-postayı Önizle', sendCloudTestMail: 'Bulut Test E-postası Gönder', cloudTestReminder: 'Bulut Test Hatırlatması', saveMail: 'E-posta Ayarlarını Kaydet', saveSync: 'Senkron Ayarlarını Kaydet', saveRate: 'Kur Ayarlarını Kaydet', estimateInterest: 'Faizi Hesapla', fetchOpenRates: 'Açılış Tarihi Kurunu Al', fetchEndRates: 'Bitiş Tarihi Kurunu Al', fetchAllRates: 'Tüm Kurları Otomatik Doldur' },
       tabs: { active: 'Aktif Mevduatlar', history: 'Geçmiş' },
       common: { allBanks: 'Tüm Bankalar', localMode: 'Yerel Mod', total: 'Toplam:', none: '-', yes: 'YES', no: 'NO', days: 'gün', records: 'kayıt', code: 'code' },
@@ -1372,9 +1458,13 @@
     $('.tab-btn[data-tab="history"]').text(t('tabs.history'));
     $('.action-fold .mobile-fold-title').text(t('fold.settingsTitle'));
     $('.action-fold .mobile-fold-subtitle').text(t('fold.settingsSub'));
+    $('.rate-fold .mobile-fold-title').text(t('fold.rateTitle'));
+    $('.rate-fold .mobile-fold-subtitle').text(t('fold.rateSub'));
+    $('.search-fold .mobile-fold-title').text(t('fold.searchTitle'));
+    $('.search-fold .mobile-fold-subtitle').text(t('fold.searchSub'));
     $('.export-fold .mobile-fold-title').text(t('fold.exportTitle'));
     $('.export-fold .mobile-fold-subtitle').text(t('fold.exportSub'));
-    $('.mobile-fold').attr('data-expand-label', t('fold.expand')).attr('data-collapse-label', t('fold.collapse'));
+    $('.mobile-fold > summary').attr('data-expand-label', t('fold.expand')).attr('data-collapse-label', t('fold.collapse'));
     setPlaceholder('#searchInput', 'placeholders.search');
     $('#bankFilter option[value=""]').text(t('common.allBanks'));
     const histDays = getHistoryRateRefreshDays ? getHistoryRateRefreshDays() : 30;
@@ -1519,6 +1609,13 @@
 
   function bindEvents() {
     $('#languageSelect').on('change', changeLanguage);
+    $('#floatLanguageToggle').on('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      $('#floatLanguage').toggleClass('open');
+    });
+    $('#floatLanguage').on('click', function (e) { e.stopPropagation(); });
+    $(document).on('click', function () { $('#floatLanguage').removeClass('open'); });
     $('#btnAdd').on('click', openAddModal);
     $('#btnSaveRecord').on('click', saveRecordFromForm);
     $('#btnEstimateInterest').on('click', function (e) { e.preventDefault(); estimateInterestToForm(); });
