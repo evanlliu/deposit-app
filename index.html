@@ -157,8 +157,10 @@
       color: var(--text);
       padding: 9px 10px;
       outline: none;
-      font-size: 14px;
-      min-height: 38px;
+      font-size: 16px;
+      min-height: 40px;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     input:focus, select:focus, textarea:focus {
@@ -792,12 +794,90 @@
     .search-fold .mobile-fold-content input,
     .search-fold .mobile-fold-content select { min-width: 0; }
 
+
+    /* v40: mobile form UX fixes */
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    .modal-head h2 {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      line-height: 1.25;
+    }
+    .modal-head button.small {
+      flex: 0 0 auto;
+      width: auto;
+      min-width: 58px;
+      white-space: nowrap;
+    }
+    .modal-body,
+    .modal-foot {
+      box-sizing: border-box;
+    }
+    @supports (-webkit-touch-callout: none) {
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+    }
+
     @media (max-width: 1100px) {
       .summary-grid { grid-template-columns: repeat(3, 1fr); }
       .form-grid { grid-template-columns: repeat(2, 1fr); }
     }
 
     @media (max-width: 760px) {
+      .modal-mask {
+        padding: 8px;
+        align-items: stretch;
+      }
+      .modal {
+        width: 100%;
+        max-width: 100%;
+        margin: 8px auto;
+        border-radius: 16px;
+      }
+      .modal-head {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+      }
+      .modal-head h2 {
+        font-size: 18px;
+      }
+      .modal-head .small,
+      .modal-head button.small,
+      [data-close] {
+        width: auto !important;
+        min-width: 58px;
+        flex: 0 0 auto;
+      }
+      .modal-body {
+        padding: 14px;
+      }
+      .modal-foot {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+      }
+      .form-field,
+      .form-field input,
+      .form-field select,
+      .form-field textarea {
+        min-width: 0;
+        max-width: 100%;
+      }
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+
+
       #activePanel,
       #historyPanel {
         width: 100% !important;
@@ -922,6 +1002,13 @@
       .summary-grid { grid-template-columns: 1fr; }
       .mobile-grid { grid-template-columns: 1fr; }
       button, input, select { width: 100%; }
+      .modal-head button,
+      .modal-head .small,
+      .modal-head [data-close],
+      .top-language-toggle,
+      .top-language-option {
+        width: auto;
+      }
       .checkbox-grid { grid-template-columns: 1fr; }
       .column-config-box { padding: 12px; }
       .column-config-item { padding: 10px; }
