@@ -1,3 +1,15 @@
+# 定期存款管理系统 v30
+
+本版本修复：前端页面保存数据时会保留 Worker/Cron 写入的邮件发送记录、最近执行日志和 exchangerate.host 年度缓存，避免浏览器旧数据把这些云端字段覆盖掉。
+
+更新方式：优先更新 Cloudflare Worker 的 worker.js；前端 index.html 可保持最新版本，也可一并覆盖。
+
+# 定期存款管理系统 v24
+
+本版本新增：云端同步配置可写入 data.json，并支持新设备打开页面自动通过 Cloudflare Worker 同步数据和配置。
+
+重要：如需完全免配置自动同步，请先在任意设备的“同步设置”里保存一次 Worker API 地址和访问密码；或在 `index-script.js` / `index.html` 中修改 `DEFAULT_SYNC_API_URL` 和 `DEFAULT_SYNC_API_PASSWORD` 后重新部署前端。
+
 # 定期存款管理系统 v17
 
 ## 本地运行
@@ -196,3 +208,33 @@ v18 开始，以下配置会跟随 `data.json` 一起同步到 GitHub 云端：
 - 变量会插入到当前光标所在的“邮件标题模板”或“邮件内容模板”。
 - 新增更多可选变量：利息 TRY、利息 CNY、开户日期、开始日期、存款天数、开户/结束汇率、本金 CNY/USD、本金+利息 CNY/USD、获得 USD 等。
 - 邮件正文仍然只发送“邮件内容模板”里的内容，不会自动追加字段。
+
+## v22 更新
+
+- 新增列名自定义配置：当前定存和历史记录可独立修改每个字段的显示名称。
+- 字段 code 保持不变，例如 `bank` 仍然是银行字段，但显示名可以改为“土耳其银行”。
+- 列名配置会保存在 `settings.columnLabels` 中，并随 data.json 云端同步到其他设备。
+- 导出 JSON / CSV 会使用当前自定义列名。
+
+## v25 紧急修复
+- 修复新设备/手机端保存同步设置时，本地空数据覆盖云端 data.json 的风险。
+- 保存同步设置时会先读取云端，再只合并 syncSettings，不再直接把本地空数据 PUT 到云端。
+- 如果本地为空但云端有记录，系统会阻止覆盖并提示先从云端刷新。
+- 如果云端为空但本地有数据，系统会二次确认是否用本地数据初始化云端。
+
+
+## iPhone 主屏幕全屏打开
+
+v32 已加入 PWA / iOS 主屏幕全屏配置：
+
+- `apple-mobile-web-app-capable=yes`
+- `manifest.webmanifest`
+- `apple-touch-icon`
+- `theme-color`
+- iOS 安全区域适配
+
+更新 GitHub Pages 后，如果你之前已经添加过主屏幕图标，需要先删除旧图标，然后重新在 Safari 里执行：
+
+分享 → 添加到主屏幕
+
+重新添加后，从主屏幕打开就不会显示 Safari 底部地址栏。

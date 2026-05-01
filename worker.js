@@ -1,0 +1,891 @@
+// Cloudflare Worker for Deposit Manager
+// Routes:
+//   GET  /bootstrap -> read cloud syncSettings without APP_PASSWORD, used for new-device auto sync
+//   GET  /data  -> read data.json from GitHub
+//   PUT  /data  -> update data.json in GitHub
+//   POST /send-test-email    -> send one test email with current cloud email settings
+//   POST /run-reminders      -> manually trigger reminder check
+//   POST /send-reminder-test -> backward-compatible alias of /run-reminders
+//   POST /refresh-rates       -> refresh active/history rates with exchangerate.host yearly cache and save data.json
+//
+// Required environment variables / secrets:
+//   GITHUB_TOKEN      Fine-grained GitHub token with Contents: Read and write permission
+//   GITHUB_OWNER      Your GitHub username or organization
+//   GITHUB_REPO       Repository name that stores data.json
+//   GITHUB_BRANCH     Branch name, usually main
+//   GITHUB_PATH       File path, usually data.json
+//   APP_PASSWORD      Password used by the frontend to call this Worker
+//
+// Optional email variables / secrets:
+//   RESEND_API_KEY    Resend email API key
+//   MAIL_FROM         Sender, e.g. "Deposit Reminder <onboarding@resend.dev>"
+//   EXCHANGE_RATE_HOST_API_KEY  Optional. Used by cloud email reminders to refresh rates before sending.
+// v30: Frontend PUT merges Worker-owned fields, preventing stale browser data from deleting cron logs/sent reminders.
+// v29: Cron duplicate prevention only uses cron-sent records. Manual cloud tests do not block scheduled sending.
+// v26: Before sending reminder emails, refresh target records with exchangerate.host yearly cache stored in data.json.
+// Cloudflare Cron Trigger examples:
+//   0 * * * *     // every hour, required if you use dueTodayIntervalHours
+//   0 6 * * *     // every day 06:00 UTC, enough if you only use advanceDays
+
+const DEFAULT_EMAIL_REMINDER = {
+  enabled: false,
+  mailTo: '',
+  advanceDays: [],
+  dueTodayIntervalHours: '',
+  onlyEnabledRecords: true,
+  fields: [],
+  subjectTemplate: '定存到期提醒：{{bank}} {{principalTry}} TRY',
+  bodyTemplate: '你的定期存款即将到期：\n\n银行：{{bank}}\n本金：{{principalTry}} TRY\n本金+利息：{{principalPlusInterestTry}} TRY\n到期日：{{endDate}}\n剩余天数：{{remainingDays}} 天\n\n请及时处理。'
+};
+
+
+const MAIL_TEMPLATE_VARIABLES = [
+  'bank', 'principalTry', 'interestTry', 'principalPlusInterestTry',
+  'openDate', 'startDate', 'endDate', 'depositDays', 'remainingDays',
+  'usdCnyOpen', 'tryCnyOpen', 'usdCnyEnd', 'tryCnyEnd',
+  'principalCny', 'principalUsd', 'principalPlusInterestCny', 'principalPlusInterestUsd',
+  'interestCny', 'gainCny', 'gainUsd', 'annualRateTry', 'annualRateCny', 'remark'
+];
+
+const DEFAULT_DATA = {
+  activeRecords: [],
+  historyRecords: [],
+  editLogs: [],
+  settings: {
+    currentUsdCny: 6.8375,
+    currentTryCny: 0.1517,
+    defaultTaxRate: 17.5,
+    rateProvider: 'TCMB',
+    rateFallbackEnabled: 'YES',
+    tcmbRateType: 'ForexBuying',
+    exchangeRateHostRefreshLatestApi: 'NO',
+    exchangeRateHostBatchWindowDays: 365,
+    rateApiKeys: {},
+    exchangeRateHostYearCache: null,
+    lastRateFetchDate: '',
+    emailReminder: DEFAULT_EMAIL_REMINDER,
+    sentReminders: {}
+  }
+};
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders() });
+    }
+
+    // v24: Bootstrap endpoint intentionally does not require APP_PASSWORD.
+    // It lets new browsers/devices fetch cloud sync settings first, then use /data normally.
+    // Only enable this if you accept storing syncSettings.apiPassword in data.json.
+    if (url.pathname === '/bootstrap' && request.method === 'GET') {
+      try {
+        const result = await readGithubFile(env);
+        const data = normalizeData(result.data);
+        return jsonResponse({
+          ok: true,
+          syncSettings: data.settings && data.settings.syncSettings ? data.settings.syncSettings : {}
+        });
+      } catch (error) {
+        return jsonResponse({ ok: false, error: error.message || String(error) }, 500);
+      }
+    }
+
+    const authError = checkPassword(request, env);
+    if (authError) return authError;
+
+    try {
+      if (url.pathname === '/data') {
+        if (request.method === 'GET') {
+          const result = await readGithubFile(env);
+          return jsonResponse({ ok: true, data: result.data, sha: result.sha });
+        }
+
+        if (request.method === 'PUT') {
+          const body = await request.json();
+          const incomingData = normalizeData(body.data || body);
+          const current = await readGithubFile(env).catch(() => ({ data: null }));
+          const data = mergeWorkerOwnedFields(incomingData, current.data);
+          const result = await writeGithubFile(env, data);
+          return jsonResponse({ ok: true, sha: result.sha, data });
+        }
+
+        return jsonResponse({ ok: false, error: 'Method not allowed' }, 405);
+      }
+
+      if (url.pathname === '/send-test-email' && request.method === 'POST') {
+        const body = await request.json().catch(() => ({}));
+        const result = await sendCloudTestEmail(env, body || {});
+        return jsonResponse({ ok: true, result });
+      }
+
+      if ((url.pathname === '/run-reminders' || url.pathname === '/send-reminder-test') && request.method === 'POST') {
+        const result = await processEmailReminders(env, { force: true, recordSent: false, triggerSource: 'manual-test' });
+        return jsonResponse({ ok: true, result });
+      }
+
+      if (url.pathname === '/refresh-rates' && request.method === 'POST') {
+        const body = await request.json().catch(() => ({}));
+        const result = await refreshRatesFromWorker(env, body || {});
+        return jsonResponse({ ok: true, ...result });
+      }
+
+      return jsonResponse({ ok: false, error: 'Not found' }, 404);
+    } catch (error) {
+      return jsonResponse({ ok: false, error: error.message || String(error) }, 500);
+    }
+  },
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(processEmailReminders(env, { force: false, recordSent: true, triggerSource: 'cron' }));
+  }
+};
+
+function checkPassword(request, env) {
+  const expected = env.APP_PASSWORD;
+  if (!expected) return jsonResponse({ ok: false, error: 'APP_PASSWORD is not configured in Worker.' }, 500);
+
+  const supplied = request.headers.get('x-app-password') || '';
+  if (supplied !== expected) {
+    return jsonResponse({ ok: false, error: 'Unauthorized' }, 401);
+  }
+  return null;
+}
+
+function githubConfig(env) {
+  const owner = env.GITHUB_OWNER;
+  const repo = env.GITHUB_REPO;
+  const branch = env.GITHUB_BRANCH || 'main';
+  const path = env.GITHUB_PATH || 'data.json';
+  const token = env.GITHUB_TOKEN;
+
+  if (!owner || !repo || !token) {
+    throw new Error('Missing GitHub config. Please set GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO.');
+  }
+
+  return { owner, repo, branch, path, token };
+}
+
+async function readGithubFile(env) {
+  const { owner, repo, branch, path, token } = githubConfig(env);
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponentPath(path)}?ref=${encodeURIComponent(branch)}`;
+
+  const res = await fetch(apiUrl, {
+    method: 'GET',
+    headers: githubHeaders(token)
+  });
+
+  if (res.status === 404) {
+    return { data: DEFAULT_DATA, sha: null };
+  }
+
+  const payload = await res.json();
+  if (!res.ok) {
+    throw new Error(payload.message || `GitHub read failed: ${res.status}`);
+  }
+
+  const content = base64DecodeUnicode((payload.content || '').replace(/\n/g, ''));
+  let data;
+  try {
+    data = JSON.parse(content || '{}');
+  } catch {
+    data = DEFAULT_DATA;
+  }
+
+  return { data: normalizeData(data), sha: payload.sha };
+}
+
+async function writeGithubFile(env, data) {
+  const { owner, repo, branch, path, token } = githubConfig(env);
+  const current = await readGithubFile(env);
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponentPath(path)}`;
+
+  const content = JSON.stringify(normalizeData(data), null, 2);
+  const body = {
+    message: `Update deposit data ${new Date().toISOString()}`,
+    content: base64EncodeUnicode(content),
+    branch
+  };
+  if (current.sha) body.sha = current.sha;
+
+  const res = await fetch(apiUrl, {
+    method: 'PUT',
+    headers: githubHeaders(token),
+    body: JSON.stringify(body)
+  });
+
+  const payload = await res.json();
+  if (!res.ok) {
+    throw new Error(payload.message || `GitHub write failed: ${res.status}`);
+  }
+
+  return { sha: payload.content && payload.content.sha };
+}
+
+async function processEmailReminders(env, options = {}) {
+  const { data } = await readGithubFile(env);
+  const cfg = normalizeEmailReminder(data.settings && data.settings.emailReminder);
+  if (!cfg.enabled) return { sent: 0, skipped: 'email reminder disabled' };
+
+  const hasAdvanceRule = cfg.advanceDays.length > 0;
+  const hasDueHourlyRule = Boolean(cfg.dueTodayIntervalHours);
+  if (!hasAdvanceRule && !hasDueHourlyRule) return { sent: 0, skipped: 'no reminder rules configured' };
+  if (!cfg.mailTo) return { sent: 0, skipped: 'mailTo is empty' };
+
+  const active = Array.isArray(data.activeRecords) ? data.activeRecords : [];
+  const sentReminders = data.settings.sentReminders && typeof data.settings.sentReminders === 'object'
+    ? data.settings.sentReminders
+    : {};
+
+  const candidates = [];
+  const now = new Date();
+
+  for (const r of active) {
+    const c = getCalc(r);
+    if (cfg.onlyEnabledRecords && !r.reminderEnabled) continue;
+
+    if (hasAdvanceRule && cfg.advanceDays.includes(c.remainingDays)) {
+      const key = `${r.id || r.bank}:${r.endDate}:advance:${c.remainingDays}`;
+      const previous = sentReminders[key];
+      // Only a real Cloudflare Cron send should block the next Cron send.
+      // Old/manual test records must not block scheduled reminders.
+      if (options.force || !isCronSentReminder(previous)) {
+        candidates.push({ r, c, key, triggerLabel: `提前 ${c.remainingDays} 天推送`, previousReminder: previous || null });
+      }
+    }
+
+    if (hasDueHourlyRule && c.remainingDays === 0) {
+      const key = `${r.id || r.bank}:${r.endDate}:due-hourly`;
+      const previous = sentReminders[key];
+      const lastSentAt = isCronSentReminder(previous) && previous.sentAt ? new Date(previous.sentAt) : null;
+      const elapsedHours = lastSentAt && !Number.isNaN(lastSentAt.getTime()) ? (now - lastSentAt) / 3600000 : Infinity;
+      if (options.force || elapsedHours >= cfg.dueTodayIntervalHours) {
+        candidates.push({ r, c, key, triggerLabel: `到期当天每 ${cfg.dueTodayIntervalHours} 小时推送`, previousReminder: previous || null });
+      }
+    }
+  }
+
+  let rateRefresh = { attempted: false, skipped: 'no candidates' };
+  if (candidates.length > 0) {
+    try {
+      rateRefresh = await refreshRatesBeforeEmail(env, data, candidates);
+    } catch (e) {
+      rateRefresh = { attempted: true, ok: false, error: e.message || String(e) };
+    }
+  }
+
+  let sent = 0;
+  const errors = [];
+  const shouldRecordSent = options.recordSent !== false;
+  const triggerSource = options.triggerSource || (shouldRecordSent ? 'cron' : 'manual-test');
+
+  for (const item of candidates) {
+    try {
+      const subject = renderTemplate(cfg.subjectTemplate, item.r, item.c);
+      const text = renderTemplate(cfg.bodyTemplate, item.r, item.c);
+      await sendEmailWithResend(env, cfg.mailTo, subject, text);
+      if (shouldRecordSent) {
+        sentReminders[item.key] = {
+          sentAt: new Date().toISOString(),
+          bank: item.r.bank,
+          endDate: item.r.endDate,
+          remainingDays: item.c.remainingDays,
+          triggerLabel: item.triggerLabel,
+          triggerSource,
+          rateRefresh
+        };
+      }
+      sent++;
+    } catch (e) {
+      errors.push(`${item.r.bank || item.r.id || 'record'}: ${e.message || String(e)}`);
+    }
+  }
+
+  const result = {
+    sent,
+    matched: candidates.length,
+    errors,
+    rateRefresh,
+    triggerSource,
+    recordSent: shouldRecordSent,
+    note: shouldRecordSent ? '正式执行：只会被 Cloudflare Cron 的发送记录拦截重复推送；页面手动测试不会拦截。' : '手动测试：不会写入防重复发送记录，后续 Cloudflare Cron 仍会按规则正式推送。',
+    rules: { advanceDays: cfg.advanceDays, dueTodayIntervalHours: cfg.dueTodayIntervalHours || '' },
+    matchedRecords: candidates.map(item => ({
+      key: item.key,
+      bank: item.r.bank || '',
+      endDate: item.r.endDate || '',
+      remainingDays: item.c.remainingDays,
+      triggerLabel: item.triggerLabel,
+      previousTriggerSource: item.previousReminder && item.previousReminder.triggerSource ? item.previousReminder.triggerSource : ''
+    }))
+  };
+
+  const shouldWriteExecutionLog = shouldRecordSent && (sent > 0 || errors.length > 0 || candidates.length > 0);
+  if (shouldWriteExecutionLog) {
+    data.settings.mailLastExecution = {
+      at: new Date().toISOString(),
+      triggerSource,
+      sent,
+      matched: candidates.length,
+      errors,
+      rules: result.rules,
+      matchedRecords: result.matchedRecords,
+      rateRefreshSummary: rateRefresh && typeof rateRefresh === 'object' ? {
+        attempted: rateRefresh.attempted,
+        ok: rateRefresh.ok,
+        provider: rateRefresh.provider,
+        cacheFetchedOn: rateRefresh.cacheFetchedOn,
+        cacheDateCount: rateRefresh.cacheDateCount,
+        refreshedRecords: rateRefresh.refreshedRecords,
+        error: rateRefresh.error || ''
+      } : rateRefresh
+    };
+  }
+
+  if (rateRefresh.dataChanged || (sent > 0 && shouldRecordSent) || shouldWriteExecutionLog) {
+    if (shouldRecordSent) data.settings.sentReminders = sentReminders;
+    await writeGithubFile(env, data);
+  }
+
+  return result;
+}
+
+function isCronSentReminder(entry) {
+  return Boolean(entry && entry.triggerSource === 'cron' && entry.sentAt);
+}
+
+async function refreshRatesBeforeEmail(env, data, candidates) {
+  const apiKey = getExchangeRateHostApiKey(env, data);
+  if (!apiKey) {
+    return { attempted: true, ok: false, skipped: 'missing exchangerate.host API key. Set EXCHANGE_RATE_HOST_API_KEY in Worker Secrets or sync exchangeRateHostApiKey to cloud.' };
+  }
+
+  const today = todayString();
+  const cache = await ensureExchangeRateHostYearCache(env, data, apiKey, today);
+  const missingDates = new Set();
+  let refreshedRecords = 0;
+  let changed = false;
+
+  for (const item of candidates) {
+    const r = item.r;
+    let recordChanged = false;
+
+    const openRates = getRatesFromExchangeHostYearCache(cache, r.openDate, false);
+    if (openRates) {
+      if (setRateIfDifferent(r, 'usdCnyOpen', openRates.usdCny)) recordChanged = true;
+      if (setRateIfDifferent(r, 'tryCnyOpen', openRates.tryCny)) recordChanged = true;
+    } else if (r.openDate) {
+      missingDates.add(r.openDate);
+    }
+
+    const endRates = getRatesFromExchangeHostYearCache(cache, r.endDate, true);
+    if (endRates) {
+      if (setRateIfDifferent(r, 'usdCnyNow', endRates.usdCny)) recordChanged = true;
+      if (setRateIfDifferent(r, 'tryCnyNow', endRates.tryCny)) recordChanged = true;
+    } else if (r.endDate) {
+      missingDates.add(r.endDate);
+    }
+
+    if (recordChanged) {
+      item.c = getCalc(r);
+      refreshedRecords++;
+      changed = true;
+    }
+  }
+
+  return {
+    attempted: true,
+    ok: true,
+    provider: 'exchangerate.host timeframe yearly cache',
+    cacheFetchedOn: cache.fetchedOn,
+    cacheStartDate: cache.startDate,
+    cacheEndDate: cache.endDate,
+    cacheDateCount: cache.rates ? Object.keys(cache.rates).length : 0,
+    refreshedRecords,
+    missingDates: Array.from(missingDates).slice(0, 20),
+    dataChanged: changed || Boolean(cache._justFetched)
+  };
+}
+
+function getExchangeRateHostApiKey(env, data) {
+  if (env.EXCHANGE_RATE_HOST_API_KEY) return String(env.EXCHANGE_RATE_HOST_API_KEY).trim();
+  const settings = data && data.settings ? data.settings : {};
+  const keys = settings.rateApiKeys && typeof settings.rateApiKeys === 'object' ? settings.rateApiKeys : {};
+  return String(keys.exchangeRateHostApiKey || '').trim();
+}
+
+async function ensureExchangeRateHostYearCache(env, data, apiKey, today) {
+  const settings = data.settings || (data.settings = {});
+  const cache = settings.exchangeRateHostYearCache;
+  const forceApi = settings.exchangeRateHostRefreshLatestApi === 'YES';
+  if (!forceApi && cache && cache.fetchedOn === today && cache.rates && Object.keys(cache.rates).length > 0) {
+    cache._justFetched = false;
+    return cache;
+  }
+
+  const days = 365;
+  const endDate = today;
+  const startDate = addDaysString(today, -(days - 1));
+  const nextCache = await fetchExchangeRateHostTimeframe(apiKey, startDate, endDate);
+  nextCache.fetchedOn = today;
+  nextCache._justFetched = true;
+  settings.exchangeRateHostYearCache = nextCache;
+  settings.lastRateFetchDate = today;
+  return nextCache;
+}
+
+async function fetchExchangeRateHostTimeframe(apiKey, startDate, endDate) {
+  const params = new URLSearchParams({
+    access_key: apiKey,
+    source: 'USD',
+    currencies: 'CNY,TRY',
+    start_date: startDate,
+    end_date: endDate
+  });
+  const url = `https://api.exchangerate.host/timeframe?${params.toString()}`;
+  const res = await fetch(url, { method: 'GET' });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok || payload.success === false) {
+    throw new Error(payload.error && (payload.error.info || payload.error.message) || payload.message || `exchangerate.host timeframe failed: ${res.status}`);
+  }
+
+  const raw = payload.quotes || payload.rates || {};
+  const rates = {};
+  const dates = Object.keys(raw).sort();
+  for (const date of dates) {
+    const daily = raw[date];
+    const parsed = parseUsdBasedDailyRates(daily, date);
+    if (parsed) rates[date] = parsed;
+  }
+  const rateDates = Object.keys(rates).sort();
+  if (!rateDates.length) throw new Error(`exchangerate.host timeframe returned no usable CNY/TRY rates: ${startDate} ~ ${endDate}`);
+  const latestDate = rateDates[rateDates.length - 1];
+
+  return {
+    provider: 'ExchangeRateHost',
+    source: 'exchangerate.host timeframe',
+    fetchedAt: new Date().toISOString(),
+    startDate,
+    endDate,
+    latestDate,
+    latest: rates[latestDate],
+    rates
+  };
+}
+
+function parseUsdBasedDailyRates(daily, date) {
+  if (!daily || typeof daily !== 'object') return null;
+  const cny = pickNumeric(daily, ['USDCNY', 'CNY', 'usdCny', 'USD_CNY']);
+  const tr = pickNumeric(daily, ['USDTRY', 'TRY', 'usdTry', 'USD_TRY']);
+  if (!cny || !tr) return null;
+  return {
+    usdCny: cny,
+    tryCny: cny / tr,
+    date,
+    source: 'exchangerate.host timeframe'
+  };
+}
+
+function getRatesFromExchangeHostYearCache(cache, date, useLatestForFuture) {
+  if (!cache || !cache.rates) return null;
+  const today = todayString();
+  if (!date) return cache.latest || null;
+  if (useLatestForFuture && date > today) return cache.latest || null;
+  if (cache.rates[date]) return cache.rates[date];
+  // For weekends / holidays, use the nearest earlier available day in the yearly cache.
+  const dates = Object.keys(cache.rates).sort();
+  for (let i = dates.length - 1; i >= 0; i--) {
+    if (dates[i] <= date) return cache.rates[dates[i]];
+  }
+  return null;
+}
+
+function pickNumeric(obj, keys) {
+  for (const key of keys) {
+    const value = Number(obj[key]);
+    if (Number.isFinite(value) && value > 0) return value;
+  }
+  return 0;
+}
+
+function setRateIfDifferent(record, key, value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return false;
+  if (Number(record[key]) === num) return false;
+  record[key] = num;
+  return true;
+}
+
+function addDaysString(dateStr, diff) {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
+async function refreshRatesFromWorker(env, body = {}) {
+  const read = await readGithubFile(env);
+  const data = normalizeData(read.data);
+  const settings = data.settings || (data.settings = {});
+  settings.rateProvider = 'ExchangeRateHost';
+
+  const apiKey = getExchangeRateHostApiKey(env, data);
+  if (!apiKey) {
+    throw new Error('缺少 exchangerate.host API Key。请在 Worker Secret 设置 EXCHANGE_RATE_HOST_API_KEY，或在页面汇率设置里同步 API Key 到云端。');
+  }
+
+  const historyDays = Math.max(0, Number(body.historyDays || settings.historyRateRefreshDays || 30) || 30);
+  settings.historyRateRefreshDays = historyDays;
+  const today = todayString();
+  const activeRecords = Array.isArray(data.activeRecords) ? data.activeRecords : [];
+  const historyRecords = Array.isArray(data.historyRecords) ? data.historyRecords : [];
+  const eligibleHistoryRecords = historyRecords.filter(r => isHistoryRateRefreshEligibleWorker(r, historyDays));
+  const skippedHistoryCount = Math.max(historyRecords.length - eligibleHistoryRecords.length, 0);
+
+  const cache = await ensureExchangeRateHostYearCache(env, data, apiKey, today);
+  let activeSuccessCount = 0;
+  let historySuccessCount = 0;
+  let changed = Boolean(cache._justFetched);
+  const missingDates = [];
+
+  function refreshOne(r, type) {
+    let recordChanged = false;
+    const openRates = getRatesFromExchangeHostYearCache(cache, r.openDate, true);
+    if (openRates) {
+      if (setRateIfDifferent(r, 'usdCnyOpen', openRates.usdCny)) recordChanged = true;
+      if (setRateIfDifferent(r, 'tryCnyOpen', openRates.tryCny)) recordChanged = true;
+    } else if (r.openDate) {
+      missingDates.push(`${type} ${r.bank || r.id || ''} 开户日期 ${r.openDate}`.trim());
+    }
+
+    const endRates = getRatesFromExchangeHostYearCache(cache, r.endDate, true);
+    if (endRates) {
+      if (setRateIfDifferent(r, 'usdCnyNow', endRates.usdCny)) recordChanged = true;
+      if (setRateIfDifferent(r, 'tryCnyNow', endRates.tryCny)) recordChanged = true;
+    } else if (r.endDate) {
+      missingDates.push(`${type} ${r.bank || r.id || ''} 结束日期 ${r.endDate}`.trim());
+    }
+
+    if (recordChanged) changed = true;
+    return Boolean(openRates || endRates);
+  }
+
+  for (const r of activeRecords) {
+    if (refreshOne(r, '当前')) activeSuccessCount++;
+  }
+  for (const r of eligibleHistoryRecords) {
+    if (refreshOne(r, '历史')) historySuccessCount++;
+  }
+
+  settings.lastRateFetchDate = today;
+  await writeGithubFile(env, data);
+
+  return {
+    data,
+    summary: {
+      provider: 'exchangerate.host yearly GitHub cache',
+      cacheFetchedOn: cache.fetchedOn,
+      cacheJustFetched: Boolean(cache._justFetched),
+      cacheStartDate: cache.startDate,
+      cacheEndDate: cache.endDate,
+      cacheDateCount: cache.rates ? Object.keys(cache.rates).length : 0,
+      activeSuccessCount,
+      historySuccessCount,
+      skippedHistoryCount,
+      missingDates: missingDates.slice(0, 30),
+      changed
+    }
+  };
+}
+
+function isHistoryRateRefreshEligibleWorker(record, days) {
+  if (days < 0) return false;
+  const today = todayString();
+  const refDate = normalizeDateOnlyWorker(record.endDate) || normalizeDateOnlyWorker(record.deletedAt);
+  if (!refDate) return false;
+  const diffFromRefToToday = dateDiffDays(refDate, today);
+  if (diffFromRefToToday >= 0 && diffFromRefToToday <= days) return true;
+  const diffFromTodayToRef = dateDiffDays(today, refDate);
+  return diffFromTodayToRef >= 0 && diffFromTodayToRef <= days;
+}
+
+function normalizeDateOnlyWorker(value) {
+  if (!value) return '';
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
+}
+
+async function sendCloudTestEmail(env, body = {}) {
+  const { data } = await readGithubFile(env);
+  const cfg = normalizeEmailReminder(data.settings && data.settings.emailReminder);
+  const to = body.mailTo || body.to || cfg.mailTo;
+  if (!to) throw new Error('mailTo is empty. Please set recipient email first.');
+
+  const fakeRecord = {
+    id: 'test-email',
+    bank: '测试银行',
+    principalTry: 50000,
+    principalPlusInterestTry: 52000,
+    annualRateTry: 40,
+    endDate: todayString(),
+    tryCnyOpen: 0.15,
+    tryCnyNow: 0.15,
+    usdCnyOpen: 7,
+    usdCnyNow: 7,
+    reminderEnabled: true,
+    remark: '这是一封云端测试邮件，不代表真实定存。'
+  };
+  const calc = getCalc(fakeRecord);
+  const subject = '[测试] ' + renderTemplate(cfg.subjectTemplate, fakeRecord, calc);
+  const text = renderTemplate(cfg.bodyTemplate, fakeRecord, calc);
+
+  const resendResult = await sendEmailWithResend(env, to, subject, text);
+  return { to, subject, resendResult };
+}
+
+async function sendEmailWithResend(env, to, subject, text) {
+  if (!env.RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured.');
+  if (!env.MAIL_FROM) throw new Error('MAIL_FROM is not configured.');
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: env.MAIL_FROM,
+      to: [to],
+      subject,
+      text
+    })
+  });
+
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(payload.message || payload.error || `Resend failed: ${res.status}`);
+  }
+
+  return payload;
+}
+
+function normalizeData(data) {
+  data = data || {};
+  const rawSettings = data && data.settings ? data.settings : {};
+  const settings = {
+    ...DEFAULT_DATA.settings,
+    ...rawSettings,
+    emailReminder: normalizeEmailReminder(rawSettings.emailReminder),
+    sentReminders: rawSettings.sentReminders && typeof rawSettings.sentReminders === 'object' ? rawSettings.sentReminders : {},
+    exchangeRateHostRefreshLatestApi: rawSettings.exchangeRateHostRefreshLatestApi === 'YES' ? 'YES' : 'NO',
+    exchangeRateHostBatchWindowDays: 365
+  };
+
+  return {
+    activeRecords: Array.isArray(data.activeRecords) ? data.activeRecords : [],
+    historyRecords: Array.isArray(data.historyRecords) ? data.historyRecords : [],
+    editLogs: Array.isArray(data.editLogs) ? data.editLogs : [],
+    settings
+  };
+}
+
+function mergeWorkerOwnedFields(incomingData, currentData) {
+  const incoming = normalizeData(incomingData || {});
+  if (!currentData || !currentData.settings) return incoming;
+
+  const current = normalizeData(currentData);
+  incoming.settings = incoming.settings || {};
+
+  // These fields are written by Worker Cron/manual cloud actions. A browser tab can easily hold
+  // stale data, so a normal frontend save must not delete or roll back these server-side fields.
+  const workerOwnedKeys = [
+    'sentReminders',
+    'mailLastExecution',
+    'exchangeRateHostYearCache',
+    'lastRateFetchDate'
+  ];
+
+  workerOwnedKeys.forEach(key => {
+    if (current.settings[key] !== undefined && current.settings[key] !== null) {
+      incoming.settings[key] = current.settings[key];
+    }
+  });
+
+  return incoming;
+}
+
+function normalizeEmailReminder(value) {
+  const raw = value || {};
+  return {
+    ...DEFAULT_EMAIL_REMINDER,
+    ...raw,
+    enabled: Boolean(raw.enabled),
+    mailTo: raw.mailTo || '',
+    advanceDays: normalizeAdvanceDays(raw.advanceDays),
+    dueTodayIntervalHours: normalizeDueTodayIntervalHours(raw.dueTodayIntervalHours),
+    onlyEnabledRecords: raw.onlyEnabledRecords !== false,
+    fields: normalizeMailFields(raw.fields),
+    subjectTemplate: raw.subjectTemplate || DEFAULT_EMAIL_REMINDER.subjectTemplate,
+    bodyTemplate: raw.bodyTemplate || DEFAULT_EMAIL_REMINDER.bodyTemplate
+  };
+}
+
+function normalizeAdvanceDays(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return [];
+  let arr = Array.isArray(value) ? value : String(value || '').split(',');
+  arr = arr.map(x => parseInt(String(x).trim(), 10)).filter(x => Number.isFinite(x) && x >= 0);
+  return Array.from(new Set(arr)).sort((a, b) => b - a);
+}
+
+function normalizeDueTodayIntervalHours(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return '';
+  const n = parseInt(String(value).trim(), 10);
+  return Number.isFinite(n) && n > 0 ? n : '';
+}
+
+function normalizeMailFields(fields) {
+  const allowed = MAIL_TEMPLATE_VARIABLES;
+  const arr = Array.isArray(fields) ? fields : [];
+  const out = arr.filter(x => allowed.includes(x));
+  return out;
+}
+
+function getCalc(r) {
+  const depositDays = Math.max(dateDiffDays(r.startDate, r.endDate), 0);
+  const remainingDays = dateDiffDays(todayString(), r.endDate);
+  const principalTry = n(r.principalTry);
+  const storedTotal = n(r.principalPlusInterestTry);
+  const legacyInterest = n(r.interestTry);
+  const principalPlusInterestTry = storedTotal > 0 ? storedTotal : principalTry + legacyInterest;
+  const interestTry = principalPlusInterestTry - principalTry;
+  const principalCny = principalTry * n(r.tryCnyOpen);
+  const principalUsd = safeDiv(principalCny, n(r.usdCnyOpen));
+  const principalPlusInterestCny = principalPlusInterestTry * n(r.tryCnyNow);
+  const principalPlusInterestUsd = safeDiv(principalPlusInterestCny, n(r.usdCnyNow));
+  const gainTry = interestTry;
+  const gainCny = principalPlusInterestCny - principalCny;
+  const gainUsd = principalPlusInterestUsd - principalUsd;
+  const interestCny = interestTry * n(r.tryCnyNow);
+  const annualRateCny = depositDays > 0 && principalCny > 0 ? gainCny / principalCny / depositDays * 365 * 100 : 0;
+  return { depositDays, remainingDays, principalPlusInterestTry, interestTry, principalCny, principalUsd, principalPlusInterestCny, principalPlusInterestUsd, gainTry, gainCny, gainUsd, interestCny, annualRateCny };
+}
+
+function renderTemplate(template, r, c) {
+  const values = mailValueMap(r, c);
+  return String(template || '').replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key) => values[key] ?? '');
+}
+
+function buildSelectedFieldsText(fields, r, c) {
+  const labels = {
+    bank: '银行', principalTry: '本金 TRY', interestTry: '利息 TRY', principalPlusInterestTry: '本金+利息 TRY',
+    openDate: '开户日期', startDate: '开始日期', endDate: '到期日期', depositDays: '存款天数', remainingDays: '剩余天数',
+    usdCnyOpen: '开户 USD→CNY', tryCnyOpen: '开户 TRY→CNY', usdCnyEnd: '结束 USD→CNY', tryCnyEnd: '结束 TRY→CNY',
+    principalCny: '本金 CNY', principalUsd: '本金 USD', principalPlusInterestCny: '本金+利息 CNY', principalPlusInterestUsd: '本金+利息 USD',
+    interestCny: '利息 CNY', gainCny: '获得 CNY', gainUsd: '获得 USD', annualRateTry: '年利率 TRY', annualRateCny: '年利率 CNY', remark: '备注'
+  };
+  const values = mailValueMap(r, c);
+  return normalizeMailFields(fields).map(k => `${labels[k] || k}：${values[k] ?? ''}`).join('\n');
+}
+
+function mailValueMap(r, c) {
+  return {
+    bank: r.bank || '',
+    openDate: r.openDate || '',
+    startDate: r.startDate || '',
+    endDate: r.endDate || '',
+    depositDays: c.depositDays,
+    remainingDays: c.remainingDays,
+    usdCnyOpen: r.usdCnyOpen ?? '',
+    tryCnyOpen: r.tryCnyOpen ?? '',
+    usdCnyEnd: r.usdCnyNow ?? '',
+    tryCnyEnd: r.tryCnyNow ?? '',
+    principalTry: fmt(r.principalTry),
+    interestTry: fmt(c.interestTry),
+    principalPlusInterestTry: fmt(c.principalPlusInterestTry),
+    principalCny: fmt(c.principalCny),
+    principalUsd: fmt(c.principalUsd),
+    principalPlusInterestCny: fmt(c.principalPlusInterestCny),
+    principalPlusInterestUsd: fmt(c.principalPlusInterestUsd),
+    interestCny: fmt(c.interestCny),
+    gainCny: fmt(c.gainCny),
+    gainUsd: fmt(c.gainUsd),
+    annualRateTry: fmt(r.annualRateTry, 2) + '%',
+    annualRateCny: fmt(c.annualRateCny, 2) + '%',
+    remark: r.remark || ''
+  };
+}
+
+function todayString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function dateDiffDays(a, b) {
+  if (!a || !b) return 0;
+  const start = new Date(a + 'T00:00:00Z');
+  const end = new Date(b + 'T00:00:00Z');
+  return Math.round((end - start) / 86400000);
+}
+
+function n(v) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
+function safeDiv(a, b) {
+  return b ? a / b : 0;
+}
+
+function fmt(v, digits = 2) {
+  const x = Number(v);
+  if (!Number.isFinite(x)) return '0.00';
+  return x.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+function githubHeaders(token) {
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Accept': 'application/vnd.github+json',
+    'Content-Type': 'application/json',
+    'User-Agent': 'deposit-manager-worker',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
+}
+
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, x-app-password',
+    'Access-Control-Max-Age': '86400'
+  };
+}
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      ...corsHeaders(),
+      'Content-Type': 'application/json; charset=utf-8'
+    }
+  });
+}
+
+function base64EncodeUnicode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+function base64DecodeUnicode(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function encodeURIComponentPath(path) {
+  return path.split('/').map(encodeURIComponent).join('/');
+}

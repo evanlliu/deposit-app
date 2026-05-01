@@ -644,47 +644,121 @@
 
 
 
-    /* v35: floating language switcher */
-    .float-language {
+    /* v36: top-right language switcher, image-style popover */
+    .top-language {
       position: fixed;
-      right: 18px;
-      bottom: 18px;
-      z-index: 95;
-      display: flex;
-      align-items: flex-end;
-      gap: 8px;
+      top: max(18px, calc(env(safe-area-inset-top) + 12px));
+      right: max(18px, calc(env(safe-area-inset-right) + 14px));
+      z-index: 120;
     }
-    .float-language-toggle {
-      width: 46px;
-      height: 46px;
+    .top-language-toggle {
+      position: relative;
+      width: 58px;
+      height: 58px;
       border-radius: 999px;
       padding: 0;
+      border: 1px solid rgba(226, 232, 240, .9);
+      background: rgba(255,255,255,.94);
+      color: var(--text);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
-      box-shadow: 0 12px 28px rgba(37,99,235,.28);
+      font-size: 28px;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, .18);
+      backdrop-filter: blur(14px);
     }
-    .float-language-panel {
+    .top-language-toggle:hover {
+      background: white;
+    }
+    .top-language-globe {
+      line-height: 1;
+      transform: translateY(-1px);
+    }
+    .top-language-badge {
+      position: absolute;
+      right: -5px;
+      bottom: -5px;
+      min-width: 28px;
+      height: 28px;
+      padding: 0 7px;
+      border-radius: 999px;
+      background: var(--primary);
+      color: white;
+      border: 2px solid white;
+      font-size: 13px;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 18px rgba(37,99,235,.28);
+    }
+    .top-language-panel {
+      position: absolute;
+      top: 70px;
+      right: 0;
+      width: min(260px, calc(100vw - 32px));
+      padding: 16px;
+      border: 1px solid rgba(226, 232, 240, .92);
+      border-radius: 28px;
+      background: rgba(255,255,255,.96);
+      box-shadow: 0 26px 70px rgba(15, 23, 42, .22);
+      backdrop-filter: blur(18px);
       display: none;
-      min-width: 190px;
-      padding: 10px;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: rgba(255,255,255,.98);
-      box-shadow: 0 18px 42px rgba(15,23,42,.18);
     }
-    .float-language.open .float-language-panel { display: block; }
-    .float-language-panel .language-control {
+    .top-language.open .top-language-panel {
+      display: grid;
+      gap: 10px;
+      animation: languageMenuIn .14s ease-out;
+    }
+    @keyframes languageMenuIn {
+      from { opacity: 0; transform: translateY(-8px) scale(.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .top-language-option {
+      width: 100%;
+      border: 0;
+      box-shadow: none;
+      background: transparent;
+      color: var(--text);
+      border-radius: 20px;
+      padding: 15px 18px;
+      text-align: left;
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1.15;
       display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 6px;
-      margin: 0;
+      align-items: center;
+      justify-content: space-between;
     }
-    .float-language-panel .language-control select { width: 100%; min-width: 0; }
+    .top-language-option:hover {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+    .top-language-option.active {
+      background: #dfe8ff;
+      color: #1d4ed8;
+    }
+    .top-language-option.active::after {
+      content: "✓";
+      font-size: 16px;
+      font-weight: 900;
+    }
+    .language-hidden {
+      display: none !important;
+    }
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
 
-    /* v35: dedicated mobile folds for rate refresh and search */
+    /* v35/v36: dedicated mobile folds for rate refresh and search */
     .rate-fold, .search-fold { width: 100%; }
     .rate-fold .mobile-fold-content,
     .search-fold .mobile-fold-content {
@@ -809,11 +883,22 @@
   </header>
 
 
-  <div class="float-language" id="floatLanguage">
-    <div class="float-language-panel">
-      <label class="language-control"><span id="languageText">语言</span><select id="languageSelect"><option value="zh">中文</option><option value="en">English</option><option value="tr">Türkçe</option></select></label>
+  <div class="top-language" id="topLanguage">
+    <button id="topLanguageToggle" class="top-language-toggle" type="button" aria-label="Language">
+      <span class="top-language-globe">🌐</span>
+      <span id="topLanguageBadge" class="top-language-badge">中</span>
+    </button>
+    <div class="top-language-panel" role="menu" aria-label="Language">
+      <button type="button" class="top-language-option" data-lang="zh">中文</button>
+      <button type="button" class="top-language-option" data-lang="en">English</button>
+      <button type="button" class="top-language-option" data-lang="tr">Türkçe</button>
     </div>
-    <button id="floatLanguageToggle" class="float-language-toggle" type="button" aria-label="Language">🌐</button>
+    <span id="languageText" class="sr-only">语言</span>
+    <select id="languageSelect" class="language-hidden" aria-label="Language">
+      <option value="zh">中文</option>
+      <option value="en">English</option>
+      <option value="tr">Türkçe</option>
+    </select>
   </div>
 
   <main>
@@ -1439,6 +1524,10 @@
     $('meta[name="application-name"]').attr('content', t('shortTitle'));
     $('meta[name="apple-mobile-web-app-title"]').attr('content', t('shortTitle'));
     $('#languageSelect').val(lang);
+    const languageBadgeMap = { zh: '中', en: 'EN', tr: 'TR' };
+    $('#topLanguageBadge').text(languageBadgeMap[lang] || '中');
+    $('.top-language-option').removeClass('active').attr('aria-pressed', 'false');
+    $(`.top-language-option[data-lang="${lang}"]`).addClass('active').attr('aria-pressed', 'true');
 
     setText('.title h1', 'appTitle');
     setText('.title p', 'appSubtitle');
@@ -1609,13 +1698,21 @@
 
   function bindEvents() {
     $('#languageSelect').on('change', changeLanguage);
-    $('#floatLanguageToggle').on('click', function (e) {
+    $('#topLanguageToggle').on('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
-      $('#floatLanguage').toggleClass('open');
+      $('#topLanguage').toggleClass('open');
     });
-    $('#floatLanguage').on('click', function (e) { e.stopPropagation(); });
-    $(document).on('click', function () { $('#floatLanguage').removeClass('open'); });
+    $('#topLanguage .top-language-option').on('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const lang = normalizeLanguage($(this).data('lang'));
+      $('#languageSelect').val(lang);
+      changeLanguage();
+      $('#topLanguage').removeClass('open');
+    });
+    $('#topLanguage').on('click', function (e) { e.stopPropagation(); });
+    $(document).on('click', function () { $('#topLanguage').removeClass('open'); });
     $('#btnAdd').on('click', openAddModal);
     $('#btnSaveRecord').on('click', saveRecordFromForm);
     $('#btnEstimateInterest').on('click', function (e) { e.preventDefault(); estimateInterestToForm(); });
