@@ -416,6 +416,7 @@
 
     .form-field { display: flex; flex-direction: column; gap: 6px; }
     .form-field label { color: var(--muted); font-size: 13px; font-weight: 650; }
+    .form-field.required-field > label:first-child::after { content: " *"; color: #ef4444; font-weight: 800; }
     .form-field.full { grid-column: 1 / -1; }
     textarea { min-height: 80px; resize: vertical; }
 
@@ -1648,7 +1649,7 @@
         <form id="recordForm">
           <input type="hidden" id="recordId" />
           <div class="form-grid">
-            <div class="form-field">
+            <div class="form-field required-field">
               <label>银行</label>
               <input id="bank" list="bankList" placeholder="例如 YAP(G)" required />
               <datalist id="bankList">
@@ -1660,34 +1661,34 @@
                 <option value="HSBC"></option>
               </datalist>
             </div>
-            <div class="form-field">
+            <div class="form-field required-field">
               <label>开户日期</label>
               <input id="openDate" type="date" required />
             </div>
-            <div class="form-field">
+            <div class="form-field required-field">
               <label>开始日期</label>
               <input id="startDate" type="date" required />
             </div>
-            <div class="form-field">
+            <div class="form-field required-field">
               <label>结束日期</label>
               <input id="endDate" type="date" required />
             </div>
 
-            <div class="form-field">
+            <div class="form-field required-field">
               <label>本金 TRY</label>
-              <input id="principalTry" type="number" step="0.01" placeholder="例如 400000" required />
+              <input id="principalTry" type="number" step="0.01" min="0.01" placeholder="例如 400000" required />
             </div>
-            <div class="form-field">
+            <div class="form-field required-field">
               <label>本金+利息 TRY</label>
-              <input id="principalPlusInterestTry" type="number" step="0.01" placeholder="例如 412295.89" required />
+              <input id="principalPlusInterestTry" type="number" step="0.01" min="0.01" placeholder="例如 412295.89" required />
             </div>
-            <div class="form-field">
+            <div class="form-field required-field">
               <label>年利率 TRY %</label>
-              <input id="annualRateTry" type="number" step="0.01" placeholder="例如 40" required />
+              <input id="annualRateTry" type="number" step="0.01" min="0.01" placeholder="例如 40" required />
             </div>
-            <div class="form-field">
+            <div class="form-field required-field">
               <label>是否创建提醒</label>
-              <select id="reminderEnabled">
+              <select id="reminderEnabled" required>
                 <option value="YES">YES</option>
                 <option value="NO">NO</option>
               </select>
@@ -3189,6 +3190,8 @@
 
   async function saveRecordFromForm(e) {
     e.preventDefault();
+    const form = document.getElementById('recordForm');
+    if (form && typeof form.reportValidity === 'function' && !form.reportValidity()) return;
     const record = getRecordFromForm();
     if (!record) return;
 
@@ -3233,6 +3236,9 @@
     const endDate = $('#endDate').val();
     const principalTry = numberValue('#principalTry');
     const principalPlusInterestTry = numberValue('#principalPlusInterestTry');
+    const annualRateTryRaw = String($('#annualRateTry').val() || '').trim();
+    const annualRateTry = numberValue('#annualRateTry');
+    const reminderEnabledValue = $('#reminderEnabled').val();
     const interestTry = principalPlusInterestTry - principalTry;
 
     if (!bank || !openDate || !startDate || !endDate) {
@@ -3249,6 +3255,18 @@
     }
     if (principalPlusInterestTry < principalTry) {
       alert('本金+利息不能小于本金。');
+      return null;
+    }
+    if (!annualRateTryRaw) {
+      alert('请填写年利率 TRY %。');
+      return null;
+    }
+    if (!Number.isFinite(annualRateTry) || annualRateTry <= 0) {
+      alert('年利率 TRY % 必须大于 0。');
+      return null;
+    }
+    if (!['YES', 'NO'].includes(reminderEnabledValue)) {
+      alert('请选择是否创建提醒。');
       return null;
     }
     if (dateDiffDays(startDate, endDate) <= 0) {
@@ -3274,9 +3292,9 @@
       tryCnyNow: numberValue('#tryCnyNow'),
       principalTry,
       principalPlusInterestTry,
-      annualRateTry: numberValue('#annualRateTry'),
+      annualRateTry,
       interestTry,
-      reminderEnabled: $('#reminderEnabled').val() === 'YES',
+      reminderEnabled: reminderEnabledValue === 'YES',
       remark: $('#remark').val().trim(),
       exchangeTry: numberValue('#exchangeTry') || undefined,
       exchangeCny: numberValue('#exchangeCny') || undefined,

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v44-mail-vars-table-columns';
+const CACHE_VERSION = 'deposit-app-v45-required-record-fields';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];
