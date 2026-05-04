@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v48-universal-date-picker';
+const CACHE_VERSION = 'deposit-app-v49-i18n-status-rates';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];

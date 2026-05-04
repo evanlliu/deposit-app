@@ -2298,7 +2298,58 @@
       mail: { title: '邮件提醒设置', enabled: '是否启用邮件提醒', to: '收件邮箱', advanceDays: '提前几天推送', dueHours: '到期当天每几小时推送', pushStartTime: '允许推送开始时间', pushEndTime: '允许推送结束时间', onlyEnabled: '只提醒已开启提醒的记录', timeZone: '页面/提醒时区', timeZoneCustom: '自定义时区', subject: '邮件标题模板', body: '邮件内容模板', variables: '模板变量', varHead: '点击变量，自动插入到标题或内容的光标位置', varSub: '显示名称跟随当前定存表列名，点击后插入固定 code，例如 {{bank}}', varNote: '说明：模板变量显示名称跟随“当前定存”表的列名设置；按钮里的 code 保持不变，保存到邮件模板的也是 {{code}}。', preview: '邮件预览', previewButtonHint: '点击“预览提醒邮件”。', hint: '邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；邮件正文只发送“邮件内容模板”里的内容，不会再额外追加字段。你可以点击“模板变量”按钮插入字段，显示名称跟随当前定存表列名，点击后插入固定 code，例如 {{bank}}。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；允许推送时间段可设置为 09:00-18:00，留空表示全天；两个规则都填写时会同时生效。', noMatch: '当前没有符合提醒条件的定存。\n例如设置提前 7 天，只有剩余天数等于 7 的记录才会进入邮件提醒。', previewSubject: '标题：{subject}\n\n内容：\n{body}', previewMore: '\n\n共 {count} 条符合条件，实际推送时会逐条发送。' },
       mobile: { startEnd: '开始/结束', interestTry: '利息 TRY', annualRateTry: '年利率 TRY', annualRateCny: '年利率 CNY', principalCny: '本金 CNY', gainCny: '获得 CNY', deleteReason: '删除原因', reminder: '提醒', exchangeTry: '兑换 TRY', exchangeCny: '兑换 CNY', exchangeReason: '兑换原因', remark: '备注', history: '历史', expired: '已到期' },
       empty: { active: '暂无当前定存，点击“新增定存”开始。', history: '暂无历史记录。', mobileActive: '暂无当前定存。', mobileHistory: '暂无历史记录。' },
-      columns: {}, mailVars: {}, messages: { statusLoaded: '已加载本地数据，正在尝试自动云端同步...', rateInfo: '汇率：当前全部；历史近 {days} 天。', savedColumns: '列配置、列名和列宽已保存并同步', resetColumns: '列配置、列名和列宽已恢复默认并同步' }
+      columns: {}, mailVars: {}, messages: {
+        statusLoaded: '已加载本地数据，正在尝试自动云端同步...',
+        modeCloud: '云端同步模式', modeLocal: '本地模式',
+        rateInfo: '汇率：当前全部；历史近 {days} 天。',
+        savedColumns: '列配置、列名和列宽已保存并同步', resetColumns: '列配置、列名和列宽已恢复默认并同步',
+        statusLocalSavedCloudMissing: '本地保存成功：云端同步未完成，缺少 API 地址或访问密码',
+        statusSavingGithub: '正在保存到 GitHub...',
+        statusCloudSaved: '云端保存成功：{time}',
+        statusCloudSaveFailedLocal: '云端保存失败，已先保存在本地：{message}',
+        statusCloudConflictCancel: '云端保存已取消：检测到版本冲突，本地缓存仍保留。请先从云端刷新或再次编辑后保存。',
+        statusMergingCloud: '已合并云端最新数据，正在重新保存...',
+        statusCloudMergeSaved: '冲突合并后云端保存成功：{time}',
+        statusCloudMissingPassword: '云端同步缺少访问密码。请先在任意一台设备的“同步设置”里填写并保存一次。',
+        statusAutoSyncing: '正在自动从云端同步...',
+        statusReadingCloud: '正在从云端读取...',
+        statusCloudEmptyLocalExists: '云端数据当前为空，但本地还有 {count} 条记录。',
+        statusSkipAutoOverwrite: '{message} 已跳过自动覆盖，本地数据保持不变。',
+        statusAutoSyncSuccess: '自动云端同步成功：{time}',
+        statusCloudReadSuccess: '云端数据和配置读取成功：{time}',
+        statusCloudReadFailed: '云端读取失败：{message}',
+        statusLocalModeSwitched: '已切换为本地模式',
+        statusSyncSavedMissingPassword: '同步设置已保存到本地，但缺少访问密码，不能自动云端同步',
+        statusSyncSavedReading: '同步设置已保存本地，正在读取云端数据，避免空数据覆盖...',
+        statusSyncSavedNoOverwrite: '同步设置已保存到本地，未覆盖空云端数据',
+        statusCloudInitialized: '已用本地数据初始化云端，并保存同步设置：{time}',
+        statusSyncSavedCloud: '同步设置已安全写入云端，并已从云端同步数据：{time}',
+        statusSyncFailed: '同步设置已保存到本地，但云端读取/保存失败：{message}',
+        rateProviderInfo: '当前汇率来源：{provider}。点击“刷新汇率”会按该来源重新计算。',
+        rateNoRecords: '没有需要刷新的记录。当前定存为空，历史记录近 {days} 天内也没有需要更新的记录。',
+        rateButtonRefreshing: '刷新中...',
+        statusCloudRateRefreshing: '正在通过 Cloudflare Worker 刷新 exchangerate.host 汇率，并优先使用 GitHub 今日缓存...',
+        statusCloudRateDone: '云端汇率刷新完成：{time}',
+        statusRateRefreshing: '正在刷新汇率：当前 {active} 条，历史近 {days} 天 {history} 条...',
+        statusRatePreloading: '正在使用 exchangerate.host 缓存逻辑刷新汇率...',
+        statusRateDone: '汇率刷新完成：{time}',
+        statusRateFailed: '刷新汇率失败：{message}',
+        rateCloudSummary: '已刷新：当前 {active} 条，历史 {history} 条；{notes}',
+        rateLocalSummary: '已刷新：当前 {active} 条，历史 {history} 条{notes}',
+        noteCacheDate: '缓存日期 {date}',
+        noteApiCalled: '已调用 API 并覆盖今日缓存',
+        noteUseGithubCache: '使用 GitHub 今日缓存',
+        noteMissingDates: '缺少 {count} 个日期',
+        noteSkippedHistory: '历史记录跳过 {count} 条（超过 {days} 天）',
+        notePreloadApi: 'exchangerate.host API {count} 次，缓存 {days} 天汇率',
+        noteOpenFuture: '{count} 条开户日期未到，开户汇率暂用最新汇率',
+        noteEndFuture: '{count} 条结束日期未到，结束汇率暂用最新汇率',
+        noteFailedItems: '{count} 条失败',
+        rateSourceDate: '来源：{source}，日期：{date}',
+        statusMailSaved: '邮件提醒设置已保存；如配置有变化，云端提醒节奏会按新规则重新计算',
+        statusCloudTestMailDone: '云端测试邮件发送成功',
+        statusCloudMailRunDone: '云端邮件提醒执行完成'
+      }
     },
     en: {
       appTitle: 'Time Deposit Manager', shortTitle: 'Deposits', appSubtitle: 'Active deposits + history; enter key fields only, rates and returns are calculated automatically.',
@@ -2317,7 +2368,58 @@
       mail: { title: 'Email Reminder Settings', enabled: 'Enable Email Reminder', to: 'Recipient Email', advanceDays: 'Advance Reminder Days', dueHours: 'Due-day Repeat Every X Hours', pushStartTime: 'Allowed push start time', pushEndTime: 'Allowed push end time', onlyEnabled: 'Only records with reminder enabled', timeZone: 'Page / reminder time zone', timeZoneCustom: 'Custom time zone', subject: 'Email Subject Template', body: 'Email Body Template', variables: 'Template Variables', varHead: 'Click a variable to insert it at the cursor position', varSub: 'Names follow Active table columns; click to insert fixed code, e.g. {{bank}}', varNote: 'Note: variable names follow the Active table column names; the inserted code stays fixed as {{code}}.', preview: 'Email Preview', previewButtonHint: 'Click “Preview Email”.', hint: 'Email rules are saved to the cloud. Sending is performed by Cloudflare Worker + Resend. The email body only uses your body template and does not append extra fields. Template variable names follow the Active table column names, while inserted code stays fixed such as {{bank}}. You can set an allowed push window such as 09:00-18:00; blank means all day. Changing reminder settings resets the duplicate-prevention schedule.', noMatch: 'No matching deposits for reminder.\nFor example, if advance days is 7, only records with 7 remaining days match.', previewSubject: 'Subject: {subject}\n\nBody:\n{body}', previewMore: '\n\n{count} matching records. Actual sending will send one email per record.' },
       mobile: { startEnd: 'Start/End', interestTry: 'Interest TRY', annualRateTry: 'Annual Rate TRY', annualRateCny: 'Annual Rate CNY', principalCny: 'Principal CNY', gainCny: 'Gain CNY', deleteReason: 'Delete Reason', reminder: 'Reminder', exchangeTry: 'Exchange TRY', exchangeCny: 'Exchange CNY', exchangeReason: 'Exchange Reason', remark: 'Note', history: 'History', expired: 'Due' },
       empty: { active: 'No active deposits. Click “Add Deposit” to start.', history: 'No history records.', mobileActive: 'No active deposits.', mobileHistory: 'No history records.' },
-      columns: {}, mailVars: {}, messages: { statusLoaded: 'Local data loaded, trying automatic cloud sync...', rateInfo: 'Rates: active all; history last {days} days.', savedColumns: 'Column settings, labels, and widths saved and synced', resetColumns: 'Column settings, labels, and widths reset and synced' }
+      columns: {}, mailVars: {}, messages: {
+        statusLoaded: 'Local data loaded, trying automatic cloud sync...',
+        modeCloud: 'Cloud sync mode', modeLocal: 'Local mode',
+        rateInfo: 'Rates: all active records; history last {days} days.',
+        savedColumns: 'Column settings, labels, and widths saved and synced', resetColumns: 'Column settings, labels, and widths reset and synced',
+        statusLocalSavedCloudMissing: 'Saved locally: cloud sync is incomplete because the API URL or password is missing',
+        statusSavingGithub: 'Saving to GitHub...',
+        statusCloudSaved: 'Cloud save successful: {time}',
+        statusCloudSaveFailedLocal: 'Cloud save failed; data has been saved locally first: {message}',
+        statusCloudConflictCancel: 'Cloud save canceled: a version conflict was detected. Local cache is kept. Please refresh from cloud or edit again before saving.',
+        statusMergingCloud: 'Merged the latest cloud data; saving again...',
+        statusCloudMergeSaved: 'Cloud save successful after conflict merge: {time}',
+        statusCloudMissingPassword: 'Cloud sync password is missing. Please fill and save it once in Sync Settings on any device.',
+        statusAutoSyncing: 'Automatically syncing from cloud...',
+        statusReadingCloud: 'Reading from cloud...',
+        statusCloudEmptyLocalExists: 'Cloud data is currently empty, but local data still has {count} records.',
+        statusSkipAutoOverwrite: '{message} Automatic overwrite was skipped; local data is unchanged.',
+        statusAutoSyncSuccess: 'Automatic cloud sync successful: {time}',
+        statusCloudReadSuccess: 'Cloud data and settings loaded: {time}',
+        statusCloudReadFailed: 'Cloud read failed: {message}',
+        statusLocalModeSwitched: 'Switched to local mode',
+        statusSyncSavedMissingPassword: 'Sync settings saved locally, but the password is missing so automatic cloud sync cannot run',
+        statusSyncSavedReading: 'Sync settings saved locally; reading cloud data first to avoid empty-data overwrite...',
+        statusSyncSavedNoOverwrite: 'Sync settings saved locally; empty cloud data was not overwritten',
+        statusCloudInitialized: 'Cloud initialized with local data and sync settings saved: {time}',
+        statusSyncSavedCloud: 'Sync settings safely saved to cloud and data synced from cloud: {time}',
+        statusSyncFailed: 'Sync settings saved locally, but cloud read/save failed: {message}',
+        rateProviderInfo: 'Current rate provider: {provider}. Click “Refresh Rates” to recalculate using this provider.',
+        rateNoRecords: 'No records need refreshing. Active deposits are empty and no history records within the last {days} days need updates.',
+        rateButtonRefreshing: 'Refreshing...',
+        statusCloudRateRefreshing: 'Refreshing exchangerate.host rates through Cloudflare Worker and using today’s GitHub cache first...',
+        statusCloudRateDone: 'Cloud rate refresh complete: {time}',
+        statusRateRefreshing: 'Refreshing rates: {active} active records, {history} history records within the last {days} days...',
+        statusRatePreloading: 'Refreshing rates with exchangerate.host cache logic...',
+        statusRateDone: 'Rate refresh complete: {time}',
+        statusRateFailed: 'Rate refresh failed: {message}',
+        rateCloudSummary: 'Refreshed: {active} active, {history} history; {notes}',
+        rateLocalSummary: 'Refreshed: {active} active, {history} history{notes}',
+        noteCacheDate: 'cache date {date}',
+        noteApiCalled: 'API called and today’s cache overwritten',
+        noteUseGithubCache: 'used today’s GitHub cache',
+        noteMissingDates: '{count} missing dates',
+        noteSkippedHistory: 'skipped {count} history records (older than {days} days)',
+        notePreloadApi: 'exchangerate.host API {count} calls, cached {days} days of rates',
+        noteOpenFuture: '{count} opening dates are in the future; latest rate used for opening rate',
+        noteEndFuture: '{count} end dates are in the future; latest rate used for end rate',
+        noteFailedItems: '{count} failed',
+        rateSourceDate: 'Source: {source}, date: {date}',
+        statusMailSaved: 'Email reminder settings saved; if the configuration changed, the cloud reminder schedule will be recalculated by the new rules',
+        statusCloudTestMailDone: 'Cloud test email sent successfully',
+        statusCloudMailRunDone: 'Cloud email reminder run complete'
+      }
     },
     tr: {
       appTitle: 'Vadeli Mevduat Yönetimi', shortTitle: 'Mevduat', appSubtitle: 'Aktif mevduatlar + geçmiş; yalnızca temel alanları girin, kurlar ve getiriler otomatik hesaplanır.',
@@ -2336,7 +2438,58 @@
       mail: { title: 'E-posta Hatırlatma Ayarları', enabled: 'E-posta hatırlatmayı etkinleştir', to: 'Alıcı e-posta', advanceDays: 'Kaç gün önce hatırlat', dueHours: 'Vade günü kaç saatte bir', pushStartTime: 'İzin verilen başlangıç saati', pushEndTime: 'İzin verilen bitiş saati', onlyEnabled: 'Yalnız hatırlatma açık kayıtlar', timeZone: 'Sayfa / hatırlatma saat dilimi', timeZoneCustom: 'Özel saat dilimi', subject: 'E-posta başlık şablonu', body: 'E-posta içerik şablonu', variables: 'Şablon Değişkenleri', varHead: 'Değişkene tıklayın, imlecin olduğu yere eklensin', varSub: 'Adlar aktif tablo sütunlarını izler; tıklanınca sabit code eklenir, örn. {{bank}}', varNote: 'Not: değişken adları aktif tablo sütun adlarını izler; eklenen code {{code}} olarak sabit kalır.', preview: 'E-posta Önizleme', previewButtonHint: '“E-postayı Önizle” düğmesine tıklayın.', hint: 'E-posta kuralları buluta kaydedilir. Gönderim Cloudflare Worker + Resend ile yapılır. İçerik yalnızca şablondaki metni kullanır. Şablon değişken adları aktif tablo sütun adlarını izler; eklenen code {{bank}} gibi sabit kalır. 09:00-18:00 gibi izin verilen gönderim aralığı ayarlanabilir; boşsa tüm gün. Ayarlar değişirse tekrar engelleme takvimi yeni kurala göre sıfırlanır.', noMatch: 'Hatırlatma koşuluna uyan mevduat yok.\nÖrn. 7 gün önce seçilirse yalnız kalan gün 7 olan kayıtlar eşleşir.', previewSubject: 'Başlık: {subject}\n\nİçerik:\n{body}', previewMore: '\n\n{count} kayıt eşleşti. Gönderimde her kayıt için ayrı e-posta gönderilir.' },
       mobile: { startEnd: 'Başlangıç/Bitiş', interestTry: 'Faiz TRY', annualRateTry: 'Yıllık Oran TRY', annualRateCny: 'Yıllık Oran CNY', principalCny: 'Ana Para CNY', gainCny: 'Getiri CNY', deleteReason: 'Silme Nedeni', reminder: 'Hatırlatma', exchangeTry: 'Değişim TRY', exchangeCny: 'Değişim CNY', exchangeReason: 'Değişim Nedeni', remark: 'Not', history: 'Geçmiş', expired: 'Vadesi doldu' },
       empty: { active: 'Aktif mevduat yok. Başlamak için “Mevduat Ekle” tıklayın.', history: 'Geçmiş kayıt yok.', mobileActive: 'Aktif mevduat yok.', mobileHistory: 'Geçmiş kayıt yok.' },
-      columns: {}, mailVars: {}, messages: { statusLoaded: 'Yerel veri yüklendi, otomatik bulut senkronu deneniyor...', rateInfo: 'Kur: aktif tümü; geçmiş son {days} gün.', savedColumns: 'Sütun ayarları, adları ve genişlikleri kaydedildi ve senkronlandı', resetColumns: 'Sütun ayarları, adları ve genişlikleri sıfırlandı ve senkronlandı' }
+      columns: {}, mailVars: {}, messages: {
+        statusLoaded: 'Yerel veri yüklendi, otomatik bulut senkronu deneniyor...',
+        modeCloud: 'Bulut senkron modu', modeLocal: 'Yerel mod',
+        rateInfo: 'Kur: tüm aktif kayıtlar; geçmiş son {days} gün.',
+        savedColumns: 'Sütun ayarları, adları ve genişlikleri kaydedildi ve senkronlandı', resetColumns: 'Sütun ayarları, adları ve genişlikleri sıfırlandı ve senkronlandı',
+        statusLocalSavedCloudMissing: 'Yerel olarak kaydedildi: API adresi veya parola eksik olduğu için bulut senkronu tamamlanmadı',
+        statusSavingGithub: 'GitHub’a kaydediliyor...',
+        statusCloudSaved: 'Buluta kaydetme başarılı: {time}',
+        statusCloudSaveFailedLocal: 'Buluta kaydetme başarısız; veri önce yerel olarak kaydedildi: {message}',
+        statusCloudConflictCancel: 'Buluta kaydetme iptal edildi: sürüm çakışması algılandı. Yerel önbellek korundu. Lütfen önce buluttan yenileyin veya tekrar düzenleyip kaydedin.',
+        statusMergingCloud: 'En güncel bulut verisi birleştirildi, yeniden kaydediliyor...',
+        statusCloudMergeSaved: 'Çakışma birleştirmesinden sonra buluta kaydetme başarılı: {time}',
+        statusCloudMissingPassword: 'Bulut senkron parolası eksik. Lütfen herhangi bir cihazda Senkron Ayarları bölümünde bir kez doldurup kaydedin.',
+        statusAutoSyncing: 'Buluttan otomatik senkronize ediliyor...',
+        statusReadingCloud: 'Buluttan okunuyor...',
+        statusCloudEmptyLocalExists: 'Bulut verisi şu anda boş, ancak yerelde {count} kayıt var.',
+        statusSkipAutoOverwrite: '{message} Otomatik üzerine yazma atlandı; yerel veri değişmedi.',
+        statusAutoSyncSuccess: 'Otomatik bulut senkronu başarılı: {time}',
+        statusCloudReadSuccess: 'Bulut verisi ve ayarları yüklendi: {time}',
+        statusCloudReadFailed: 'Buluttan okuma başarısız: {message}',
+        statusLocalModeSwitched: 'Yerel moda geçildi',
+        statusSyncSavedMissingPassword: 'Senkron ayarları yerel olarak kaydedildi, ancak parola eksik olduğu için otomatik bulut senkronu çalışamaz',
+        statusSyncSavedReading: 'Senkron ayarları yerel olarak kaydedildi; boş veriyle üzerine yazmayı önlemek için bulut verisi okunuyor...',
+        statusSyncSavedNoOverwrite: 'Senkron ayarları yerel olarak kaydedildi; boş bulut verisinin üzerine yazılmadı',
+        statusCloudInitialized: 'Bulut yerel veriyle başlatıldı ve senkron ayarları kaydedildi: {time}',
+        statusSyncSavedCloud: 'Senkron ayarları güvenli şekilde buluta yazıldı ve veri buluttan senkronlandı: {time}',
+        statusSyncFailed: 'Senkron ayarları yerel olarak kaydedildi, ancak bulut okuma/kaydetme başarısız: {message}',
+        rateProviderInfo: 'Geçerli kur sağlayıcısı: {provider}. Bu sağlayıcıyla yeniden hesaplamak için “Kurları Yenile” düğmesine tıklayın.',
+        rateNoRecords: 'Yenilenecek kayıt yok. Aktif mevduat boş ve son {days} gün içinde güncellenecek geçmiş kayıt yok.',
+        rateButtonRefreshing: 'Yenileniyor...',
+        statusCloudRateRefreshing: 'Cloudflare Worker üzerinden exchangerate.host kurları yenileniyor ve önce GitHub’ın bugünkü önbelleği kullanılıyor...',
+        statusCloudRateDone: 'Bulut kur yenileme tamamlandı: {time}',
+        statusRateRefreshing: 'Kurlar yenileniyor: {active} aktif kayıt, son {days} gün içinde {history} geçmiş kayıt...',
+        statusRatePreloading: 'exchangerate.host önbellek mantığıyla kurlar yenileniyor...',
+        statusRateDone: 'Kur yenileme tamamlandı: {time}',
+        statusRateFailed: 'Kur yenileme başarısız: {message}',
+        rateCloudSummary: 'Yenilendi: {active} aktif, {history} geçmiş; {notes}',
+        rateLocalSummary: 'Yenilendi: {active} aktif, {history} geçmiş{notes}',
+        noteCacheDate: 'önbellek tarihi {date}',
+        noteApiCalled: 'API çağrıldı ve bugünkü önbellek üzerine yazıldı',
+        noteUseGithubCache: 'GitHub’ın bugünkü önbelleği kullanıldı',
+        noteMissingDates: '{count} eksik tarih',
+        noteSkippedHistory: '{count} geçmiş kayıt atlandı ({days} günden eski)',
+        notePreloadApi: 'exchangerate.host API {count} çağrı, {days} gün kur önbelleğe alındı',
+        noteOpenFuture: '{count} açılış tarihi gelecekte; açılış kuru için son kur kullanıldı',
+        noteEndFuture: '{count} bitiş tarihi gelecekte; bitiş kuru için son kur kullanıldı',
+        noteFailedItems: '{count} başarısız',
+        rateSourceDate: 'Kaynak: {source}, tarih: {date}',
+        statusMailSaved: 'E-posta hatırlatma ayarları kaydedildi; yapılandırma değiştiyse bulut hatırlatma zamanlaması yeni kurallara göre yeniden hesaplanır',
+        statusCloudTestMailDone: 'Bulut test e-postası başarıyla gönderildi',
+        statusCloudMailRunDone: 'Bulut e-posta hatırlatma çalışması tamamlandı'
+      }
     }
   };
 
@@ -3029,21 +3182,21 @@
     saveLocalData();
     const cfg = await ensureCloudConfig(false);
     if (!cfg.apiUrl || !cfg.apiPassword) {
-      updateStatus('本地保存成功：云端同步未完成，缺少 API 地址或访问密码');
+      updateStatus(t('messages.statusLocalSavedCloudMissing'));
       renderAll();
       return;
     }
 
     try {
-      updateStatus('正在保存到 GitHub...');
+      updateStatus(t('messages.statusSavingGithub'));
       await assertSafeCloudOverwrite(cfg, appData);
       await putCloudData(cfg, appData);
-      updateStatus('云端保存成功：' + formatDateTime(new Date()));
+      updateStatus(t('messages.statusCloudSaved', { time: formatDateTime(new Date()) }));
     } catch (e) {
       if (e && e.isCloudConflict) {
         await handleCloudSaveConflict(cfg, e);
       } else {
-        updateStatus('云端保存失败，已先保存在本地：' + e.message);
+        updateStatus(t('messages.statusCloudSaveFailedLocal', { message: e.message }));
         alert('云端保存失败，数据已经先保存在本地。\n' + e.message);
       }
     }
@@ -3105,16 +3258,16 @@
     if (err.currentSha) rememberCloudSha(err.currentSha);
     const yes = confirm('检测到云端 data.json 已被其他设备或 Worker 更新。\n\n为避免旧页面覆盖新数据，本次保存已被拦截。\n\n是否现在把“云端最新数据”和“本地未保存修改”自动合并后再保存？\n选择“取消”则只保留本地缓存，不覆盖云端。');
     if (!yes) {
-      updateStatus('云端保存已取消：检测到版本冲突，本地缓存仍保留。请先从云端刷新或再次编辑后保存。');
+      updateStatus(t('messages.statusCloudConflictCancel'));
       return;
     }
     appData = mergeDataForConflict(cloudData, appData);
     saveLocalData();
-    updateStatus('已合并云端最新数据，正在重新保存...');
+    updateStatus(t('messages.statusMergingCloud'));
     const payload = await putCloudData(cfg, appData, { baseSha: getKnownCloudSha() });
     appData = normalizeData(payload.data || appData);
     saveLocalData();
-    updateStatus('冲突合并后云端保存成功：' + formatDateTime(new Date()));
+    updateStatus(t('messages.statusCloudMergeSaved', { time: formatDateTime(new Date()) }));
   }
 
   function totalRecordCount(data) {
@@ -3162,7 +3315,7 @@
       return;
     }
     if (!cfg.apiPassword) {
-      const msg = '云端同步缺少访问密码。请先在任意一台设备的“同步设置”里填写并保存一次。';
+      const msg = t('messages.statusCloudMissingPassword');
       updateStatus(msg);
       if (!options.silent) {
         alert(msg);
@@ -3172,7 +3325,7 @@
     }
 
     try {
-      updateStatus(options.auto ? '正在自动从云端同步...' : '正在从云端读取...');
+      updateStatus(options.auto ? t('messages.statusAutoSyncing') : t('messages.statusReadingCloud'));
       const res = await fetch(cfg.apiUrl, {
         method: 'GET',
         headers: { 'x-app-password': cfg.apiPassword || '' }
@@ -3182,9 +3335,9 @@
       rememberCloudSha(payload.sha || '');
       const incomingData = normalizeData(payload.data);
       if (isEffectivelyEmptyData(incomingData) && !isEffectivelyEmptyData(appData)) {
-        const msg = '云端数据当前为空，但本地还有 ' + totalRecordCount(appData) + ' 条记录。';
+        const msg = t('messages.statusCloudEmptyLocalExists', { count: totalRecordCount(appData) });
         if (options.auto) {
-          updateStatus(msg + ' 已跳过自动覆盖，本地数据保持不变。');
+          updateStatus(t('messages.statusSkipAutoOverwrite', { message: msg }));
           return;
         }
         if (!confirm(msg + '\n\n是否确认用空云端数据覆盖本地？')) return;
@@ -3199,9 +3352,9 @@
       }));
       syncSettingInputs();
       renderAll();
-      updateStatus((options.auto ? '自动云端同步成功：' : '云端数据和配置读取成功：') + formatDateTime(new Date()));
+      updateStatus(options.auto ? t('messages.statusAutoSyncSuccess', { time: formatDateTime(new Date()) }) : t('messages.statusCloudReadSuccess', { time: formatDateTime(new Date()) }));
     } catch (e) {
-      updateStatus('云端读取失败：' + e.message);
+      updateStatus(t('messages.statusCloudReadFailed', { message: e.message }));
       if (!options.silent) alert('云端读取失败：\n' + e.message);
     }
   }
@@ -3285,11 +3438,11 @@
     saveLocalData();
     $('#syncModal').hide();
     if (!cfg.apiUrl) {
-      updateStatus('已切换为本地模式');
+      updateStatus(t('messages.statusLocalModeSwitched'));
       return;
     }
     if (!cfg.apiPassword) {
-      updateStatus('同步设置已保存到本地，但缺少访问密码，不能自动云端同步');
+      updateStatus(t('messages.statusSyncSavedMissingPassword'));
       return;
     }
     await saveSyncSettingSafely(cfg);
@@ -3298,7 +3451,7 @@
   async function saveSyncSettingSafely(cfg) {
     const localBefore = normalizeData(appData);
     try {
-      updateStatus('同步设置已保存本地，正在读取云端数据，避免空数据覆盖...');
+      updateStatus(t('messages.statusSyncSavedReading'));
       const cloudData = await readCloudDataByConfig(cfg);
       cloudData.settings.syncSettings = { apiUrl: cfg.apiUrl, apiPassword: cfg.apiPassword };
 
@@ -3308,13 +3461,13 @@
           appData = localBefore;
           saveLocalData();
           renderAll();
-          updateStatus('同步设置已保存到本地，未覆盖空云端数据');
+          updateStatus(t('messages.statusSyncSavedNoOverwrite'));
           return;
         }
         appData = localBefore;
         appData.settings.syncSettings = { apiUrl: cfg.apiUrl, apiPassword: cfg.apiPassword };
         await putCloudData(cfg, appData);
-        updateStatus('已用本地数据初始化云端，并保存同步设置：' + formatDateTime(new Date()));
+        updateStatus(t('messages.statusCloudInitialized', { time: formatDateTime(new Date()) }));
         renderAll();
         return;
       }
@@ -3324,9 +3477,9 @@
       syncSettingInputs();
       renderAll();
       await putCloudData(cfg, appData);
-      updateStatus('同步设置已安全写入云端，并已从云端同步数据：' + formatDateTime(new Date()));
+      updateStatus(t('messages.statusSyncSavedCloud', { time: formatDateTime(new Date()) }));
     } catch (e) {
-      updateStatus('同步设置已保存到本地，但云端读取/保存失败：' + e.message);
+      updateStatus(t('messages.statusSyncFailed', { message: e.message }));
       alert('同步设置已保存到本地，但没有写入云端。\n\n为避免再次发生空数据覆盖，系统没有用本地数据覆盖云端。\n\n错误：' + e.message);
     }
   }
@@ -3473,7 +3626,7 @@
     appData.settings.rateApiKeys = appData.settings.rateApiKeysCloudSync === 'YES' ? apiKeys : {};
     try { localStorage.removeItem(RATE_CACHE_KEY); } catch (e) {}
     $('#rateModal').hide();
-    $('#rateInfo').text(`当前汇率来源：${getRateProviderLabel(appData.settings.rateProvider)}。点击“刷新汇率”会按该来源重新计算。`);
+    $('#rateInfo').text(t('messages.rateProviderInfo', { provider: getRateProviderLabel(appData.settings.rateProvider) }));
     persistData();
   }
 
@@ -3732,14 +3885,14 @@
       const skippedHistoryCount = Math.max((appData.historyRecords || []).length - eligibleHistoryRecords.length, 0);
 
       if (!activeRecords.length && !eligibleHistoryRecords.length) {
-        alert(`没有需要刷新的记录。当前定存为空，历史记录近 ${historyDays} 天内也没有需要更新的记录。`);
+        alert(t('messages.rateNoRecords', { days: historyDays }));
         return;
       }
 
-      btn.prop('disabled', true).text('刷新中...');
+      btn.prop('disabled', true).text(t('messages.rateButtonRefreshing'));
 
       if (normalizeRateProvider(appData.settings.rateProvider) === 'ExchangeRateHost' && getWorkerBaseUrl()) {
-        updateStatus('正在通过 Cloudflare Worker 刷新 exchangerate.host 汇率，并优先使用 GitHub 今日缓存...');
+        updateStatus(t('messages.statusCloudRateRefreshing'));
         const payload = await postWorkerApi('/refresh-rates', { historyDays });
         if (payload.sha) rememberCloudSha(payload.sha);
         appData = normalizeData(payload.data);
@@ -3748,26 +3901,26 @@
         renderAll();
         const s = payload.summary || {};
         const notes = [];
-        if (s.cacheFetchedOn) notes.push('缓存日期 ' + s.cacheFetchedOn);
-        if (s.cacheJustFetched) notes.push('已调用 API 并覆盖今日缓存');
-        else notes.push('使用 GitHub 今日缓存');
-        if (s.missingDates && s.missingDates.length) notes.push('缺少 ' + s.missingDates.length + ' 个日期');
-        if (s.skippedHistoryCount) notes.push('历史记录跳过 ' + s.skippedHistoryCount + ` 条（超过 ${historyDays} 天）`);
-        $('#rateInfo').text(`已刷新：当前 ${s.activeSuccessCount || 0} 条，历史 ${s.historySuccessCount || 0} 条；${notes.join('；')}`);
-        updateStatus('云端汇率刷新完成：' + formatDateTime(new Date()));
+        if (s.cacheFetchedOn) notes.push(t('messages.noteCacheDate', { date: s.cacheFetchedOn }));
+        if (s.cacheJustFetched) notes.push(t('messages.noteApiCalled'));
+        else notes.push(t('messages.noteUseGithubCache'));
+        if (s.missingDates && s.missingDates.length) notes.push(t('messages.noteMissingDates', { count: s.missingDates.length }));
+        if (s.skippedHistoryCount) notes.push(t('messages.noteSkippedHistory', { count: s.skippedHistoryCount, days: historyDays }));
+        $('#rateInfo').text(t('messages.rateCloudSummary', { active: s.activeSuccessCount || 0, history: s.historySuccessCount || 0, notes: notes.join(currentLanguage() === 'zh' ? '；' : '; ') }));
+        updateStatus(t('messages.statusCloudRateDone', { time: formatDateTime(new Date()) }));
         return;
       }
 
-      updateStatus(`正在刷新汇率：当前 ${activeRecords.length} 条，历史近 ${historyDays} 天 ${eligibleHistoryRecords.length} 条...`);
+      updateStatus(t('messages.statusRateRefreshing', { active: activeRecords.length, days: historyDays, history: eligibleHistoryRecords.length }));
 
       const refreshItems = [
-        ...activeRecords.map(r => ({ record: r, type: '当前' })),
-        ...eligibleHistoryRecords.map(r => ({ record: r, type: '历史' }))
+        ...activeRecords.map(r => ({ record: r, type: t('tabs.active') })),
+        ...eligibleHistoryRecords.map(r => ({ record: r, type: t('tabs.history') }))
       ];
 
       let preloadInfo = null;
       if (shouldPreloadExchangeRateHostTimeframe()) {
-        updateStatus('正在使用 exchangerate.host 缓存逻辑刷新汇率...');
+        updateStatus(t('messages.statusRatePreloading'));
         preloadInfo = await preloadExchangeRateHostRatesForItems(refreshItems);
       }
 
@@ -3777,25 +3930,25 @@
       syncSettingInputs();
 
       const notes = [];
-      if (result.preloadInfo && result.preloadInfo.callCount) notes.push(`exchangerate.host API ${result.preloadInfo.callCount} 次，缓存 ${result.preloadInfo.cachedDateCount} 天汇率`);
-      if (result.openFutureCount) notes.push(result.openFutureCount + ' 条开户日期未到，开户汇率暂用最新汇率');
-      if (result.endFutureCount) notes.push(result.endFutureCount + ' 条结束日期未到，结束汇率暂用最新汇率');
-      if (skippedHistoryCount) notes.push('历史记录跳过 ' + skippedHistoryCount + ` 条（超过 ${historyDays} 天）`);
-      if (result.failedItems.length) notes.push(result.failedItems.length + ' 条失败');
+      if (result.preloadInfo && result.preloadInfo.callCount) notes.push(t('messages.notePreloadApi', { count: result.preloadInfo.callCount, days: result.preloadInfo.cachedDateCount }));
+      if (result.openFutureCount) notes.push(t('messages.noteOpenFuture', { count: result.openFutureCount }));
+      if (result.endFutureCount) notes.push(t('messages.noteEndFuture', { count: result.endFutureCount }));
+      if (skippedHistoryCount) notes.push(t('messages.noteSkippedHistory', { count: skippedHistoryCount, days: historyDays }));
+      if (result.failedItems.length) notes.push(t('messages.noteFailedItems', { count: result.failedItems.length }));
 
-      $('#rateInfo').text(`已刷新：当前 ${result.activeSuccessCount} 条，历史 ${result.historySuccessCount} 条${notes.length ? '；' + notes.join('；') : ''}`);
+      $('#rateInfo').text(t('messages.rateLocalSummary', { active: result.activeSuccessCount, history: result.historySuccessCount, notes: notes.length ? (currentLanguage() === 'zh' ? '；' : '; ') + notes.join(currentLanguage() === 'zh' ? '；' : '; ') : '' }));
       await persistData();
-      updateStatus('汇率刷新完成：' + formatDateTime(new Date()));
+      updateStatus(t('messages.statusRateDone', { time: formatDateTime(new Date()) }));
 
       if (result.failedItems.length) {
         alert('部分记录汇率刷新失败：\n' + result.failedItems.slice(0, 10).join('\n') + (result.failedItems.length > 10 ? '\n...' : ''));
       }
     } catch (e) {
       console.error(e);
-      updateStatus('刷新汇率失败：' + e.message);
+      updateStatus(t('messages.statusRateFailed', { message: e.message }));
       alert('刷新汇率失败：\n' + e.message + '\n\n你也可以先手动填写汇率。');
     } finally {
-      btn.prop('disabled', false).text('刷新汇率');
+      btn.prop('disabled', false).text(t('buttons.refreshRates'));
     }
   }
 
@@ -3808,7 +3961,7 @@
 
     for (const item of items) {
       const r = item.record;
-      const type = item.type || '记录';
+      const type = item.type || t('common.records');
       try {
         if (!r.openDate || !r.endDate) {
           failedItems.push(`${type} ${(r.bank || r.id || '未命名记录')}：缺少开户日期或结束日期`);
@@ -3918,7 +4071,7 @@
     saveLocalData();
 
     const msg = `结束汇率已获取：${rates.date || endDate}，来源：${rates.source}${rates.isFuture ? '；结束日期未到，暂用最新可用汇率' : ''}`;
-    $('#rateInfo').text(`来源：${rates.source}，日期：${rates.date || endDate}`);
+    $('#rateInfo').text(t('messages.rateSourceDate', { source: rates.source, date: rates.date || endDate }));
     $('#formRateHint').text(msg);
     updateFormPreview();
     if (showMessage) alert(`已填入结束汇率。\nUSD→CNY = ${fmtRate(rates.usdCny)}\nTRY→CNY = ${fmtRate(rates.tryCny)}\n日期：${rates.date || endDate}${rates.isFuture ? '\n提示：结束日期未到，暂用最新可用汇率。' : ''}`);
@@ -5290,7 +5443,7 @@
     saveLocalData();
     persistData();
     $('#mailModal').hide();
-    updateStatus('邮件提醒设置已保存；如配置有变化，云端提醒节奏会按新规则重新计算');
+    updateStatus(t('messages.statusMailSaved'));
   }
 
   function previewMailReminder(e, silent) {
@@ -5448,7 +5601,7 @@
       await persistData();
       const result = await postWorkerApi('/send-test-email', { mailTo: cfg.mailTo });
       $('#mailPreview').text('云端测试邮件发送成功。\n收件人：' + (result.result && result.result.to ? result.result.to : cfg.mailTo) + '\n标题：' + (result.result && result.result.subject ? result.result.subject : '-') + '\n\n如果没有收到，请检查垃圾邮件，或确认 Resend 发信域名/收件邮箱权限。');
-      updateStatus('云端测试邮件发送成功');
+      updateStatus(t('messages.statusCloudTestMailDone'));
     } catch (err) {
       $('#mailPreview').text('云端测试邮件发送失败：' + err.message + '\n\n请确认：\n1. 同步设置里的 Worker API 地址和访问密码正确\n2. Cloudflare Worker 已配置 RESEND_API_KEY 和 MAIL_FROM\n3. 新版 worker.js 已部署到 Cloudflare\n4. Resend 发件人可用');
       alert('云端测试邮件发送失败：' + err.message);
@@ -5482,7 +5635,7 @@
       const result = await postWorkerApi('/run-reminders', {});
       const r = result.result || {};
       $('#mailPreview').text('云端手动测试执行完成。\n匹配记录：' + (r.matched || 0) + ' 条\n成功发送：' + (r.sent || 0) + ' 封\n规则：提前 ' + ((r.rules && r.rules.advanceDays || []).join(',') || '-') + ' 天；到期当天每 ' + ((r.rules && r.rules.dueTodayIntervalHours) || '-') + ' 小时；允许时间 ' + (((r.rules && r.rules.pushStartTime) || '00:00') + '-' + ((r.rules && r.rules.pushEndTime) || '23:59')) + '\n\n错误：\n' + ((r.errors || []).join('\n') || '无'));
-      updateStatus('云端邮件提醒执行完成');
+      updateStatus(t('messages.statusCloudMailRunDone'));
     } catch (err) {
       $('#mailPreview').text('云端执行提醒失败：' + err.message + '\n\n请确认 Worker、Resend 和云端 data.json 配置正确。');
       alert('云端执行提醒失败：' + err.message);
@@ -5685,7 +5838,7 @@
 
   function updateStatus(text) {
     const cfg = getConfig();
-    const mode = cfg.apiUrl ? '云端同步模式' : '本地模式';
+    const mode = cfg.apiUrl ? t('messages.modeCloud') : t('messages.modeLocal');
     $('#statusLine').text(`${mode} · ${text}`);
   }
 
