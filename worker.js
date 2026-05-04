@@ -20,6 +20,7 @@
 //   RESEND_API_KEY    Resend email API key
 //   MAIL_FROM         Sender, e.g. "Deposit Reminder <onboarding@resend.dev>"
 //   EXCHANGE_RATE_HOST_API_KEY  Optional. Used by cloud email reminders to refresh rates before sending.
+// v34: Explicitly preserves/saves new UI settings in data.json, including timeZone and columnWidths.
 // v31: PUT uses GitHub sha optimistic locking; timezone-aware reminders/rate refresh; keeps Worker-owned fields safe.
 // v29: Cron duplicate prevention only uses cron-sent records. Manual cloud tests do not block scheduled sending.
 // v26: Before sending reminder emails, refresh target records with exchangerate.host yearly cache stored in data.json.
@@ -63,7 +64,11 @@ const DEFAULT_DATA = {
     rateApiKeys: {},
     exchangeRateHostYearCache: null,
     lastRateFetchDate: '',
+    language: 'zh',
     timeZone: 'UTC',
+    columnVisibility: { active: {}, history: {} },
+    columnLabels: { active: {}, history: {} },
+    columnWidths: { active: {}, history: {} },
     emailReminder: DEFAULT_EMAIL_REMINDER,
     sentReminders: {},
     recordTombstones: {}

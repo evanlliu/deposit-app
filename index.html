@@ -544,9 +544,15 @@
       font-size: 13px;
       text-align: right;
     }
-    /* 自定义列宽只影响用户填写了宽度的列；未填写的列保持内容自适应。 */
+    /* 自定义列宽只影响用户填写了宽度的列；未填写的列保持内容自适应。
+       固定宽度列的具体 width/max-width 由 JS 按当前列顺序写入 <style>，
+       这样 40px 这类小宽度也会真实生效，超出内容显示省略号。 */
     table.has-custom-widths {
       table-layout: auto;
+    }
+    .table-cell-content {
+      display: block;
+      min-width: 0;
     }
     .actions-cell {
       min-width: 150px;
@@ -3753,9 +3759,33 @@
     const cols = getVisibleColumns(type);
     const html = cols.map(col => {
       const width = getCustomColumnWidth(type, col.key);
-      return width ? `<col style="width:${width}px;min-width:${width}px;" />` : '<col />';
+      return width ? `<col style="width:${width}px;min-width:${width}px;max-width:${width}px;" />` : '<col />';
     }).join('');
     return `<colgroup>${html}</colgroup>`;
+  }
+
+  function updateColumnWidthStyle(type) {
+    const tableId = type === 'active' ? 'activeTable' : 'historyTable';
+    const styleId = `${tableId}ColumnWidthStyle`;
+    const cols = getVisibleColumns(type);
+    const rules = [];
+    cols.forEach((col, index) => {
+      const width = getCustomColumnWidth(type, col.key);
+      if (!width) return;
+      const nth = index + 1;
+      const cellSelector = `#${tableId} th:nth-child(${nth}), #${tableId} td:nth-child(${nth})`;
+      const contentSelector = `#${tableId} th:nth-child(${nth}) > .table-cell-content, #${tableId} td:nth-child(${nth}) > .table-cell-content`;
+      rules.push(`${cellSelector}{width:${width}px!important;min-width:${width}px!important;max-width:${width}px!important;overflow:hidden!important;}`);
+      rules.push(`${contentSelector}{width:100%;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}`);
+    });
+
+    let styleEl = document.getElementById(styleId);
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = rules.join('\n');
   }
 
   function getEstimatedAutoColumnWidth(type, key) {
@@ -3788,6 +3818,7 @@
 
   function applyTableColumnSizing(selector, type) {
     const hasWidths = hasCustomColumnWidths(type);
+    updateColumnWidthStyle(type);
     const table = $(selector);
     table.toggleClass('has-custom-widths', hasWidths);
     table.css('min-width', getTableMinWidth(type) + 'px');
@@ -3795,11 +3826,11 @@
 
   function tableHeadHtml(type) {
     const cols = getVisibleColumns(type);
-    return '<thead><tr>' + cols.map(col => `<th class="${escapeAttr(col.thClass || '')}">${columnLabelHtml(type, col)}</th>`).join('') + '</tr></thead>';
+    return '<thead><tr>' + cols.map(col => `<th class="${escapeAttr(col.thClass || '')}"><div class="table-cell-content">${columnLabelHtml(type, col)}</div></th>`).join('') + '</tr></thead>';
   }
 
   function tableCell(className, html) {
-    return `<td class="${escapeAttr(className || '')}">${html}</td>`;
+    return `<td class="${escapeAttr(className || '')}"><div class="table-cell-content">${html}</div></td>`;
   }
 
   function renderActiveTable() {

@@ -1,4 +1,24 @@
-# 定期存款管理系统 v33
+# 定期存款管理系统 v35
+
+## v35 列宽精确修复
+
+- 列配置里的“列宽 px”现在会真正按填写的像素值生效，例如填写 `40` 就会将该列固定为 40px。
+- 未填写列宽的列不做固定宽度处理，继续由浏览器按该列内容自适应。
+- 已填写列宽的列会对表头、表体、表尾同时应用 `width / min-width / max-width`。
+- 已填写列宽的列超出内容使用单行省略号显示，不再撑开列宽。
+- 列宽配置仍保存在 `settings.columnWidths`，并随 `data.json` 多设备同步。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v35`，方便浏览器拉取新版前端。
+
+## v34 保存配置确认
+
+本版本确认所有新增配置都会写入 `data.json` 的 `settings` 字段，便于多设备同步：
+
+- `settings.timeZone`：页面日期计算、邮件提醒、Worker Cron、云端汇率刷新使用的 IANA 时区。
+- `settings.columnWidths`：列宽配置，结构为 `{ active: {}, history: {} }`；空对象表示默认自适应。
+- `settings.columnVisibility` / `settings.columnLabels`：列显示和列名配置。
+
+列宽留空不会写入具体宽度，代表默认按内容自适应。
+
 
 - 修复列宽自定义后“操作”列按钮被压缩/隐藏的问题。
 - 表格保持自动布局：未填写列宽的列继续按内容自适应；只有填写了 px 的列才按自定义宽度显示。
