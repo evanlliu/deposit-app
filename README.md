@@ -1,4 +1,11 @@
-# 定期存款管理系统 v35
+# 定期存款管理系统 v36
+
+## v36 操作列列宽配置
+
+- “操作”列现在也会显示在列配置里，固定显示但可以设置列宽。
+- 操作列宽度同样保存到 `settings.columnWidths.active.actions` / `settings.columnWidths.history.actions`，会写入 `data.json` 并支持多设备同步。
+- 留空仍然按按钮内容自适应；填写 px 后按实际宽度固定，超出部分按省略/裁剪处理。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v36`。
 
 ## v35 列宽精确修复
 

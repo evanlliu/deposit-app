@@ -544,6 +544,15 @@
       font-size: 13px;
       text-align: right;
     }
+    .locked-column {
+      background: #fbfdff;
+    }
+    .column-locked-note {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
     /* 自定义列宽只影响用户填写了宽度的列；未填写的列保持内容自适应。
        固定宽度列的具体 width/max-width 由 JS 按当前列顺序写入 <style>，
        这样 40px 这类小宽度也会真实生效，超出内容显示省略号。 */
@@ -1414,7 +1423,7 @@
           </div>
         </div>
         <div class="hint" style="margin-top:12px;">
-          “序号”列也可以隐藏/显示；“操作”列固定显示。列名、列宽和列显示配置会一起保存到云端，多设备同步。列宽留空就是自适应，填写数字代表 px。
+          “序号”列也可以隐藏/显示；“操作”列固定显示但可以设置列宽。列名、列宽和列显示配置会一起保存到云端，多设备同步。列宽留空就是自适应，填写数字代表 px。
         </div>
       </div>
       <div class="modal-foot">
@@ -1657,7 +1666,7 @@
       record: { addTitle: '新增定存', editTitle: '编辑定存', bank: '银行', openDate: '开户日期', startDate: '开始日期', endDate: '结束日期', principalTry: '本金 TRY', principalPlusInterestTry: '本金+利息 TRY', annualRateTry: '年利率 TRY %', taxRate: '税率 %', interestTry: '利息 TRY', reminderEnabled: '是否创建提醒', autoEstimateInterest: '自动估算利息', noAutoCover: '不自动覆盖', autoCover: '根据年利率自动覆盖本金+利息', rateAuto: '汇率自动获取', openUsdCny: '开户 USD→CNY 汇率', openTryCny: '开户 TRY→CNY 汇率', endUsdCny: '结束 USD→CNY 汇率', endTryCny: '结束 TRY→CNY 汇率', remark: '备注', historyExtra: '历史记录补充', deleteReason: '删除原因', exchangeTry: '兑换 TRY', exchangeCny: '兑换 CNY', exchangeReason: '兑换原因', hint: '说明：现在只需要手动录入开户日期、开始日期、结束日期、本金 TRY、本金+利息 TRY、年利率 TRY。利息、存款天数、剩余天数、CNY/USD 换算、CNY 年化收益率都会自动计算。结束日期如果是未来日期，系统会暂时使用最新可用汇率，等到结束日期后可以点击“刷新汇率”重新按开户日期和结束日期更新汇率。', calcTitle: '自动计算：', calcLine1: '存款天数：{depositDays} 天；剩余天数：{remainingDays} 天；利息 TRY：{interestTry}', calcOpenRate: '开户汇率：USD→CNY {usdOpen}，TRY→CNY {tryOpen}', calcEndRate: '结束汇率：USD→CNY {usdEnd}，TRY→CNY {tryEnd}', calcCny: '本金 CNY：{principalCny}；本金+利息 CNY：{totalCny}；获得 CNY：{gainCny}', calcUsd: '本金 USD：{principalUsd}；本金+利息 USD：{totalUsd}；获得 USD：{gainUsd}；CNY 年化：{annualRateCny}%' },
       sync: { title: '同步设置', apiUrl: 'Cloudflare Worker API 地址', password: '访问密码', hint: 'API 地址和访问密码会写入云端配置/备份 JSON。任意设备保存一次后，其他设备打开页面会自动读取云端配置和数据。你仍然可以在这里自定义 Worker 地址和访问密码。' },
       rate: { historyRange: '历史刷新范围', title: '汇率设置', provider: '默认汇率来源', fallback: '失败时自动切换备用来源', tcmbType: 'TCMB 汇率类型', exchangeRateApiKey: 'ExchangeRate-API Key，可选', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'exchangerate.host 获取最新 API 返回数据', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: '是否把汇率 API Key 同步到云端', optYesRefresh: 'YES，每次刷新时都重新调用 API 获取并覆盖 GitHub 今日汇率缓存', optNoRefresh: 'NO，优先使用 GitHub 里今天已缓存的汇率；如果今天没有缓存，才调用 API 获取', optNoKeys: 'NO，不同步密钥，推荐更安全', optYesKeys: 'YES，同步到 GitHub data.json，换设备不用重新填写', hint: '开户汇率和结束汇率都会按这里选择的来源获取。TCMB 更适合 TRY 场景；Frankfurter 无需 Key；ExchangeRate-API 不填 Key 时只使用开放最新汇率；exchangerate.host 和 currencyapi.com 需要 API Key。exchangerate.host 会把当天获取到的最近一年汇率缓存到 GitHub 的 data.json；如果“获取最新 API 返回数据”选择 NO，则当天后续刷新优先使用 GitHub 缓存，避免重复消耗 API 次数；如果选择 YES，则每次刷新都会重新调用 API 并覆盖今天的缓存。' },
-      column: { title: '列配置', activeTitle: '当前定存列配置', historyTitle: '历史记录列配置', activeHint: '当前定存表和历史记录表独立保存配置。可以隐藏列、修改显示列名，也可以设置列宽；字段 code 不会变化。', historyHint: '历史记录可以单独修改列名和列宽，例如把“银行”改成“土耳其银行”，不会影响当前定存表。', bottomHint: '“序号”列也可以隐藏/显示；“操作”列固定显示。列名、列宽和列显示配置会一起保存到云端，多设备同步。列宽留空就是自适应；填写数字代表 px。', displayName: '显示名称：{name}', widthPx: '列宽 px', widthPlaceholder: '自适应' },
+      column: { title: '列配置', activeTitle: '当前定存列配置', historyTitle: '历史记录列配置', activeHint: '当前定存表和历史记录表独立保存配置。可以隐藏列、修改显示列名，也可以设置列宽；字段 code 不会变化。', historyHint: '历史记录可以单独修改列名和列宽，例如把“银行”改成“土耳其银行”，不会影响当前定存表。', bottomHint: '“序号”列也可以隐藏/显示；“操作”列固定显示但可以设置列宽。列名、列宽和列显示配置会一起保存到云端，多设备同步。列宽留空就是自适应；填写数字代表 px。', displayName: '显示名称：{name}', widthPx: '列宽 px', widthPlaceholder: '自适应', lockedVisible: '固定显示' },
       mail: { title: '邮件提醒设置', enabled: '是否启用邮件提醒', to: '收件邮箱', advanceDays: '提前几天推送', dueHours: '到期当天每几小时推送', onlyEnabled: '只提醒已开启提醒的记录', timeZone: '页面/提醒时区', timeZoneCustom: '自定义时区', subject: '邮件标题模板', body: '邮件内容模板', variables: '模板变量', varHead: '点击变量，自动插入到标题或内容的光标位置', varSub: '例如点击“银行”会插入 {{bank}}', varNote: '说明：“利息 CNY”= 利息 TRY × 结束 TRY→CNY 汇率；“获得 CNY”= 本金+利息按结束汇率折算后减去本金按开户汇率折算后的结果，包含汇率变化影响。', preview: '邮件预览', previewButtonHint: '点击“预览提醒邮件”。', hint: '邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；邮件正文只发送“邮件内容模板”里的内容，不会再额外追加字段。你可以点击“模板变量”按钮插入字段，例如点击“银行”会插入 {{bank}}。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；两个规则都填写时会同时生效。', noMatch: '当前没有符合提醒条件的定存。\n例如设置提前 7 天，只有剩余天数等于 7 的记录才会进入邮件提醒。', previewSubject: '标题：{subject}\n\n内容：\n{body}', previewMore: '\n\n共 {count} 条符合条件，实际推送时会逐条发送。' },
       mobile: { startEnd: '开始/结束', interestTry: '利息 TRY', annualRateTry: '年利率 TRY', annualRateCny: '年利率 CNY', principalCny: '本金 CNY', gainCny: '获得 CNY', deleteReason: '删除原因', reminder: '提醒', exchangeTry: '兑换 TRY', exchangeCny: '兑换 CNY', exchangeReason: '兑换原因', remark: '备注', history: '历史', expired: '已到期' },
       empty: { active: '暂无当前定存，点击“新增定存”开始。', history: '暂无历史记录。', mobileActive: '暂无当前定存。', mobileHistory: '暂无历史记录。' },
@@ -1675,7 +1684,7 @@
       record: { addTitle: 'Add Deposit', editTitle: 'Edit Deposit', bank: 'Bank', openDate: 'Opening Date', startDate: 'Start Date', endDate: 'End Date', principalTry: 'Principal TRY', principalPlusInterestTry: 'Principal + Interest TRY', annualRateTry: 'Annual Rate TRY %', taxRate: 'Tax Rate %', interestTry: 'Interest TRY', reminderEnabled: 'Create Reminder', autoEstimateInterest: 'Auto Estimate Interest', noAutoCover: 'Do not auto overwrite', autoCover: 'Overwrite principal+interest by annual rate', rateAuto: 'Rate Auto Fetch', openUsdCny: 'Open USD→CNY Rate', openTryCny: 'Open TRY→CNY Rate', endUsdCny: 'End USD→CNY Rate', endTryCny: 'End TRY→CNY Rate', remark: 'Note', historyExtra: 'History Extra Info', deleteReason: 'Delete Reason', exchangeTry: 'Exchange TRY', exchangeCny: 'Exchange CNY', exchangeReason: 'Exchange Reason', hint: 'Note: now you only need to manually enter opening date, start date, end date, principal TRY, principal+interest TRY, and annual rate TRY. Interest, deposit days, remaining days, CNY/USD conversion and CNY annualized return are calculated automatically.', calcTitle: 'Auto calculation:', calcLine1: 'Deposit days: {depositDays} days; remaining days: {remainingDays} days; interest TRY: {interestTry}', calcOpenRate: 'Open rate: USD→CNY {usdOpen}, TRY→CNY {tryOpen}', calcEndRate: 'End rate: USD→CNY {usdEnd}, TRY→CNY {tryEnd}', calcCny: 'Principal CNY: {principalCny}; Principal+Interest CNY: {totalCny}; Gain CNY: {gainCny}', calcUsd: 'Principal USD: {principalUsd}; Principal+Interest USD: {totalUsd}; Gain USD: {gainUsd}; CNY Annualized: {annualRateCny}%' },
       sync: { title: 'Sync Settings', apiUrl: 'Cloudflare Worker API URL', password: 'Access Password', hint: 'The API URL and password are saved to cloud configuration / backup JSON. After one device saves them, other devices can automatically load cloud configuration and data. You can still customize the Worker URL and password here.' },
       rate: { historyRange: 'History refresh range', title: 'Rate Settings', provider: 'Default Rate Provider', fallback: 'Auto fallback on failure', tcmbType: 'TCMB Rate Type', exchangeRateApiKey: 'ExchangeRate-API Key, optional', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'Fetch latest API response from exchangerate.host', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: 'Sync rate API keys to cloud', optYesRefresh: 'YES, call API every refresh and overwrite today’s GitHub rate cache', optNoRefresh: 'NO, use today’s GitHub cache first; call API only if no cache exists today', optNoKeys: 'NO, do not sync keys, safer', optYesKeys: 'YES, sync to GitHub data.json for other devices', hint: 'Opening and ending rates are fetched from the selected source. exchangerate.host caches the last-year rates in GitHub data.json to reduce API calls.' },
-      column: { title: 'Column Settings', activeTitle: 'Active Deposit Columns', historyTitle: 'History Columns', activeHint: 'Active and history tables keep independent settings. You can hide columns, rename display labels, and set widths; field codes do not change.', historyHint: 'History column names and widths can be customized separately without affecting active deposits.', bottomHint: 'The sequence column can also be hidden/shown; the action column is fixed. Column labels, widths, and visibility are synced across devices. Leave width blank for auto; numbers are px.', displayName: 'Display name: {name}', widthPx: 'Width px', widthPlaceholder: 'Auto' },
+      column: { title: 'Column Settings', activeTitle: 'Active Deposit Columns', historyTitle: 'History Columns', activeHint: 'Active and history tables keep independent settings. You can hide columns, rename display labels, and set widths; field codes do not change.', historyHint: 'History column names and widths can be customized separately without affecting active deposits.', bottomHint: 'The sequence column can also be hidden/shown; the action column stays visible but its width can be customized. Column labels, widths, and visibility are synced across devices. Leave width blank for auto; numbers are px.', displayName: 'Display name: {name}', widthPx: 'Width px', widthPlaceholder: 'Auto', lockedVisible: 'Always visible' },
       mail: { title: 'Email Reminder Settings', enabled: 'Enable Email Reminder', to: 'Recipient Email', advanceDays: 'Advance Reminder Days', dueHours: 'Due-day Repeat Every X Hours', onlyEnabled: 'Only records with reminder enabled', timeZone: 'Page / reminder time zone', timeZoneCustom: 'Custom time zone', subject: 'Email Subject Template', body: 'Email Body Template', variables: 'Template Variables', varHead: 'Click a variable to insert it at the cursor position', varSub: 'For example, Bank inserts {{bank}}', varNote: 'Note: Interest CNY = Interest TRY × end TRY→CNY rate; Gain CNY includes FX impact.', preview: 'Email Preview', previewButtonHint: 'Click “Preview Email”.', hint: 'Email rules are saved to the cloud. Sending is performed by Cloudflare Worker + Resend. The email body only uses your body template and does not append extra fields.', noMatch: 'No matching deposits for reminder.\nFor example, if advance days is 7, only records with 7 remaining days match.', previewSubject: 'Subject: {subject}\n\nBody:\n{body}', previewMore: '\n\n{count} matching records. Actual sending will send one email per record.' },
       mobile: { startEnd: 'Start/End', interestTry: 'Interest TRY', annualRateTry: 'Annual Rate TRY', annualRateCny: 'Annual Rate CNY', principalCny: 'Principal CNY', gainCny: 'Gain CNY', deleteReason: 'Delete Reason', reminder: 'Reminder', exchangeTry: 'Exchange TRY', exchangeCny: 'Exchange CNY', exchangeReason: 'Exchange Reason', remark: 'Note', history: 'History', expired: 'Due' },
       empty: { active: 'No active deposits. Click “Add Deposit” to start.', history: 'No history records.', mobileActive: 'No active deposits.', mobileHistory: 'No history records.' },
@@ -1693,7 +1702,7 @@
       record: { addTitle: 'Mevduat Ekle', editTitle: 'Mevduatı Düzenle', bank: 'Banka', openDate: 'Açılış Tarihi', startDate: 'Başlangıç Tarihi', endDate: 'Bitiş Tarihi', principalTry: 'Ana Para TRY', principalPlusInterestTry: 'Ana Para + Faiz TRY', annualRateTry: 'Yıllık Oran TRY %', taxRate: 'Vergi Oranı %', interestTry: 'Faiz TRY', reminderEnabled: 'Hatırlatma Oluştur', autoEstimateInterest: 'Faizi Otomatik Hesapla', noAutoCover: 'Otomatik üzerine yazma', autoCover: 'Yıllık orana göre toplamı güncelle', rateAuto: 'Kur Otomatik Al', openUsdCny: 'Açılış USD→CNY Kuru', openTryCny: 'Açılış TRY→CNY Kuru', endUsdCny: 'Bitiş USD→CNY Kuru', endTryCny: 'Bitiş TRY→CNY Kuru', remark: 'Not', historyExtra: 'Geçmiş Ek Bilgi', deleteReason: 'Silme Nedeni', exchangeTry: 'Değişim TRY', exchangeCny: 'Değişim CNY', exchangeReason: 'Değişim Nedeni', hint: 'Not: yalnızca açılış tarihi, başlangıç tarihi, bitiş tarihi, ana para TRY, ana para+faiz TRY ve yıllık oran TRY girilir. Diğer değerler otomatik hesaplanır.', calcTitle: 'Otomatik hesaplama:', calcLine1: 'Mevduat günü: {depositDays}; kalan gün: {remainingDays}; faiz TRY: {interestTry}', calcOpenRate: 'Açılış kuru: USD→CNY {usdOpen}, TRY→CNY {tryOpen}', calcEndRate: 'Bitiş kuru: USD→CNY {usdEnd}, TRY→CNY {tryEnd}', calcCny: 'Ana para CNY: {principalCny}; Ana para+faiz CNY: {totalCny}; Getiri CNY: {gainCny}', calcUsd: 'Ana para USD: {principalUsd}; Ana para+faiz USD: {totalUsd}; Getiri USD: {gainUsd}; CNY yıllık: {annualRateCny}%' },
       sync: { title: 'Senkron Ayarları', apiUrl: 'Cloudflare Worker API Adresi', password: 'Erişim Şifresi', hint: 'API adresi ve şifre bulut yapılandırmasına / yedek JSON’a kaydedilir. Bir cihazda kaydedildiğinde diğer cihazlar otomatik olarak bulut verilerini alabilir.' },
       rate: { historyRange: 'Geçmiş yenileme aralığı', title: 'Kur Ayarları', provider: 'Varsayılan Kur Kaynağı', fallback: 'Hata olursa yedek kaynağa geç', tcmbType: 'TCMB Kur Tipi', exchangeRateApiKey: 'ExchangeRate-API Key, opsiyonel', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'exchangerate.host güncel API verisini al', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: 'Kur API key buluta senkronlansın mı', optYesRefresh: 'YES, her yenilemede API çağır ve bugünkü GitHub kur önbelleğini güncelle', optNoRefresh: 'NO, önce bugünkü GitHub önbelleğini kullan; yoksa API çağır', optNoKeys: 'NO, key senkronlama; daha güvenli', optYesKeys: 'YES, GitHub data.json içine senkronla', hint: 'Açılış ve bitiş kurları seçilen kaynaktan alınır. exchangerate.host son bir yıllık kurları GitHub data.json içinde önbelleğe alır.' },
-      column: { title: 'Sütun Ayarları', activeTitle: 'Aktif Mevduat Sütunları', historyTitle: 'Geçmiş Sütunları', activeHint: 'Aktif ve geçmiş tabloları bağımsız ayarlar tutar. Sütun gizleyebilir, görünen adları değiştirebilir ve genişlik ayarlayabilirsiniz; field code değişmez.', historyHint: 'Geçmiş sütun adları ve genişlikleri aktif tabloyu etkilemeden ayrı düzenlenebilir.', bottomHint: 'Sıra sütunu da gizlenebilir/gösterilebilir; işlem sütunu sabittir. Sütun adları, genişlikleri ve görünürlük ayarları cihazlar arasında senkronlanır. Genişlik boşsa otomatik; sayı px anlamına gelir.', displayName: 'Görünen ad: {name}', widthPx: 'Genişlik px', widthPlaceholder: 'Otomatik' },
+      column: { title: 'Sütun Ayarları', activeTitle: 'Aktif Mevduat Sütunları', historyTitle: 'Geçmiş Sütunları', activeHint: 'Aktif ve geçmiş tabloları bağımsız ayarlar tutar. Sütun gizleyebilir, görünen adları değiştirebilir ve genişlik ayarlayabilirsiniz; field code değişmez.', historyHint: 'Geçmiş sütun adları ve genişlikleri aktif tabloyu etkilemeden ayrı düzenlenebilir.', bottomHint: 'Sıra sütunu da gizlenebilir/gösterilebilir; işlem sütunu görünür kalır ama genişliği özelleştirilebilir. Sütun adları, genişlikleri ve görünürlük ayarları cihazlar arasında senkronlanır. Genişlik boşsa otomatik; sayı px anlamına gelir.', displayName: 'Görünen ad: {name}', widthPx: 'Genişlik px', widthPlaceholder: 'Otomatik', lockedVisible: 'Sabit görünür' },
       mail: { title: 'E-posta Hatırlatma Ayarları', enabled: 'E-posta hatırlatmayı etkinleştir', to: 'Alıcı e-posta', advanceDays: 'Kaç gün önce hatırlat', dueHours: 'Vade günü kaç saatte bir', onlyEnabled: 'Yalnız hatırlatma açık kayıtlar', timeZone: 'Sayfa / hatırlatma saat dilimi', timeZoneCustom: 'Özel saat dilimi', subject: 'E-posta başlık şablonu', body: 'E-posta içerik şablonu', variables: 'Şablon Değişkenleri', varHead: 'Değişkene tıklayın, imlecin olduğu yere eklensin', varSub: 'Örneğin Banka {{bank}} ekler', varNote: 'Not: Faiz CNY = Faiz TRY × bitiş TRY→CNY kuru; Getiri CNY kur etkisini içerir.', preview: 'E-posta Önizleme', previewButtonHint: '“E-postayı Önizle” düğmesine tıklayın.', hint: 'E-posta kuralları buluta kaydedilir. Gönderim Cloudflare Worker + Resend ile yapılır. İçerik yalnızca şablondaki metni kullanır.', noMatch: 'Hatırlatma koşuluna uyan mevduat yok.\nÖrn. 7 gün önce seçilirse yalnız kalan gün 7 olan kayıtlar eşleşir.', previewSubject: 'Başlık: {subject}\n\nİçerik:\n{body}', previewMore: '\n\n{count} kayıt eşleşti. Gönderimde her kayıt için ayrı e-posta gönderilir.' },
       mobile: { startEnd: 'Başlangıç/Bitiş', interestTry: 'Faiz TRY', annualRateTry: 'Yıllık Oran TRY', annualRateCny: 'Yıllık Oran CNY', principalCny: 'Ana Para CNY', gainCny: 'Getiri CNY', deleteReason: 'Silme Nedeni', reminder: 'Hatırlatma', exchangeTry: 'Değişim TRY', exchangeCny: 'Değişim CNY', exchangeReason: 'Değişim Nedeni', remark: 'Not', history: 'Geçmiş', expired: 'Vadesi doldu' },
       empty: { active: 'Aktif mevduat yok. Başlamak için “Mevduat Ekle” tıklayın.', history: 'Geçmiş kayıt yok.', mobileActive: 'Aktif mevduat yok.', mobileHistory: 'Geçmiş kayıt yok.' },
@@ -3695,7 +3704,6 @@
       const src = value[type];
       if (!src || typeof src !== 'object') return;
       getTableColumns(type).forEach(col => {
-        if (col.locked) return;
         const width = sanitizeColumnWidth(src[col.key]);
         if (width) result[type][col.key] = width;
       });
@@ -3710,7 +3718,6 @@
       const src = value[type];
       if (!src || typeof src !== 'object') return;
       getTableColumns(type).forEach(col => {
-        if (col.locked) return;
         const custom = typeof src[col.key] === 'string' ? src[col.key].trim() : '';
         if (custom && custom !== getDefaultColumnLabelText(type, col)) result[type][col.key] = custom;
       });
@@ -3777,6 +3784,10 @@
       const contentSelector = `#${tableId} th:nth-child(${nth}) > .table-cell-content, #${tableId} td:nth-child(${nth}) > .table-cell-content`;
       rules.push(`${cellSelector}{width:${width}px!important;min-width:${width}px!important;max-width:${width}px!important;overflow:hidden!important;}`);
       rules.push(`${contentSelector}{width:100%;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}`);
+      if (col.key === 'actions') {
+        rules.push(`#${tableId} td:nth-child(${nth}) .actions-inline{max-width:100%;overflow:hidden;flex-wrap:nowrap;}`);
+        rules.push(`#${tableId} td:nth-child(${nth}) .actions-inline button{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}`);
+      }
     });
 
     let styleEl = document.getElementById(styleId);
@@ -4033,15 +4044,16 @@
   function renderColumnConfigBox(type) {
     const box = type === 'active' ? '#activeColumnBox' : '#historyColumnBox';
     const html = getTableColumns(type)
-      .filter(col => !col.locked)
       .map(col => {
         const defaultLabel = getDefaultColumnLabelText(type, col);
         const customLabel = getCustomColumnLabel(type, col.key);
         const customWidth = getCustomColumnWidth(type, col.key) || '';
-        return `<div class="column-config-item">
+        const checkedAttr = col.locked ? 'checked disabled' : (isColumnVisible(type, col.key) ? 'checked' : '');
+        const lockedNote = col.locked ? `<span class="column-locked-note">${escapeHtml(t('column.lockedVisible'))}</span>` : '';
+        return `<div class="column-config-item${col.locked ? ' locked-column' : ''}">
           <label class="column-visible-row">
-            <input type="checkbox" data-column-table="${type}" value="${escapeAttr(col.key)}" ${isColumnVisible(type, col.key) ? 'checked' : ''} />
-            <span>${escapeHtml(defaultLabel)}</span>
+            <input type="checkbox" data-column-table="${type}" value="${escapeAttr(col.key)}" ${checkedAttr} />
+            <span>${escapeHtml(defaultLabel)}</span>${lockedNote}
           </label>
           <div class="column-code">${escapeHtml(t('common.code'))}: ${escapeHtml(col.key)}</div>
           <input class="column-label-input" data-column-label-table="${type}" data-column-label-key="${escapeAttr(col.key)}" value="${escapeAttr(customLabel)}" placeholder="${escapeAttr(t('column.displayName', { name: defaultLabel }))}" />
@@ -4061,9 +4073,10 @@
     const nextWidths = defaultColumnWidths();
     ['active', 'history'].forEach(type => {
       getTableColumns(type).forEach(col => {
-        if (col.locked) return;
-        const checked = $(`#columnModal input[data-column-table="${type}"][value="${col.key}"]`).prop('checked');
-        if (!checked) next[type][col.key] = false;
+        if (!col.locked) {
+          const checked = $(`#columnModal input[data-column-table="${type}"][value="${col.key}"]`).prop('checked');
+          if (!checked) next[type][col.key] = false;
+        }
 
         const defaultLabel = getDefaultColumnLabelText(type, col);
         const customLabel = ($(`#columnModal input[data-column-label-table="${type}"][data-column-label-key="${col.key}"]`).val() || '').trim();
