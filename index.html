@@ -261,8 +261,10 @@
     }
 
     table {
-      width: 100%;
-      min-width: 1540px;
+      /* v41: 内容宽度超过容器时按真实内容横向滚动；内容宽度小于容器时自动撑满一屏。 */
+      width: max-content;
+      min-width: 100%;
+      max-width: none;
       border-collapse: collapse;
       background: white;
     }
@@ -553,9 +555,8 @@
       color: var(--muted);
       white-space: nowrap;
     }
-    /* 自定义列宽只影响用户填写了宽度的列；未填写的列保持内容自适应。
-       固定宽度列的具体 width/max-width 由 JS 按当前列顺序写入 <style>，
-       这样 40px 这类小宽度也会真实生效，超出内容显示省略号。 */
+    /* v41：列宽先按真实内容自适应；如果整张表小于容器，则表格撑满一屏。
+       已填写列宽的列由 JS 写入 width/max-width，严格按 px 生效，超出内容显示省略号。 */
     table.has-custom-widths {
       table-layout: auto;
     }
@@ -4244,12 +4245,11 @@
   }
 
   function getTableMinWidth(type) {
-    const defaultMinWidth = 1540;
-    const cols = getVisibleColumns(type);
-    const estimated = cols.reduce((sum, col) => {
-      return sum + (getCustomColumnWidth(type, col.key) || getEstimatedAutoColumnWidth(type, col.key));
-    }, 0);
-    return Math.max(defaultMinWidth, estimated);
+    // v41：不再用固定像素 min-width 撑大表格。
+    // 未配置列宽的列交给浏览器按真实内容自适应；
+    // 如果整张表小于容器，则 CSS min-width:100% 让表格铺满一屏；
+    // 已配置列宽的列由 updateColumnWidthStyle 精确控制。
+    return 0;
   }
 
   function applyTableColumnSizing(selector, type) {
@@ -4257,7 +4257,8 @@
     updateColumnWidthStyle(type);
     const table = $(selector);
     table.toggleClass('has-custom-widths', hasWidths);
-    table.css('min-width', getTableMinWidth(type) + 'px');
+    // 保留 CSS 默认的 width:max-content + min-width:100%，不要用内联样式覆盖。
+    table.css({ width: '', minWidth: '' });
   }
 
   function tableHeadHtml(type) {
