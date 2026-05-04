@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v45-required-record-fields';
+const CACHE_VERSION = 'deposit-app-v47-date-picker-sticky-total';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];
