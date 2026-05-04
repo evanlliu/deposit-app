@@ -21,6 +21,7 @@
 //   RESEND_API_KEY    Resend email API key
 //   MAIL_FROM         Sender, e.g. "Deposit Reminder <onboarding@resend.dev>"
 //   EXCHANGE_RATE_HOST_API_KEY  Optional. Used by cloud email reminders to refresh rates before sending.
+// v51: Adds configurable page lock timeout; each device keeps its own local unlock timer.
 // v50: Adds /auth endpoint so the page lock screen can verify APP_PASSWORD before loading data.
 // v44: Email template variables now support active table column codes and keep legacy aliases.
 // v42: Email reminder supports push windows and config-fingerprint based duplicate reset.
@@ -75,6 +76,8 @@ const DEFAULT_DATA = {
     lastRateFetchDate: '',
     language: 'zh',
     timeZone: 'UTC',
+    lockTimeoutMinutes: 2,
+    syncSettings: { apiUrl: '', apiPassword: '' },
     columnVisibility: { active: {}, history: {} },
     columnLabels: { active: {}, history: {} },
     columnWidths: { active: {}, history: {} },
@@ -843,6 +846,12 @@ async function sendEmailWithResend(env, to, subject, text) {
   return payload;
 }
 
+function normalizeLockTimeoutMinutes(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 2;
+  return Math.min(1440, Math.max(0, Math.round(n)));
+}
+
 function normalizeData(data) {
   data = data || {};
   const rawSettings = data && data.settings ? data.settings : {};
@@ -853,6 +862,7 @@ function normalizeData(data) {
     sentReminders: rawSettings.sentReminders && typeof rawSettings.sentReminders === 'object' ? rawSettings.sentReminders : {},
     recordTombstones: rawSettings.recordTombstones && typeof rawSettings.recordTombstones === 'object' ? rawSettings.recordTombstones : {},
     timeZone: normalizeTimeZone(rawSettings.timeZone || DEFAULT_DATA.settings.timeZone),
+    lockTimeoutMinutes: normalizeLockTimeoutMinutes(rawSettings.lockTimeoutMinutes),
     exchangeRateHostRefreshLatestApi: rawSettings.exchangeRateHostRefreshLatestApi === 'YES' ? 'YES' : 'NO',
     exchangeRateHostBatchWindowDays: 365
   };
