@@ -7,6 +7,7 @@
 //   POST /run-reminders      -> manually trigger reminder check
 //   POST /send-reminder-test -> backward-compatible alias of /run-reminders
 //   POST /refresh-rates       -> refresh active/history rates with exchangerate.host yearly cache and save data.json
+//   POST /auth                -> verify APP_PASSWORD for page unlock
 //
 // Required environment variables / secrets:
 //   GITHUB_TOKEN      Fine-grained GitHub token with Contents: Read and write permission
@@ -20,6 +21,7 @@
 //   RESEND_API_KEY    Resend email API key
 //   MAIL_FROM         Sender, e.g. "Deposit Reminder <onboarding@resend.dev>"
 //   EXCHANGE_RATE_HOST_API_KEY  Optional. Used by cloud email reminders to refresh rates before sending.
+// v50: Adds /auth endpoint so the page lock screen can verify APP_PASSWORD before loading data.
 // v44: Email template variables now support active table column codes and keep legacy aliases.
 // v42: Email reminder supports push windows and config-fingerprint based duplicate reset.
 // v34: Explicitly preserves/saves new UI settings in data.json, including timeZone and columnWidths.
@@ -119,6 +121,10 @@ export default {
     if (authError) return authError;
 
     try {
+      if (url.pathname === '/auth' && (request.method === 'GET' || request.method === 'POST')) {
+        return jsonResponse({ ok: true, authenticated: true, checkedAt: new Date().toISOString() });
+      }
+
       if (url.pathname === '/data') {
         if (request.method === 'GET') {
           const result = await readGithubFile(env);

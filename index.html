@@ -51,6 +51,125 @@
       }
     }
 
+
+    body.app-locked {
+      overflow: hidden;
+    }
+
+    body.app-locked header,
+    body.app-locked main,
+    body.app-locked .modal-mask,
+    body.app-locked .date-picker-popover {
+      display: none !important;
+    }
+
+    #lockScreen {
+      display: none;
+    }
+
+    body.app-locked #lockScreen {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(37, 99, 235, .16), transparent 34%),
+        radial-gradient(circle at 82% 12%, rgba(132, 204, 22, .14), transparent 30%),
+        var(--bg);
+    }
+
+    .lock-card {
+      width: min(460px, 100%);
+      background: rgba(255, 255, 255, .96);
+      border: 1px solid rgba(215, 222, 234, .95);
+      border-radius: 22px;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, .16);
+      padding: 26px;
+      backdrop-filter: blur(16px);
+    }
+
+    .lock-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      background: #eff6ff;
+      color: var(--primary);
+      font-size: 28px;
+      box-shadow: inset 0 0 0 1px #dbeafe;
+    }
+
+    .lock-card h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.22;
+    }
+
+    .lock-card p {
+      margin: 8px 0 18px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .lock-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .lock-label {
+      font-weight: 800;
+      color: #4b5563;
+      font-size: 13px;
+    }
+
+    .lock-form input {
+      width: 100%;
+      min-height: 46px;
+      font-size: 16px;
+    }
+
+    .lock-form button {
+      min-height: 46px;
+      font-size: 15px;
+    }
+
+    .lock-advanced {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #f8fafc;
+    }
+
+    .lock-advanced summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 13px;
+      user-select: none;
+    }
+
+    .lock-advanced-body {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .lock-status {
+      min-height: 20px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .lock-status.error { color: #dc2626; font-weight: 700; }
+    .lock-status.success { color: #15803d; font-weight: 700; }
+
     header {
       position: sticky;
       top: 0;
@@ -1685,7 +1804,28 @@
     }
   </style>
 </head>
-<body>
+<body class="app-locked">
+  <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
+    <div class="lock-card">
+      <div class="lock-icon" aria-hidden="true">🔐</div>
+      <h1 id="lockTitle">定期存款管理系统</h1>
+      <p id="lockSubtitle">请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。</p>
+      <form id="lockForm" class="lock-form" autocomplete="off">
+        <label id="lockPasswordLabel" class="lock-label" for="lockPassword">访问密码</label>
+        <input id="lockPassword" type="password" autocomplete="current-password" placeholder="输入 APP_PASSWORD" />
+        <details class="lock-advanced">
+          <summary id="lockAdvancedTitle">高级设置：Worker API 地址</summary>
+          <div class="lock-advanced-body">
+            <label id="lockApiUrlLabel" class="lock-label" for="lockApiUrl">Cloudflare Worker API 地址</label>
+            <input id="lockApiUrl" type="url" autocomplete="off" placeholder="https://your-worker.workers.dev/data" />
+          </div>
+        </details>
+        <button id="btnUnlock" type="submit">解锁</button>
+      </form>
+      <div id="lockStatus" class="lock-status" aria-live="polite"></div>
+    </div>
+  </div>
+
   <header>
     <div class="wrap topbar">
       <div class="title">
@@ -2189,6 +2329,8 @@
   const DEFAULT_SYNC_API_PASSWORD = '';
 
   let appData = defaultData();
+  let isUnlocked = false;
+  let sessionAuthPassword = '';
   let currentTab = 'active';
   let editingMode = 'add';
   let editingRecordId = null;
@@ -2284,6 +2426,7 @@
     zh: {
       appTitle: '定期存款管理系统', shortTitle: '定期存款', appSubtitle: '当前定存 + 历史记录；只需录入关键字段，汇率和收益自动计算。',
       language: { label: '语言', zh: '中文', en: 'English', tr: 'Türkçe' },
+      lock: { title: '定期存款管理系统', subtitle: '请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。刷新页面后需要重新输入。', passwordLabel: '访问密码', passwordPlaceholder: '输入 APP_PASSWORD', apiUrlLabel: 'Cloudflare Worker API 地址', advanced: '高级设置：Worker API 地址', button: '解锁', verifying: '正在验证...', success: '验证成功，正在加载数据...', passwordRequired: '请输入访问密码。', apiUrlRequired: '请填写 Cloudflare Worker API 地址。', failed: '验证失败', failedWithMessage: '解锁失败：{message}' },
       fold: { settingsTitle: '设置 / 更多', settingsSub: '同步、邮件、列、汇率', rateTitle: '刷新汇率', rateSub: '汇率、历史范围', searchTitle: '查询 / 筛选', searchSub: '搜索、银行、时间区间', exportTitle: '导出 / 备份', exportSub: 'JSON、CSV、备份、导入', expand: '展开', collapse: '收起' },
       buttons: { add: '新增定存', refreshCloud: '从云端刷新', sync: '同步设置', mail: '邮件提醒', columns: '列配置', rate: '汇率设置', refreshRates: '刷新汇率', exportJson: '导出JSON', exportCsv: '导出CSV', backupJson: '备份JSON', importBackup: '导入备份', current: '当前定存', history: '历史记录', close: '关闭', cancel: '取消', save: '保存', edit: '编辑', moveHistory: '移入历史', restore: '恢复', deleteForever: '永久删除', resetColumns: '恢复默认列', previewMail: '预览提醒邮件', sendCloudTestMail: '发送云端测试邮件', cloudTestReminder: '云端测试一次提醒', saveMail: '保存邮件设置', saveSync: '保存同步设置', saveRate: '保存汇率设置', estimateInterest: '估算利息', fetchOpenRates: '按开户日期获取汇率', fetchEndRates: '按结束日期获取汇率', fetchAllRates: '自动填入全部汇率' },
       tabs: { active: '当前定存', history: '历史记录' },
@@ -2354,6 +2497,7 @@
     en: {
       appTitle: 'Time Deposit Manager', shortTitle: 'Deposits', appSubtitle: 'Active deposits + history; enter key fields only, rates and returns are calculated automatically.',
       language: { label: 'Language', zh: '中文', en: 'English', tr: 'Türkçe' },
+      lock: { title: 'Time Deposit Manager', subtitle: 'Enter the APP_PASSWORD from your Cloudflare Worker. Data will only be loaded after unlocking. Refreshing the page requires the password again.', passwordLabel: 'Access Password', passwordPlaceholder: 'Enter APP_PASSWORD', apiUrlLabel: 'Cloudflare Worker API URL', advanced: 'Advanced: Worker API URL', button: 'Unlock', verifying: 'Verifying...', success: 'Verified. Loading data...', passwordRequired: 'Please enter the access password.', apiUrlRequired: 'Please enter the Cloudflare Worker API URL.', failed: 'Verification failed', failedWithMessage: 'Unlock failed: {message}' },
       fold: { settingsTitle: 'Settings / More', settingsSub: 'Sync, mail, columns, rates', rateTitle: 'Refresh Rates', rateSub: 'Rates and history range', searchTitle: 'Search / Filter', searchSub: 'Search, bank, date range', exportTitle: 'Export / Backup', exportSub: 'JSON, CSV, backup, import', expand: 'Expand', collapse: 'Collapse' },
       buttons: { add: 'Add Deposit', refreshCloud: 'Refresh from Cloud', sync: 'Sync Settings', mail: 'Email Reminder', columns: 'Column Settings', rate: 'Rate Settings', refreshRates: 'Refresh Rates', exportJson: 'Export JSON', exportCsv: 'Export CSV', backupJson: 'Backup JSON', importBackup: 'Import Backup', current: 'Active Deposits', history: 'History', close: 'Close', cancel: 'Cancel', save: 'Save', edit: 'Edit', moveHistory: 'Move to History', restore: 'Restore', deleteForever: 'Delete Forever', resetColumns: 'Reset Columns', previewMail: 'Preview Email', sendCloudTestMail: 'Send Cloud Test Email', cloudTestReminder: 'Run Cloud Test Reminder', saveMail: 'Save Email Settings', saveSync: 'Save Sync Settings', saveRate: 'Save Rate Settings', estimateInterest: 'Estimate Interest', fetchOpenRates: 'Fetch Open-Date Rates', fetchEndRates: 'Fetch End-Date Rates', fetchAllRates: 'Auto Fill All Rates' },
       tabs: { active: 'Active Deposits', history: 'History' },
@@ -2424,6 +2568,7 @@
     tr: {
       appTitle: 'Vadeli Mevduat Yönetimi', shortTitle: 'Mevduat', appSubtitle: 'Aktif mevduatlar + geçmiş; yalnızca temel alanları girin, kurlar ve getiriler otomatik hesaplanır.',
       language: { label: 'Dil', zh: '中文', en: 'English', tr: 'Türkçe' },
+      lock: { title: 'Vadeli Mevduat Yöneticisi', subtitle: 'Cloudflare Worker içindeki APP_PASSWORD değerini girin. Veriler yalnızca kilit açıldıktan sonra yüklenir. Sayfa yenilenirse parola tekrar gerekir.', passwordLabel: 'Erişim Şifresi', passwordPlaceholder: 'APP_PASSWORD girin', apiUrlLabel: 'Cloudflare Worker API Adresi', advanced: 'Gelişmiş: Worker API Adresi', button: 'Kilidi Aç', verifying: 'Doğrulanıyor...', success: 'Doğrulandı, veriler yükleniyor...', passwordRequired: 'Lütfen erişim şifresini girin.', apiUrlRequired: 'Lütfen Cloudflare Worker API adresini girin.', failed: 'Doğrulama başarısız', failedWithMessage: 'Kilit açılamadı: {message}' },
       fold: { settingsTitle: 'Ayarlar / Daha fazla', settingsSub: 'Senkron, e-posta, sütun, kur', rateTitle: 'Kurları Yenile', rateSub: 'Kur ve geçmiş aralığı', searchTitle: 'Ara / Filtrele', searchSub: 'Arama, banka, tarih aralığı', exportTitle: 'Dışa Aktar / Yedek', exportSub: 'JSON, CSV, yedek, içe aktar', expand: 'Aç', collapse: 'Kapat' },
       buttons: { add: 'Mevduat Ekle', refreshCloud: 'Buluttan Yenile', sync: 'Senkron Ayarları', mail: 'E-posta Hatırlatma', columns: 'Sütun Ayarları', rate: 'Kur Ayarları', refreshRates: 'Kurları Yenile', exportJson: 'JSON Dışa Aktar', exportCsv: 'CSV Dışa Aktar', backupJson: 'JSON Yedekle', importBackup: 'Yedek İçe Aktar', current: 'Aktif Mevduatlar', history: 'Geçmiş', close: 'Kapat', cancel: 'İptal', save: 'Kaydet', edit: 'Düzenle', moveHistory: 'Geçmişe Taşı', restore: 'Geri Al', deleteForever: 'Kalıcı Sil', resetColumns: 'Sütunları Sıfırla', previewMail: 'E-postayı Önizle', sendCloudTestMail: 'Bulut Test E-postası Gönder', cloudTestReminder: 'Bulut Test Hatırlatması', saveMail: 'E-posta Ayarlarını Kaydet', saveSync: 'Senkron Ayarlarını Kaydet', saveRate: 'Kur Ayarlarını Kaydet', estimateInterest: 'Faizi Hesapla', fetchOpenRates: 'Açılış Tarihi Kurunu Al', fetchEndRates: 'Bitiş Tarihi Kurunu Al', fetchAllRates: 'Tüm Kurları Otomatik Doldur' },
       tabs: { active: 'Aktif Mevduatlar', history: 'Geçmiş' },
@@ -2506,6 +2651,12 @@
   };
 
   function currentLanguage() {
+    if (!isUnlocked) {
+      try {
+        const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+        if (cfg && cfg.language) return normalizeLanguage(cfg.language);
+      } catch (e) {}
+    }
     const lang = appData && appData.settings ? appData.settings.language : 'zh';
     return normalizeLanguage(lang);
   }
@@ -2621,11 +2772,23 @@
     $('#rateInfo').text(t('messages.rateInfo', { days: histDays }));
     $('#historyRateRefreshDays').closest('label').contents().filter(function(){ return this.nodeType === 3; }).first().replaceWith(t('rate.historyRange') || '');
 
+    applyLockI18n();
     applyRecordI18n();
     applySyncI18n();
     applyRateI18n();
     applyColumnI18n();
     applyMailI18n();
+  }
+
+  function applyLockI18n() {
+    $('#lockTitle').text(t('lock.title'));
+    $('#lockSubtitle').text(t('lock.subtitle'));
+    $('#lockPasswordLabel').text(t('lock.passwordLabel'));
+    $('#lockPassword').attr('placeholder', t('lock.passwordPlaceholder'));
+    $('#lockAdvancedTitle').text(t('lock.advanced'));
+    $('#lockApiUrlLabel').text(t('lock.apiUrlLabel'));
+    $('#lockApiUrl').attr('placeholder', t('placeholders.apiUrl'));
+    $('#btnUnlock').text(t('lock.button'));
   }
 
   function applyRecordI18n() {
@@ -2724,14 +2887,82 @@
   function init() {
     setupMobileFolds();
     bindEvents();
-    loadConfigToForm();
-    loadLocalData();
+    initLockScreen();
     applyI18n();
-    syncSettingInputs();
-    renderAll();
-    updateStatus(t('messages.statusLoaded'));
-    autoCloudSyncOnStart();
     registerAppServiceWorker();
+  }
+
+  function initLockScreen() {
+    isUnlocked = false;
+    sessionAuthPassword = '';
+    document.body.classList.add('app-locked');
+    const cfg = getConfig();
+    $('#lockApiUrl').val(cfg.apiUrl || DEFAULT_SYNC_API_URL || '');
+    $('#lockPassword').val('');
+    setLockStatus('', '');
+    setTimeout(() => $('#lockPassword').trigger('focus'), 80);
+  }
+
+  function setLockStatus(message, type) {
+    $('#lockStatus').removeClass('error success').addClass(type || '').text(message || '');
+  }
+
+  function workerBaseFromApiUrl(apiUrl) {
+    return String(apiUrl || '').trim().replace(/\/data\/?$/, '').replace(/\/$/, '');
+  }
+
+  async function verifyAppPassword(apiUrl, password) {
+    const base = workerBaseFromApiUrl(apiUrl);
+    if (!base) throw new Error(t('lock.apiUrlRequired'));
+    const res = await fetch(base + '/auth', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-app-password': password || ''
+      },
+      body: JSON.stringify({ purpose: 'unlock' })
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || payload.ok === false) throw new Error(payload.error || t('lock.failed'));
+    return payload;
+  }
+
+  async function handleUnlock(e) {
+    if (e) e.preventDefault();
+    const apiUrl = ($('#lockApiUrl').val() || '').trim() || DEFAULT_SYNC_API_URL || '';
+    const password = $('#lockPassword').val() || '';
+    if (!password) {
+      setLockStatus(t('lock.passwordRequired'), 'error');
+      $('#lockPassword').trigger('focus');
+      return;
+    }
+    const btn = $('#btnUnlock');
+    const oldText = btn.text();
+    btn.prop('disabled', true).text(t('lock.verifying'));
+    setLockStatus(t('lock.verifying'), '');
+    try {
+      await verifyAppPassword(apiUrl, password);
+      sessionAuthPassword = password;
+      saveConfig({ apiUrl: apiUrl });
+      const selectedLang = normalizeLanguage($('#languageSelect').val());
+      isUnlocked = true;
+      document.body.classList.remove('app-locked');
+      loadLocalData();
+      appData.settings.language = selectedLang;
+      loadConfigToForm();
+      applyI18n();
+      syncSettingInputs();
+      renderAll();
+      updateStatus(t('messages.statusLoaded'));
+      setLockStatus(t('lock.success'), 'success');
+      autoCloudSyncOnStart();
+    } catch (err) {
+      sessionAuthPassword = '';
+      setLockStatus(t('lock.failedWithMessage', { message: err.message || String(err) }), 'error');
+      $('#lockPassword').trigger('focus').trigger('select');
+    } finally {
+      btn.prop('disabled', false).text(t('lock.button') || oldText);
+    }
   }
 
   function setupMobileFolds() {
@@ -2755,6 +2986,11 @@
   function changeLanguage() {
     const lang = normalizeLanguage($('#languageSelect').val());
     appData.settings.language = lang;
+    if (!isUnlocked) {
+      saveConfig({ language: lang });
+      applyI18n();
+      return;
+    }
     saveLocalData();
     applyI18n();
     renderAll();
@@ -3004,6 +3240,7 @@
 
   function bindEvents() {
     setupDatePicker();
+    $('#lockForm').on('submit', handleUnlock);
     $('#languageSelect').on('change', changeLanguage);
     $('#topLanguageToggle').on('click', function (e) {
       e.preventDefault();
@@ -3401,7 +3638,7 @@
     const cloudSync = (appData && appData.settings && appData.settings.syncSettings) || {};
     return Object.assign({}, local, {
       apiUrl: local.apiUrl || cloudSync.apiUrl || DEFAULT_SYNC_API_URL || '',
-      apiPassword: local.apiPassword || cloudSync.apiPassword || DEFAULT_SYNC_API_PASSWORD || '',
+      apiPassword: sessionAuthPassword || local.apiPassword || cloudSync.apiPassword || DEFAULT_SYNC_API_PASSWORD || '',
       rateSettings: local.rateSettings || {},
       cloudSha: local.cloudSha || ''
     });
