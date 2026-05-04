@@ -544,13 +544,27 @@
       font-size: 13px;
       text-align: right;
     }
+    /* 自定义列宽只影响用户填写了宽度的列；未填写的列保持内容自适应。 */
     table.has-custom-widths {
-      table-layout: fixed;
+      table-layout: auto;
     }
-    table.has-custom-widths th,
-    table.has-custom-widths td {
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .actions-cell {
+      min-width: 150px;
+      white-space: normal;
+    }
+    #historyTable .actions-cell {
+      min-width: 230px;
+    }
+    .actions-inline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      white-space: normal;
+    }
+    .actions-inline button {
+      flex: 0 0 auto;
     }
     .preview-box {
       white-space: pre-wrap;
@@ -3739,17 +3753,36 @@
     const cols = getVisibleColumns(type);
     const html = cols.map(col => {
       const width = getCustomColumnWidth(type, col.key);
-      return width ? `<col style="width:${width}px;min-width:${width}px;max-width:${width}px;" />` : '<col />';
+      return width ? `<col style="width:${width}px;min-width:${width}px;" />` : '<col />';
     }).join('');
     return `<colgroup>${html}</colgroup>`;
+  }
+
+  function getEstimatedAutoColumnWidth(type, key) {
+    const map = {
+      seq: 56,
+      actions: type === 'history' ? 230 : 150,
+      remark: 180,
+      deleteReason: 170,
+      exchangeReason: 170,
+      bank: 130,
+      openDate: 112,
+      startDate: 112,
+      endDate: 112,
+      deletedAt: 168,
+      reminderEnabled: 105,
+      remainingDays: 82,
+      depositDays: 82
+    };
+    return map[key] || 105;
   }
 
   function getTableMinWidth(type) {
     const defaultMinWidth = 1540;
     const cols = getVisibleColumns(type);
-    const customTotal = cols.reduce((sum, col) => sum + (getCustomColumnWidth(type, col.key) || 0), 0);
-    const autoCount = cols.filter(col => !getCustomColumnWidth(type, col.key)).length;
-    const estimated = customTotal + autoCount * 90;
+    const estimated = cols.reduce((sum, col) => {
+      return sum + (getCustomColumnWidth(type, col.key) || getEstimatedAutoColumnWidth(type, col.key));
+    }, 0);
     return Math.max(defaultMinWidth, estimated);
   }
 
@@ -3815,7 +3848,7 @@
       case 'gainCny': return tableCell('gain-green', fmt(c.gainCny));
       case 'gainUsd': return tableCell('', fmt(c.gainUsd));
       case 'reminderEnabled': return tableCell(r.reminderEnabled ? 'yes' : 'no', r.reminderEnabled ? 'YES' : 'NO');
-      case 'actions': return tableCell('', `<button class="small secondary" data-edit="${escapeAttr(r.id)}">${escapeHtml(t('buttons.edit'))}</button> <button class="small danger" data-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.moveHistory'))}</button>`);
+      case 'actions': return tableCell('actions-cell', `<div class="actions-inline"><button class="small secondary" data-edit="${escapeAttr(r.id)}">${escapeHtml(t('buttons.edit'))}</button><button class="small danger" data-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.moveHistory'))}</button></div>`);
       default: return tableCell('', '');
     }
   }
@@ -3903,7 +3936,7 @@
       case 'exchangeCny': return tableCell('', fmt(r.exchangeCny));
       case 'exchangeReason': return tableCell('', escapeHtml(r.exchangeReason || ''));
       case 'remark': return tableCell('', escapeHtml(r.remark || ''));
-      case 'actions': return tableCell('', `<button class="small secondary" data-edit-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.edit'))}</button> <button class="small green" data-restore="${escapeAttr(r.id)}">${escapeHtml(t('buttons.restore'))}</button> <button class="small danger" data-delete-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.deleteForever'))}</button>`);
+      case 'actions': return tableCell('actions-cell', `<div class="actions-inline"><button class="small secondary" data-edit-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.edit'))}</button><button class="small green" data-restore="${escapeAttr(r.id)}">${escapeHtml(t('buttons.restore'))}</button><button class="small danger" data-delete-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.deleteForever'))}</button></div>`);
       default: return tableCell('', '');
     }
   }
