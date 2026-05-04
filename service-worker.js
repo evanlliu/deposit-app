@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v42-mail-window-reset';
+const CACHE_VERSION = 'deposit-app-v43-mail-template-size';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];

@@ -593,6 +593,17 @@
       line-height: 1.55;
     }
 
+    /* v43：邮件内容模板编辑区加宽加高，方便编辑长模板。 */
+    #mailModal .modal {
+      width: min(1120px, calc(100% - 24px));
+    }
+    #mailBodyTemplate {
+      width: 100%;
+      min-height: 240px;
+      line-height: 1.6;
+      resize: vertical;
+    }
+
 
     .mail-variable-box {
       border: 1px solid var(--line);
