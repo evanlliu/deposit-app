@@ -20,12 +20,13 @@
 //   RESEND_API_KEY    Resend email API key
 //   MAIL_FROM         Sender, e.g. "Deposit Reminder <onboarding@resend.dev>"
 //   EXCHANGE_RATE_HOST_API_KEY  Optional. Used by cloud email reminders to refresh rates before sending.
+// v42: Email reminder supports push windows and config-fingerprint based duplicate reset.
 // v34: Explicitly preserves/saves new UI settings in data.json, including timeZone and columnWidths.
 // v31: PUT uses GitHub sha optimistic locking; timezone-aware reminders/rate refresh; keeps Worker-owned fields safe.
 // v29: Cron duplicate prevention only uses cron-sent records. Manual cloud tests do not block scheduled sending.
 // v26: Before sending reminder emails, refresh target records with exchangerate.host yearly cache stored in data.json.
 // Cloudflare Cron Trigger examples:
-//   0 * * * *     // every hour, required if you use dueTodayIntervalHours
+//   0 * * * *     // every hour, required if you use dueTodayIntervalHours and push windows such as 09:00-18:00
 //   0 6 * * *     // every day 06:00 UTC, enough if you only use advanceDays
 
 const DEFAULT_EMAIL_REMINDER = {
@@ -33,6 +34,8 @@ const DEFAULT_EMAIL_REMINDER = {
   mailTo: '',
   advanceDays: [],
   dueTodayIntervalHours: '',
+  pushStartTime: '',
+  pushEndTime: '',
   onlyEnabledRecords: true,
   fields: [],
   subjectTemplate: '定存到期提醒：{{bank}} {{principalTry}} TRY',
@@ -267,13 +270,32 @@ async function processEmailReminders(env, options = {}) {
   if (!hasAdvanceRule && !hasDueHourlyRule) return { sent: 0, skipped: 'no reminder rules configured' };
   if (!cfg.mailTo) return { sent: 0, skipped: 'mailTo is empty' };
 
+  const now = new Date();
+  const configFingerprint = emailReminderFingerprint(cfg, timeZone);
+  const windowInfo = getReminderWindowInfo(cfg, now, timeZone);
+  if (!options.force && !windowInfo.allowed) {
+    return {
+      sent: 0,
+      matched: 0,
+      skipped: `outside push window ${windowInfo.windowLabel}`,
+      triggerSource: options.triggerSource || 'cron',
+      rules: {
+        advanceDays: cfg.advanceDays,
+        dueTodayIntervalHours: cfg.dueTodayIntervalHours || '',
+        pushStartTime: cfg.pushStartTime || '',
+        pushEndTime: cfg.pushEndTime || '',
+        timeZone,
+        currentTime: windowInfo.currentTime
+      }
+    };
+  }
+
   const active = Array.isArray(data.activeRecords) ? data.activeRecords : [];
   const sentReminders = data.settings.sentReminders && typeof data.settings.sentReminders === 'object'
     ? data.settings.sentReminders
     : {};
 
   const candidates = [];
-  const now = new Date();
 
   for (const r of active) {
     const c = getCalc(r, timeZone);
@@ -284,7 +306,7 @@ async function processEmailReminders(env, options = {}) {
       const previous = sentReminders[key];
       // Only a real Cloudflare Cron send should block the next Cron send.
       // Old/manual test records must not block scheduled reminders.
-      if (options.force || !isCronSentReminder(previous)) {
+      if (options.force || !isBlockingCronReminder(previous, configFingerprint)) {
         candidates.push({ r, c, key, triggerLabel: `提前 ${c.remainingDays} 天推送`, previousReminder: previous || null });
       }
     }
@@ -292,9 +314,13 @@ async function processEmailReminders(env, options = {}) {
     if (hasDueHourlyRule && c.remainingDays === 0) {
       const key = `${r.id || r.bank}:${r.endDate}:due-hourly`;
       const previous = sentReminders[key];
-      const lastSentAt = isCronSentReminder(previous) && previous.sentAt ? new Date(previous.sentAt) : null;
-      const elapsedHours = lastSentAt && !Number.isNaN(lastSentAt.getTime()) ? (now - lastSentAt) / 3600000 : Infinity;
-      if (options.force || elapsedHours >= cfg.dueTodayIntervalHours) {
+      const lastSentAt = isBlockingCronReminder(previous, configFingerprint) && previous.sentAt ? new Date(previous.sentAt) : null;
+      const elapsedMs = lastSentAt && !Number.isNaN(lastSentAt.getTime()) ? (now - lastSentAt) : Infinity;
+      // Cron usually runs on an hourly boundary, but seconds can drift. Give it a small tolerance so
+      // a 10:00 run is not blocked by a previous 09:00:30 send when the interval is 1 hour.
+      const intervalMs = Number(cfg.dueTodayIntervalHours) * 3600000;
+      const clockToleranceMs = 70000;
+      if (options.force || elapsedMs >= Math.max(0, intervalMs - clockToleranceMs)) {
         candidates.push({ r, c, key, triggerLabel: `到期当天每 ${cfg.dueTodayIntervalHours} 小时推送`, previousReminder: previous || null });
       }
     }
@@ -327,6 +353,8 @@ async function processEmailReminders(env, options = {}) {
           remainingDays: item.c.remainingDays,
           triggerLabel: item.triggerLabel,
           triggerSource,
+          emailReminderFingerprint: configFingerprint,
+          emailReminderWindow: windowInfo.windowLabel,
           rateRefresh
         };
       }
@@ -344,14 +372,15 @@ async function processEmailReminders(env, options = {}) {
     triggerSource,
     recordSent: shouldRecordSent,
     note: shouldRecordSent ? '正式执行：只会被 Cloudflare Cron 的发送记录拦截重复推送；页面手动测试不会拦截。' : '手动测试：不会写入防重复发送记录，后续 Cloudflare Cron 仍会按规则正式推送。',
-    rules: { advanceDays: cfg.advanceDays, dueTodayIntervalHours: cfg.dueTodayIntervalHours || '', timeZone },
+    rules: { advanceDays: cfg.advanceDays, dueTodayIntervalHours: cfg.dueTodayIntervalHours || '', pushStartTime: cfg.pushStartTime || '', pushEndTime: cfg.pushEndTime || '', timeZone, currentTime: windowInfo.currentTime },
     matchedRecords: candidates.map(item => ({
       key: item.key,
       bank: item.r.bank || '',
       endDate: item.r.endDate || '',
       remainingDays: item.c.remainingDays,
       triggerLabel: item.triggerLabel,
-      previousTriggerSource: item.previousReminder && item.previousReminder.triggerSource ? item.previousReminder.triggerSource : ''
+      previousTriggerSource: item.previousReminder && item.previousReminder.triggerSource ? item.previousReminder.triggerSource : '',
+      previousFingerprint: item.previousReminder && item.previousReminder.emailReminderFingerprint ? item.previousReminder.emailReminderFingerprint : ''
     }))
   };
 
@@ -389,6 +418,99 @@ async function processEmailReminders(env, options = {}) {
 
 function isCronSentReminder(entry) {
   return Boolean(entry && entry.triggerSource === 'cron' && entry.sentAt);
+}
+
+function isBlockingCronReminder(entry, currentFingerprint) {
+  if (!isCronSentReminder(entry)) return false;
+  // If the user changes any email reminder configuration, the current fingerprint changes.
+  // Then old cron records should not block the new schedule. Entries from older app versions
+  // may not have a fingerprint; keep them blocking only by elapsed time for backward compatibility.
+  if (entry.emailReminderFingerprint && currentFingerprint && entry.emailReminderFingerprint !== currentFingerprint) return false;
+  return true;
+}
+
+function emailReminderFingerprint(cfg, timeZone) {
+  const payload = {
+    enabled: Boolean(cfg.enabled),
+    mailTo: String(cfg.mailTo || '').trim(),
+    advanceDays: normalizeAdvanceDays(cfg.advanceDays),
+    dueTodayIntervalHours: normalizeDueTodayIntervalHours(cfg.dueTodayIntervalHours) || '',
+    pushStartTime: normalizeTimeOfDay(cfg.pushStartTime) || '',
+    pushEndTime: normalizeTimeOfDay(cfg.pushEndTime) || '',
+    onlyEnabledRecords: cfg.onlyEnabledRecords !== false,
+    subjectTemplate: cfg.subjectTemplate || '',
+    bodyTemplate: cfg.bodyTemplate || '',
+    timeZone: normalizeTimeZone(timeZone)
+  };
+  return simpleHash(stableStringify(payload));
+}
+
+function stableStringify(value) {
+  if (Array.isArray(value)) return '[' + value.map(stableStringify).join(',') + ']';
+  if (value && typeof value === 'object') {
+    return '{' + Object.keys(value).sort().map(k => JSON.stringify(k) + ':' + stableStringify(value[k])).join(',') + '}';
+  }
+  return JSON.stringify(value);
+}
+
+function simpleHash(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return 'r' + (h >>> 0).toString(36);
+}
+
+function getReminderWindowInfo(cfg, date, timeZone) {
+  const start = normalizeTimeOfDay(cfg.pushStartTime);
+  const end = normalizeTimeOfDay(cfg.pushEndTime);
+  const startMin = parseTimeOfDayToMinutes(start || '00:00');
+  const endMin = parseTimeOfDayToMinutes(end || '23:59');
+  const nowParts = getTimePartsInTimeZone(date, timeZone);
+  const nowMin = nowParts.hour * 60 + nowParts.minute;
+  const allowed = startMin <= endMin
+    ? nowMin >= startMin && nowMin <= endMin
+    : nowMin >= startMin || nowMin <= endMin;
+  return {
+    allowed,
+    currentTime: `${String(nowParts.hour).padStart(2, '0')}:${String(nowParts.minute).padStart(2, '0')}`,
+    windowLabel: `${start || '00:00'}-${end || '23:59'}`
+  };
+}
+
+function getTimePartsInTimeZone(date, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: normalizeTimeZone(timeZone),
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).formatToParts(date).reduce((acc, part) => {
+    acc[part.type] = part.value;
+    return acc;
+  }, {});
+  let hour = parseInt(parts.hour, 10);
+  const minute = parseInt(parts.minute, 10);
+  if (hour === 24) hour = 0;
+  return { hour: Number.isFinite(hour) ? hour : 0, minute: Number.isFinite(minute) ? minute : 0 };
+}
+
+function parseTimeOfDayToMinutes(value) {
+  const normalized = normalizeTimeOfDay(value) || '00:00';
+  const [h, m] = normalized.split(':').map(x => parseInt(x, 10));
+  return h * 60 + m;
+}
+
+function normalizeTimeOfDay(value) {
+  if (value === null || value === undefined) return '';
+  const s = String(value).trim();
+  if (!s) return '';
+  const m = s.match(/^(\d{1,2})(?::(\d{1,2}))?$/);
+  if (!m) return '';
+  const h = parseInt(m[1], 10);
+  const min = m[2] === undefined ? 0 : parseInt(m[2], 10);
+  if (!Number.isFinite(h) || !Number.isFinite(min) || h < 0 || h > 23 || min < 0 || min > 59) return '';
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
 }
 
 async function refreshRatesBeforeEmail(env, data, candidates, timeZone) {
@@ -767,6 +889,8 @@ function normalizeEmailReminder(value) {
     mailTo: raw.mailTo || '',
     advanceDays: normalizeAdvanceDays(raw.advanceDays),
     dueTodayIntervalHours: normalizeDueTodayIntervalHours(raw.dueTodayIntervalHours),
+    pushStartTime: normalizeTimeOfDay(raw.pushStartTime),
+    pushEndTime: normalizeTimeOfDay(raw.pushEndTime),
     onlyEnabledRecords: raw.onlyEnabledRecords !== false,
     fields: normalizeMailFields(raw.fields),
     subjectTemplate: raw.subjectTemplate || DEFAULT_EMAIL_REMINDER.subjectTemplate,
