@@ -52,6 +52,18 @@
     }
 
 
+    body.app-booting {
+      overflow: hidden;
+    }
+
+    body.app-booting header,
+    body.app-booting main,
+    body.app-booting .modal-mask,
+    body.app-booting .date-picker-popover,
+    body.app-booting #lockScreen {
+      display: none !important;
+    }
+
     body.app-locked {
       overflow: hidden;
     }
@@ -1804,7 +1816,35 @@
     }
   </style>
 </head>
-<body class="app-locked">
+<body class="app-booting app-locked">
+  <script>
+    (function () {
+      var CONFIG_KEY = 'deposit-manager-config-v1';
+      var AUTH_SESSION_KEY = 'deposit-manager-auth-session-v1';
+      var DEFAULT_SYNC_API_URL = 'https://deposit-data-worker.287418456.workers.dev/data';
+      function workerBaseFromApiUrl(apiUrl) {
+        return String(apiUrl || '').trim().replace(/\/data\/?$/, '').replace(/\/$/, '');
+      }
+      function normalizeLockTimeoutMinutes(value) {
+        var n = Number(value);
+        if (!Number.isFinite(n)) return 2;
+        return Math.min(1440, Math.max(0, Math.round(n)));
+      }
+      try {
+        var cfg = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}') || {};
+        var timeout = normalizeLockTimeoutMinutes(cfg.lockTimeoutMinutes);
+        var apiUrl = cfg.apiUrl || DEFAULT_SYNC_API_URL || '';
+        var key = workerBaseFromApiUrl(apiUrl) || 'local';
+        var sessions = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) || '{}') || {};
+        var session = sessions[key];
+        var valid = timeout > 0 && session && Number(session.expiresAt) > Date.now();
+        if (valid) {
+          document.body.classList.remove('app-locked');
+        }
+      } catch (e) {}
+      document.body.classList.remove('app-booting');
+    })();
+  </script>
   <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
     <div class="lock-card">
       <div class="lock-icon" aria-hidden="true">🔐</div>
@@ -2902,17 +2942,21 @@
   function initLockScreen() {
     isUnlocked = false;
     sessionAuthPassword = '';
-    document.body.classList.add('app-locked');
     const cfg = getConfig();
     const apiUrl = cfg.apiUrl || DEFAULT_SYNC_API_URL || '';
-    $('#lockApiUrl').val(apiUrl);
-    $('#lockPassword').val('');
-    setLockStatus('', '');
+    clearExpiredAuthSessions();
 
     if (hasValidAuthSession(apiUrl)) {
+      document.body.classList.remove('app-booting', 'app-locked');
       unlockFromCachedSession(apiUrl);
       return;
     }
+
+    document.body.classList.remove('app-booting');
+    document.body.classList.add('app-locked');
+    $('#lockApiUrl').val(apiUrl);
+    $('#lockPassword').val('');
+    setLockStatus('', '');
     setTimeout(() => $('#lockPassword').trigger('focus'), 80);
   }
 
@@ -3029,7 +3073,7 @@
     isUnlocked = true;
     sessionAuthPassword = '';
     saveConfig({ apiUrl: apiUrl });
-    document.body.classList.remove('app-locked');
+    document.body.classList.remove('app-booting', 'app-locked');
     loadLocalData();
     loadConfigToForm();
     applyI18n();
@@ -3058,7 +3102,7 @@
       saveConfig({ apiUrl: apiUrl });
       const selectedLang = normalizeLanguage($('#languageSelect').val());
       isUnlocked = true;
-      document.body.classList.remove('app-locked');
+      document.body.classList.remove('app-booting', 'app-locked');
       loadLocalData();
       recordAuthSession(apiUrl);
       appData.settings.language = selectedLang;

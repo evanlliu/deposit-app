@@ -1,3 +1,10 @@
+## v52 锁屏残影修复
+
+- 修复在锁屏有效期内刷新页面时，锁屏界面先闪一下再消失的问题。
+- 页面启动时会先用本机缓存判断锁屏会话是否仍有效；有效则直接显示系统，不再先渲染锁屏页。
+- 保留 v51 的每设备独立计时和 `settings.lockTimeoutMinutes` 配置。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v52-lock-no-flash`。
+
 ## v51 锁屏有效期配置
 
 - 锁屏密码使用 Cloudflare Worker 的 `APP_PASSWORD` 不变。

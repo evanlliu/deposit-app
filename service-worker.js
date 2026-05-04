@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v51-lock-timeout';
+const CACHE_VERSION = 'deposit-app-v52-lock-no-flash';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];
