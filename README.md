@@ -1,8 +1,53 @@
-# 定期存款管理系统 v30
+# 定期存款管理系统 v31
 
-本版本修复：前端页面保存数据时会保留 Worker/Cron 写入的邮件发送记录、最近执行日志和 exchangerate.host 年度缓存，避免浏览器旧数据把这些云端字段覆盖掉。
+本次优化重点：
 
-更新方式：优先更新 Cloudflare Worker 的 worker.js；前端 index.html 可保持最新版本，也可一并覆盖。
+- B：云端保存增加 GitHub sha 乐观锁。前端 PUT 时会带上上次读取的 `baseSha`，Cloudflare Worker 发现云端已被其他设备或 Cron 更新时返回 409，不再静默覆盖。页面会提示是否把本地修改和云端最新数据合并后再保存。
+- C：新增页面 / 邮件提醒时区配置，支持中国、土耳其、墨西哥城、蒙特雷、英国、UTC 和自定义 IANA 时区，例如 `America/Monterrey`。剩余天数、邮件提醒、Worker 汇率刷新都按该时区计算“今天”。
+- D：保持静态部署方式不变，新增独立 `service-worker.js`，避免继续把 PWA 逻辑塞进主页面。
+- E：清理页面中已经不存在的 DOM 绑定，例如旧的全局汇率输入、自动估算利息按钮、推送字段复选框等，减少运行时空引用。
+- F：补齐 PWA Service Worker，支持 GitHub Pages 静态资源离线缓存；`data.json` / Worker API 不缓存，保证云端数据实时。
+
+## 这次需要更新哪些文件
+
+### 发布到 GitHub Pages / GitHub 仓库
+
+覆盖或新增：
+
+```text
+index.html
+manifest.webmanifest
+service-worker.js
+icons/
+README.md
+```
+
+如果你的 `data.json` 已经在 GitHub 私有仓库中保存真实数据，不要用空文件覆盖它。
+
+### 发布到 Cloudflare Worker
+
+覆盖 Worker 代码：
+
+```text
+worker.js
+```
+
+Cloudflare 变量 / Secrets 沿用原来的：
+
+```text
+GITHUB_TOKEN
+GITHUB_OWNER
+GITHUB_REPO
+GITHUB_BRANCH
+GITHUB_PATH
+APP_PASSWORD
+RESEND_API_KEY
+MAIL_FROM
+```
+
+`APP_PASSWORD` 可能被 bootstrap 引导公开的问题，本版本按你的要求暂不处理。
+
+---
 
 # 定期存款管理系统 v24
 

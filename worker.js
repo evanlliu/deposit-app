@@ -20,7 +20,7 @@
 //   RESEND_API_KEY    Resend email API key
 //   MAIL_FROM         Sender, e.g. "Deposit Reminder <onboarding@resend.dev>"
 //   EXCHANGE_RATE_HOST_API_KEY  Optional. Used by cloud email reminders to refresh rates before sending.
-// v30: Frontend PUT merges Worker-owned fields, preventing stale browser data from deleting cron logs/sent reminders.
+// v31: PUT uses GitHub sha optimistic locking; timezone-aware reminders/rate refresh; keeps Worker-owned fields safe.
 // v29: Cron duplicate prevention only uses cron-sent records. Manual cloud tests do not block scheduled sending.
 // v26: Before sending reminder emails, refresh target records with exchangerate.host yearly cache stored in data.json.
 // Cloudflare Cron Trigger examples:
@@ -63,10 +63,21 @@ const DEFAULT_DATA = {
     rateApiKeys: {},
     exchangeRateHostYearCache: null,
     lastRateFetchDate: '',
+    timeZone: 'UTC',
     emailReminder: DEFAULT_EMAIL_REMINDER,
-    sentReminders: {}
+    sentReminders: {},
+    recordTombstones: {}
   }
 };
+
+class CloudConflictError extends Error {
+  constructor(message, current) {
+    super(message);
+    this.name = 'CloudConflictError';
+    this.currentSha = current && current.sha ? current.sha : '';
+    this.currentData = current && current.data ? current.data : null;
+  }
+}
 
 export default {
   async fetch(request, env) {
@@ -105,9 +116,13 @@ export default {
         if (request.method === 'PUT') {
           const body = await request.json();
           const incomingData = normalizeData(body.data || body);
-          const current = await readGithubFile(env).catch(() => ({ data: null }));
+          const current = await readGithubFile(env).catch(() => ({ data: null, sha: null }));
+          const expectedSha = Object.prototype.hasOwnProperty.call(body, 'baseSha') ? (body.baseSha || null) : undefined;
+          if (expectedSha !== undefined && (expectedSha || current.sha) && expectedSha !== current.sha) {
+            throw new CloudConflictError('云端 data.json 已被其他设备或 Worker 更新，已阻止旧数据覆盖。请先从云端刷新或选择合并。', current);
+          }
           const data = mergeWorkerOwnedFields(incomingData, current.data);
-          const result = await writeGithubFile(env, data);
+          const result = await writeGithubFile(env, data, expectedSha);
           return jsonResponse({ ok: true, sha: result.sha, data });
         }
 
@@ -133,6 +148,15 @@ export default {
 
       return jsonResponse({ ok: false, error: 'Not found' }, 404);
     } catch (error) {
+      if (error && error.name === 'CloudConflictError') {
+        return jsonResponse({
+          ok: false,
+          conflict: true,
+          error: error.message || 'Cloud data conflict',
+          currentSha: error.currentSha || '',
+          currentData: error.currentData || null
+        }, 409);
+      }
       return jsonResponse({ ok: false, error: error.message || String(error) }, 500);
     }
   },
@@ -196,9 +220,12 @@ async function readGithubFile(env) {
   return { data: normalizeData(data), sha: payload.sha };
 }
 
-async function writeGithubFile(env, data) {
+async function writeGithubFile(env, data, expectedSha) {
   const { owner, repo, branch, path, token } = githubConfig(env);
   const current = await readGithubFile(env);
+  if (expectedSha !== undefined && (expectedSha || current.sha) && expectedSha !== current.sha) {
+    throw new CloudConflictError('云端 data.json 已被其他设备或 Worker 更新，已阻止旧数据覆盖。请先从云端刷新或选择合并。', current);
+  }
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponentPath(path)}`;
 
   const content = JSON.stringify(normalizeData(data), null, 2);
@@ -224,9 +251,11 @@ async function writeGithubFile(env, data) {
 }
 
 async function processEmailReminders(env, options = {}) {
-  const { data } = await readGithubFile(env);
+  const read = await readGithubFile(env);
+  const data = normalizeData(read.data);
   const cfg = normalizeEmailReminder(data.settings && data.settings.emailReminder);
-  if (!cfg.enabled) return { sent: 0, skipped: 'email reminder disabled' };
+  const timeZone = normalizeTimeZone(data.settings && data.settings.timeZone);
+  if (!cfg.enabled) return { sent: 0, skipped: 'email reminder disabled', timeZone };
 
   const hasAdvanceRule = cfg.advanceDays.length > 0;
   const hasDueHourlyRule = Boolean(cfg.dueTodayIntervalHours);
@@ -242,7 +271,7 @@ async function processEmailReminders(env, options = {}) {
   const now = new Date();
 
   for (const r of active) {
-    const c = getCalc(r);
+    const c = getCalc(r, timeZone);
     if (cfg.onlyEnabledRecords && !r.reminderEnabled) continue;
 
     if (hasAdvanceRule && cfg.advanceDays.includes(c.remainingDays)) {
@@ -269,7 +298,7 @@ async function processEmailReminders(env, options = {}) {
   let rateRefresh = { attempted: false, skipped: 'no candidates' };
   if (candidates.length > 0) {
     try {
-      rateRefresh = await refreshRatesBeforeEmail(env, data, candidates);
+      rateRefresh = await refreshRatesBeforeEmail(env, data, candidates, timeZone);
     } catch (e) {
       rateRefresh = { attempted: true, ok: false, error: e.message || String(e) };
     }
@@ -310,7 +339,7 @@ async function processEmailReminders(env, options = {}) {
     triggerSource,
     recordSent: shouldRecordSent,
     note: shouldRecordSent ? '正式执行：只会被 Cloudflare Cron 的发送记录拦截重复推送；页面手动测试不会拦截。' : '手动测试：不会写入防重复发送记录，后续 Cloudflare Cron 仍会按规则正式推送。',
-    rules: { advanceDays: cfg.advanceDays, dueTodayIntervalHours: cfg.dueTodayIntervalHours || '' },
+    rules: { advanceDays: cfg.advanceDays, dueTodayIntervalHours: cfg.dueTodayIntervalHours || '', timeZone },
     matchedRecords: candidates.map(item => ({
       key: item.key,
       bank: item.r.bank || '',
@@ -331,6 +360,7 @@ async function processEmailReminders(env, options = {}) {
       errors,
       rules: result.rules,
       matchedRecords: result.matchedRecords,
+      timeZone,
       rateRefreshSummary: rateRefresh && typeof rateRefresh === 'object' ? {
         attempted: rateRefresh.attempted,
         ok: rateRefresh.ok,
@@ -345,7 +375,8 @@ async function processEmailReminders(env, options = {}) {
 
   if (rateRefresh.dataChanged || (sent > 0 && shouldRecordSent) || shouldWriteExecutionLog) {
     if (shouldRecordSent) data.settings.sentReminders = sentReminders;
-    await writeGithubFile(env, data);
+    const writeResult = await writeGithubFile(env, data, read.sha || null);
+    result.sha = writeResult.sha || '';
   }
 
   return result;
@@ -355,13 +386,13 @@ function isCronSentReminder(entry) {
   return Boolean(entry && entry.triggerSource === 'cron' && entry.sentAt);
 }
 
-async function refreshRatesBeforeEmail(env, data, candidates) {
+async function refreshRatesBeforeEmail(env, data, candidates, timeZone) {
   const apiKey = getExchangeRateHostApiKey(env, data);
   if (!apiKey) {
     return { attempted: true, ok: false, skipped: 'missing exchangerate.host API key. Set EXCHANGE_RATE_HOST_API_KEY in Worker Secrets or sync exchangeRateHostApiKey to cloud.' };
   }
 
-  const today = todayString();
+  const today = todayString(timeZone);
   const cache = await ensureExchangeRateHostYearCache(env, data, apiKey, today);
   const missingDates = new Set();
   let refreshedRecords = 0;
@@ -371,7 +402,7 @@ async function refreshRatesBeforeEmail(env, data, candidates) {
     const r = item.r;
     let recordChanged = false;
 
-    const openRates = getRatesFromExchangeHostYearCache(cache, r.openDate, false);
+    const openRates = getRatesFromExchangeHostYearCache(cache, r.openDate, false, timeZone);
     if (openRates) {
       if (setRateIfDifferent(r, 'usdCnyOpen', openRates.usdCny)) recordChanged = true;
       if (setRateIfDifferent(r, 'tryCnyOpen', openRates.tryCny)) recordChanged = true;
@@ -379,7 +410,7 @@ async function refreshRatesBeforeEmail(env, data, candidates) {
       missingDates.add(r.openDate);
     }
 
-    const endRates = getRatesFromExchangeHostYearCache(cache, r.endDate, true);
+    const endRates = getRatesFromExchangeHostYearCache(cache, r.endDate, true, timeZone);
     if (endRates) {
       if (setRateIfDifferent(r, 'usdCnyNow', endRates.usdCny)) recordChanged = true;
       if (setRateIfDifferent(r, 'tryCnyNow', endRates.tryCny)) recordChanged = true;
@@ -388,7 +419,7 @@ async function refreshRatesBeforeEmail(env, data, candidates) {
     }
 
     if (recordChanged) {
-      item.c = getCalc(r);
+      item.c = getCalc(r, timeZone);
       refreshedRecords++;
       changed = true;
     }
@@ -487,9 +518,9 @@ function parseUsdBasedDailyRates(daily, date) {
   };
 }
 
-function getRatesFromExchangeHostYearCache(cache, date, useLatestForFuture) {
+function getRatesFromExchangeHostYearCache(cache, date, useLatestForFuture, timeZone) {
   if (!cache || !cache.rates) return null;
-  const today = todayString();
+  const today = todayString(timeZone);
   if (!date) return cache.latest || null;
   if (useLatestForFuture && date > today) return cache.latest || null;
   if (cache.rates[date]) return cache.rates[date];
@@ -528,6 +559,7 @@ async function refreshRatesFromWorker(env, body = {}) {
   const data = normalizeData(read.data);
   const settings = data.settings || (data.settings = {});
   settings.rateProvider = 'ExchangeRateHost';
+  const timeZone = normalizeTimeZone(settings.timeZone);
 
   const apiKey = getExchangeRateHostApiKey(env, data);
   if (!apiKey) {
@@ -536,10 +568,10 @@ async function refreshRatesFromWorker(env, body = {}) {
 
   const historyDays = Math.max(0, Number(body.historyDays || settings.historyRateRefreshDays || 30) || 30);
   settings.historyRateRefreshDays = historyDays;
-  const today = todayString();
+  const today = todayString(timeZone);
   const activeRecords = Array.isArray(data.activeRecords) ? data.activeRecords : [];
   const historyRecords = Array.isArray(data.historyRecords) ? data.historyRecords : [];
-  const eligibleHistoryRecords = historyRecords.filter(r => isHistoryRateRefreshEligibleWorker(r, historyDays));
+  const eligibleHistoryRecords = historyRecords.filter(r => isHistoryRateRefreshEligibleWorker(r, historyDays, timeZone));
   const skippedHistoryCount = Math.max(historyRecords.length - eligibleHistoryRecords.length, 0);
 
   const cache = await ensureExchangeRateHostYearCache(env, data, apiKey, today);
@@ -550,7 +582,7 @@ async function refreshRatesFromWorker(env, body = {}) {
 
   function refreshOne(r, type) {
     let recordChanged = false;
-    const openRates = getRatesFromExchangeHostYearCache(cache, r.openDate, true);
+    const openRates = getRatesFromExchangeHostYearCache(cache, r.openDate, true, timeZone);
     if (openRates) {
       if (setRateIfDifferent(r, 'usdCnyOpen', openRates.usdCny)) recordChanged = true;
       if (setRateIfDifferent(r, 'tryCnyOpen', openRates.tryCny)) recordChanged = true;
@@ -558,7 +590,7 @@ async function refreshRatesFromWorker(env, body = {}) {
       missingDates.push(`${type} ${r.bank || r.id || ''} 开户日期 ${r.openDate}`.trim());
     }
 
-    const endRates = getRatesFromExchangeHostYearCache(cache, r.endDate, true);
+    const endRates = getRatesFromExchangeHostYearCache(cache, r.endDate, true, timeZone);
     if (endRates) {
       if (setRateIfDifferent(r, 'usdCnyNow', endRates.usdCny)) recordChanged = true;
       if (setRateIfDifferent(r, 'tryCnyNow', endRates.tryCny)) recordChanged = true;
@@ -578,10 +610,12 @@ async function refreshRatesFromWorker(env, body = {}) {
   }
 
   settings.lastRateFetchDate = today;
-  await writeGithubFile(env, data);
+  const writeResult = await writeGithubFile(env, data, read.sha || null);
 
   return {
     data,
+    sha: writeResult.sha || '',
+    timeZone,
     summary: {
       provider: 'exchangerate.host yearly GitHub cache',
       cacheFetchedOn: cache.fetchedOn,
@@ -598,9 +632,9 @@ async function refreshRatesFromWorker(env, body = {}) {
   };
 }
 
-function isHistoryRateRefreshEligibleWorker(record, days) {
+function isHistoryRateRefreshEligibleWorker(record, days, timeZone) {
   if (days < 0) return false;
-  const today = todayString();
+  const today = todayString(timeZone);
   const refDate = normalizeDateOnlyWorker(record.endDate) || normalizeDateOnlyWorker(record.deletedAt);
   if (!refDate) return false;
   const diffFromRefToToday = dateDiffDays(refDate, today);
@@ -620,6 +654,7 @@ function normalizeDateOnlyWorker(value) {
 async function sendCloudTestEmail(env, body = {}) {
   const { data } = await readGithubFile(env);
   const cfg = normalizeEmailReminder(data.settings && data.settings.emailReminder);
+  const timeZone = normalizeTimeZone(data.settings && data.settings.timeZone);
   const to = body.mailTo || body.to || cfg.mailTo;
   if (!to) throw new Error('mailTo is empty. Please set recipient email first.');
 
@@ -629,7 +664,7 @@ async function sendCloudTestEmail(env, body = {}) {
     principalTry: 50000,
     principalPlusInterestTry: 52000,
     annualRateTry: 40,
-    endDate: todayString(),
+    endDate: todayString(timeZone),
     tryCnyOpen: 0.15,
     tryCnyNow: 0.15,
     usdCnyOpen: 7,
@@ -637,12 +672,12 @@ async function sendCloudTestEmail(env, body = {}) {
     reminderEnabled: true,
     remark: '这是一封云端测试邮件，不代表真实定存。'
   };
-  const calc = getCalc(fakeRecord);
+  const calc = getCalc(fakeRecord, timeZone);
   const subject = '[测试] ' + renderTemplate(cfg.subjectTemplate, fakeRecord, calc);
   const text = renderTemplate(cfg.bodyTemplate, fakeRecord, calc);
 
   const resendResult = await sendEmailWithResend(env, to, subject, text);
-  return { to, subject, resendResult };
+  return { to, subject, timeZone, resendResult };
 }
 
 async function sendEmailWithResend(env, to, subject, text) {
@@ -679,6 +714,8 @@ function normalizeData(data) {
     ...rawSettings,
     emailReminder: normalizeEmailReminder(rawSettings.emailReminder),
     sentReminders: rawSettings.sentReminders && typeof rawSettings.sentReminders === 'object' ? rawSettings.sentReminders : {},
+    recordTombstones: rawSettings.recordTombstones && typeof rawSettings.recordTombstones === 'object' ? rawSettings.recordTombstones : {},
+    timeZone: normalizeTimeZone(rawSettings.timeZone || DEFAULT_DATA.settings.timeZone),
     exchangeRateHostRefreshLatestApi: rawSettings.exchangeRateHostRefreshLatestApi === 'YES' ? 'YES' : 'NO',
     exchangeRateHostBatchWindowDays: 365
   };
@@ -752,9 +789,9 @@ function normalizeMailFields(fields) {
   return out;
 }
 
-function getCalc(r) {
+function getCalc(r, timeZone) {
   const depositDays = Math.max(dateDiffDays(r.startDate, r.endDate), 0);
-  const remainingDays = dateDiffDays(todayString(), r.endDate);
+  const remainingDays = dateDiffDays(todayString(timeZone), r.endDate);
   const principalTry = n(r.principalTry);
   const storedTotal = n(r.principalPlusInterestTry);
   const legacyInterest = n(r.interestTry);
@@ -817,8 +854,31 @@ function mailValueMap(r, c) {
   };
 }
 
-function todayString() {
-  return new Date().toISOString().slice(0, 10);
+function todayString(timeZone = 'UTC') {
+  return dateToTimeZoneYmd(new Date(), normalizeTimeZone(timeZone));
+}
+
+function normalizeTimeZone(value) {
+  const tz = String(value || '').trim() || 'UTC';
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz }).format(new Date());
+    return tz;
+  } catch (_) {
+    return 'UTC';
+  }
+}
+
+function dateToTimeZoneYmd(date, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date).reduce((acc, part) => {
+    acc[part.type] = part.value;
+    return acc;
+  }, {});
+  return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
 function dateDiffDays(a, b) {
