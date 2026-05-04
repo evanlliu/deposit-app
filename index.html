@@ -270,11 +270,117 @@
       font-weight: 700;
       white-space: nowrap;
     }
-    .date-range-date,
-    .filterbar input.date-range-date {
+    .date-input-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
       width: 145px;
       min-width: 132px;
       max-width: 145px;
+    }
+    .date-range-date,
+    .filterbar input.date-range-date {
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+      padding-right: 32px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: -0.01em;
+    }
+    .date-picker-trigger {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .date-picker-trigger:hover {
+      color: var(--primary);
+      background: rgba(14, 165, 233, 0.08);
+    }
+    .date-picker-popover {
+      position: fixed;
+      z-index: 3000;
+      width: 288px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+    .date-picker-popover[hidden] { display: none; }
+    .date-picker-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .date-picker-title {
+      font-weight: 900;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .date-picker-nav {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border-radius: 10px;
+      background: #f8fafc;
+      color: var(--text);
+      box-shadow: none;
+      border: 1px solid var(--line);
+    }
+    .date-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .date-picker-weekday,
+    .date-picker-day {
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9px;
+      font-size: 12px;
+    }
+    .date-picker-weekday {
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .date-picker-day {
+      border: 1px solid transparent;
+      background: #fff;
+      color: var(--text);
+      box-shadow: none;
+      padding: 0;
+    }
+    .date-picker-day:hover {
+      background: #eef8ff;
+      border-color: #bae6fd;
+    }
+    .date-picker-day.is-muted {
+      color: #a8b3c5;
+      background: #fafafa;
+    }
+    .date-picker-day.is-today {
+      border-color: var(--primary);
+    }
+    .date-picker-day.is-selected {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      font-weight: 900;
     }
     .date-range-separator {
       color: var(--muted);
@@ -1566,6 +1672,7 @@
       }
       .date-range-separator { display: none; }
       .date-range-part,
+      .date-input-wrap,
       .date-range-date,
       .filterbar input.date-range-date,
       .date-range-clear {
@@ -1670,12 +1777,18 @@
                 <div class="date-range-picker" aria-label="时间区间">
                   <label class="date-range-part">
                     <span class="date-range-start-text">开始日期</span>
-                    <input id="dateRangeStart" class="date-range-date" type="date" />
+                    <span class="date-input-wrap">
+                      <input id="dateRangeStart" class="date-range-date date-picker-input" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" data-date-picker="1" />
+                      <button class="date-picker-trigger" type="button" aria-label="选择开始日期">📅</button>
+                    </span>
                   </label>
                   <span class="date-range-separator">至</span>
                   <label class="date-range-part">
                     <span class="date-range-end-text">结束日期</span>
-                    <input id="dateRangeEnd" class="date-range-date" type="date" />
+                    <span class="date-input-wrap">
+                      <input id="dateRangeEnd" class="date-range-date date-picker-input" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" data-date-picker="1" />
+                      <button class="date-picker-trigger" type="button" aria-label="选择结束日期">📅</button>
+                    </span>
                   </label>
                   <button id="btnClearDateRange" class="secondary small date-range-clear" type="button">清空</button>
                 </div>
@@ -2174,7 +2287,7 @@
       fold: { settingsTitle: '设置 / 更多', settingsSub: '同步、邮件、列、汇率', rateTitle: '刷新汇率', rateSub: '汇率、历史范围', searchTitle: '查询 / 筛选', searchSub: '搜索、银行、时间区间', exportTitle: '导出 / 备份', exportSub: 'JSON、CSV、备份、导入', expand: '展开', collapse: '收起' },
       buttons: { add: '新增定存', refreshCloud: '从云端刷新', sync: '同步设置', mail: '邮件提醒', columns: '列配置', rate: '汇率设置', refreshRates: '刷新汇率', exportJson: '导出JSON', exportCsv: '导出CSV', backupJson: '备份JSON', importBackup: '导入备份', current: '当前定存', history: '历史记录', close: '关闭', cancel: '取消', save: '保存', edit: '编辑', moveHistory: '移入历史', restore: '恢复', deleteForever: '永久删除', resetColumns: '恢复默认列', previewMail: '预览提醒邮件', sendCloudTestMail: '发送云端测试邮件', cloudTestReminder: '云端测试一次提醒', saveMail: '保存邮件设置', saveSync: '保存同步设置', saveRate: '保存汇率设置', estimateInterest: '估算利息', fetchOpenRates: '按开户日期获取汇率', fetchEndRates: '按结束日期获取汇率', fetchAllRates: '自动填入全部汇率' },
       tabs: { active: '当前定存', history: '历史记录' },
-      common: { allBanks: '全部银行', allDates: '全部日期', localMode: '本地模式', total: '合计：', none: '-', yes: 'YES', no: 'NO', days: '天', records: '笔', code: 'code', dateRangeStart: '开始日期', dateRangeEnd: '结束日期', clearDateRange: '清空' },
+      common: { allBanks: '全部银行', allDates: '全部日期', localMode: '本地模式', total: '合计：', none: '-', yes: 'YES', no: 'NO', days: '天', records: '笔', code: 'code', dateRangeStart: '开始日期', dateRangeEnd: '结束日期', dateRangeTo: '至', clearDateRange: '清空', datePlaceholder: 'YYYY-MM-DD', pickDate: '选择日期' },
       placeholders: { search: '搜索银行/备注/日期', dateRange: '时间区间：2026/04/04-2026/05/04', bank: '例如 YAP(G)', principalTry: '例如 400000', principalPlusInterestTry: '例如 412295.89', annualRateTry: '例如 40', remark: '例如：一个月定期、已续存、资金来源说明等', deleteReason: '例如：已到期、手动删除、提前取出', exchangeTry: '例如 393820', exchangeCny: '例如 59722', exchangeReason: '例如：和 OPPO 苏建明换', apiUrl: 'https://你的worker.workers.dev/data', apiPassword: '和 Worker 里的 APP_PASSWORD 一样', mailTo: '例如 you@example.com', mailAdvanceDays: '例如 1 或 3，留空则不提前推送', dueHours: '例如 1 或 2，留空则不当天循环推送', pushStartTime: '例如 09:00，留空表示 00:00', pushEndTime: '例如 18:00，留空表示 23:59', mailSubject: '例如：定存到期提醒：{{bank}} {{principalTry}} TRY', mailBody: '你可以直接点击下面的变量按钮插入，例如选择“银行”会插入 {{bank}}', exchangeRateApiKey: '不填则使用 open.er-api.com 最新汇率；历史日期需要付费历史接口权限', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key；支持 live / historical / timeframe', currencyApiKey: 'currencyapi.com 需要 API Key；支持 latest / historical', timeZoneCustom: '例如 America/Monterrey' },
       summary: { count: '当前笔数', principalTry: '本金合计 TRY', interestTry: '利息合计 TRY', principalCny: '本金合计 CNY', gainCny: '获得 CNY', reminder: '提醒', reminderValue: '7天内 {soon} / 到期 {expired}' },
       history: { deletedAt: '删除时间' },
@@ -2193,7 +2306,7 @@
       fold: { settingsTitle: 'Settings / More', settingsSub: 'Sync, mail, columns, rates', rateTitle: 'Refresh Rates', rateSub: 'Rates and history range', searchTitle: 'Search / Filter', searchSub: 'Search, bank, date range', exportTitle: 'Export / Backup', exportSub: 'JSON, CSV, backup, import', expand: 'Expand', collapse: 'Collapse' },
       buttons: { add: 'Add Deposit', refreshCloud: 'Refresh from Cloud', sync: 'Sync Settings', mail: 'Email Reminder', columns: 'Column Settings', rate: 'Rate Settings', refreshRates: 'Refresh Rates', exportJson: 'Export JSON', exportCsv: 'Export CSV', backupJson: 'Backup JSON', importBackup: 'Import Backup', current: 'Active Deposits', history: 'History', close: 'Close', cancel: 'Cancel', save: 'Save', edit: 'Edit', moveHistory: 'Move to History', restore: 'Restore', deleteForever: 'Delete Forever', resetColumns: 'Reset Columns', previewMail: 'Preview Email', sendCloudTestMail: 'Send Cloud Test Email', cloudTestReminder: 'Run Cloud Test Reminder', saveMail: 'Save Email Settings', saveSync: 'Save Sync Settings', saveRate: 'Save Rate Settings', estimateInterest: 'Estimate Interest', fetchOpenRates: 'Fetch Open-Date Rates', fetchEndRates: 'Fetch End-Date Rates', fetchAllRates: 'Auto Fill All Rates' },
       tabs: { active: 'Active Deposits', history: 'History' },
-      common: { allBanks: 'All Banks', allDates: 'All Dates', localMode: 'Local Mode', total: 'Total:', none: '-', yes: 'YES', no: 'NO', days: 'days', records: 'records', code: 'code', dateRangeStart: 'Start Date', dateRangeEnd: 'End Date', clearDateRange: 'Clear' },
+      common: { allBanks: 'All Banks', allDates: 'All Dates', localMode: 'Local Mode', total: 'Total:', none: '-', yes: 'YES', no: 'NO', days: 'days', records: 'records', code: 'code', dateRangeStart: 'Start Date', dateRangeEnd: 'End Date', dateRangeTo: 'to', clearDateRange: 'Clear', datePlaceholder: 'YYYY-MM-DD', pickDate: 'Pick date' },
       placeholders: { search: 'Search bank/note/date', dateRange: 'Date range: 2026/04/04-2026/05/04', bank: 'e.g. YAP(G)', principalTry: 'e.g. 400000', principalPlusInterestTry: 'e.g. 412295.89', annualRateTry: 'e.g. 40', remark: 'e.g. one-month deposit, renewed, source of funds', deleteReason: 'e.g. matured, manual delete, early withdrawal', exchangeTry: 'e.g. 393820', exchangeCny: 'e.g. 59722', exchangeReason: 'e.g. exchanged with OPPO Su Jianming', apiUrl: 'https://your-worker.workers.dev/data', apiPassword: 'Same as APP_PASSWORD in Worker', mailTo: 'e.g. you@example.com', mailAdvanceDays: 'e.g. 1 or 3; blank = no advance reminder', dueHours: 'e.g. 1 or 2; blank = no due-day repeating reminder', pushStartTime: 'e.g. 09:00; blank = 00:00', pushEndTime: 'e.g. 18:00; blank = 23:59', mailSubject: 'e.g. Deposit reminder: {{bank}} {{principalTry}} TRY', mailBody: 'Click variable buttons below to insert, e.g. Bank inserts {{bank}}', exchangeRateApiKey: 'Leave blank to use open.er-api.com latest rates; historical dates need paid access', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key; supports live / historical / timeframe', currencyApiKey: 'currencyapi.com API Key; supports latest / historical', timeZoneCustom: 'e.g. America/Monterrey' },
       summary: { count: 'Active Count', principalTry: 'Total Principal TRY', interestTry: 'Total Interest TRY', principalCny: 'Total Principal CNY', gainCny: 'Gain CNY', reminder: 'Reminder', reminderValue: 'within 7 days {soon} / due {expired}' },
       history: { deletedAt: 'Deleted At' },
@@ -2212,7 +2325,7 @@
       fold: { settingsTitle: 'Ayarlar / Daha fazla', settingsSub: 'Senkron, e-posta, sütun, kur', rateTitle: 'Kurları Yenile', rateSub: 'Kur ve geçmiş aralığı', searchTitle: 'Ara / Filtrele', searchSub: 'Arama, banka, tarih aralığı', exportTitle: 'Dışa Aktar / Yedek', exportSub: 'JSON, CSV, yedek, içe aktar', expand: 'Aç', collapse: 'Kapat' },
       buttons: { add: 'Mevduat Ekle', refreshCloud: 'Buluttan Yenile', sync: 'Senkron Ayarları', mail: 'E-posta Hatırlatma', columns: 'Sütun Ayarları', rate: 'Kur Ayarları', refreshRates: 'Kurları Yenile', exportJson: 'JSON Dışa Aktar', exportCsv: 'CSV Dışa Aktar', backupJson: 'JSON Yedekle', importBackup: 'Yedek İçe Aktar', current: 'Aktif Mevduatlar', history: 'Geçmiş', close: 'Kapat', cancel: 'İptal', save: 'Kaydet', edit: 'Düzenle', moveHistory: 'Geçmişe Taşı', restore: 'Geri Al', deleteForever: 'Kalıcı Sil', resetColumns: 'Sütunları Sıfırla', previewMail: 'E-postayı Önizle', sendCloudTestMail: 'Bulut Test E-postası Gönder', cloudTestReminder: 'Bulut Test Hatırlatması', saveMail: 'E-posta Ayarlarını Kaydet', saveSync: 'Senkron Ayarlarını Kaydet', saveRate: 'Kur Ayarlarını Kaydet', estimateInterest: 'Faizi Hesapla', fetchOpenRates: 'Açılış Tarihi Kurunu Al', fetchEndRates: 'Bitiş Tarihi Kurunu Al', fetchAllRates: 'Tüm Kurları Otomatik Doldur' },
       tabs: { active: 'Aktif Mevduatlar', history: 'Geçmiş' },
-      common: { allBanks: 'Tüm Bankalar', allDates: 'Tüm Tarihler', localMode: 'Yerel Mod', total: 'Toplam:', none: '-', yes: 'YES', no: 'NO', days: 'gün', records: 'kayıt', code: 'code', dateRangeStart: 'Başlangıç', dateRangeEnd: 'Bitiş', clearDateRange: 'Temizle' },
+      common: { allBanks: 'Tüm Bankalar', allDates: 'Tüm Tarihler', localMode: 'Yerel Mod', total: 'Toplam:', none: '-', yes: 'YES', no: 'NO', days: 'gün', records: 'kayıt', code: 'code', dateRangeStart: 'Başlangıç', dateRangeEnd: 'Bitiş', dateRangeTo: 'ile', clearDateRange: 'Temizle', datePlaceholder: 'YYYY-MM-DD', pickDate: 'Tarih seç' },
       placeholders: { search: 'Banka / not / tarih ara', dateRange: 'Tarih aralığı: 2026/04/04-2026/05/04', bank: 'örn. YAP(G)', principalTry: 'örn. 400000', principalPlusInterestTry: 'örn. 412295.89', annualRateTry: 'örn. 40', remark: 'örn. bir aylık mevduat, yenilendi, fon kaynağı', deleteReason: 'örn. vadesi doldu, manuel silindi, erken çekim', exchangeTry: 'örn. 393820', exchangeCny: 'örn. 59722', exchangeReason: 'örn. OPPO Su Jianming ile değişim', apiUrl: 'https://worker.workers.dev/data', apiPassword: 'Worker içindeki APP_PASSWORD ile aynı', mailTo: 'örn. you@example.com', mailAdvanceDays: 'örn. 1 veya 3; boşsa erken hatırlatma yok', dueHours: 'örn. 1 veya 2; boşsa vade günü tekrar yok', pushStartTime: 'örn. 09:00; boş = 00:00', pushEndTime: 'örn. 18:00; boş = 23:59', mailSubject: 'örn. Mevduat hatırlatma: {{bank}} {{principalTry}} TRY', mailBody: 'Aşağıdaki değişken düğmelerine tıklayarak ekleyin', exchangeRateApiKey: 'Boş bırakılırsa open.er-api.com güncel kuru kullanılır; geçmiş tarih ücretli yetki gerektirir', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key', currencyApiKey: 'currencyapi.com API Key', timeZoneCustom: 'örn. Europe/Istanbul' },
       summary: { count: 'Aktif Kayıt', principalTry: 'Toplam Ana Para TRY', interestTry: 'Toplam Faiz TRY', principalCny: 'Toplam Ana Para CNY', gainCny: 'Getiri CNY', reminder: 'Hatırlatma', reminderValue: '7 gün içinde {soon} / vadesi dolan {expired}' },
       history: { deletedAt: 'Silinme Zamanı' },
@@ -2341,6 +2454,9 @@
     setPlaceholder('#searchInput', 'placeholders.search');
     $('.date-range-start-text').text(t('common.dateRangeStart'));
     $('.date-range-end-text').text(t('common.dateRangeEnd'));
+    $('.date-range-separator').text(t('common.dateRangeTo'));
+    $('.date-picker-input').attr('placeholder', t('common.datePlaceholder'));
+    $('.date-picker-trigger').attr('aria-label', t('common.pickDate'));
     $('#btnClearDateRange').text(t('common.clearDateRange'));
     $('#bankFilter option[value=""]').text(t('common.allBanks'));
     $('#dateRangeField option[value="all"]').text(t('common.allDates'));
@@ -2575,7 +2691,166 @@
     handle.addEventListener('pointercancel', finishDrag);
   }
 
+
+  let datePickerState = { input: null, year: null, month: null };
+
+  function setupDatePicker() {
+    if (!document.getElementById('miniDatePicker')) {
+      $('body').append('<div id="miniDatePicker" class="date-picker-popover" hidden></div>');
+    }
+
+    $(document).on('focus click', '.date-picker-input', function () {
+      showMiniDatePicker(this);
+    });
+    $(document).on('click', '.date-picker-trigger', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const input = $(this).closest('.date-input-wrap').find('.date-picker-input')[0];
+      if (input) {
+        input.focus();
+        showMiniDatePicker(input);
+      }
+    });
+    $(document).on('keydown', '.date-picker-input', function (e) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        showMiniDatePicker(this);
+      } else if (e.key === 'Escape') {
+        hideMiniDatePicker();
+      }
+    });
+    $(document).on('blur', '.date-picker-input', function () {
+      normalizeDatePickerInput(this);
+    });
+    $(document).on('click', '#miniDatePicker .date-picker-nav', function (e) {
+      e.preventDefault();
+      const delta = Number($(this).data('delta')) || 0;
+      shiftMiniDatePickerMonth(delta);
+    });
+    $(document).on('click', '#miniDatePicker .date-picker-day', function (e) {
+      e.preventDefault();
+      const ymd = $(this).data('date');
+      if (!ymd || !datePickerState.input) return;
+      datePickerState.input.value = ymd;
+      $(datePickerState.input).trigger('input').trigger('change');
+      hideMiniDatePicker();
+    });
+    $(document).on('click', function (e) {
+      const target = e.target;
+      if ($(target).closest('#miniDatePicker, .date-input-wrap').length) return;
+      hideMiniDatePicker();
+    });
+    $(window).on('resize', repositionMiniDatePicker);
+    $('.table-wrap, main').on('scroll', repositionMiniDatePicker);
+  }
+
+  function showMiniDatePicker(input) {
+    if (!input) return;
+    datePickerState.input = input;
+    const selected = normalizeLooseDate(input.value);
+    const base = selected ? parseDate(selected) : parseDate(todayString());
+    datePickerState.year = base.getUTCFullYear();
+    datePickerState.month = base.getUTCMonth();
+    renderMiniDatePicker();
+    repositionMiniDatePicker();
+  }
+
+  function hideMiniDatePicker() {
+    const picker = document.getElementById('miniDatePicker');
+    if (picker) picker.hidden = true;
+    datePickerState.input = null;
+  }
+
+  function normalizeDatePickerInput(input) {
+    const raw = String(input.value || '').trim();
+    if (!raw) return;
+    const normalized = normalizeLooseDate(raw);
+    if (normalized) {
+      if (input.value !== normalized) {
+        input.value = normalized;
+        $(input).trigger('input').trigger('change');
+      }
+    }
+  }
+
+  function shiftMiniDatePickerMonth(delta) {
+    const d = new Date(Date.UTC(datePickerState.year, datePickerState.month + delta, 1));
+    datePickerState.year = d.getUTCFullYear();
+    datePickerState.month = d.getUTCMonth();
+    renderMiniDatePicker();
+    repositionMiniDatePicker();
+  }
+
+  function renderMiniDatePicker() {
+    const picker = document.getElementById('miniDatePicker');
+    if (!picker || !datePickerState.input) return;
+
+    const y = datePickerState.year;
+    const m = datePickerState.month;
+    const selected = normalizeLooseDate(datePickerState.input.value);
+    const today = todayString();
+    const localeMap = { zh: 'zh-CN', en: 'en-US', tr: 'tr-TR' };
+    const locale = localeMap[currentLanguage()] || 'en-US';
+    const titleDate = new Date(Date.UTC(y, m, 1));
+    let title = `${y}-${String(m + 1).padStart(2, '0')}`;
+    try {
+      title = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long', timeZone: 'UTC' }).format(titleDate);
+    } catch (e) {}
+
+    const weekdayBase = new Date(Date.UTC(2024, 0, 1)); // Monday
+    const weekdays = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(weekdayBase.getTime() + i * 86400000);
+      try {
+        return new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(d);
+      } catch (e) {
+        return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i];
+      }
+    });
+
+    const firstDay = (new Date(Date.UTC(y, m, 1)).getUTCDay() + 6) % 7; // Monday-first
+    const start = new Date(Date.UTC(y, m, 1 - firstDay));
+    const days = Array.from({ length: 42 }, (_, i) => {
+      const d = new Date(start.getTime() + i * 86400000);
+      const ymd = dateToString(d);
+      const muted = d.getUTCMonth() !== m;
+      const classes = ['date-picker-day'];
+      if (muted) classes.push('is-muted');
+      if (ymd === today) classes.push('is-today');
+      if (ymd === selected) classes.push('is-selected');
+      return `<button type="button" class="${classes.join(' ')}" data-date="${ymd}">${d.getUTCDate()}</button>`;
+    }).join('');
+
+    picker.innerHTML = `
+      <div class="date-picker-head">
+        <button type="button" class="date-picker-nav" data-delta="-1" aria-label="Previous month">‹</button>
+        <div class="date-picker-title">${escapeHtml(title)}</div>
+        <button type="button" class="date-picker-nav" data-delta="1" aria-label="Next month">›</button>
+      </div>
+      <div class="date-picker-grid">
+        ${weekdays.map(w => `<div class="date-picker-weekday">${escapeHtml(w)}</div>`).join('')}
+        ${days}
+      </div>`;
+    picker.hidden = false;
+  }
+
+  function repositionMiniDatePicker() {
+    const picker = document.getElementById('miniDatePicker');
+    const input = datePickerState.input;
+    if (!picker || picker.hidden || !input) return;
+    const rect = input.getBoundingClientRect();
+    const width = picker.offsetWidth || 288;
+    const height = picker.offsetHeight || 330;
+    let left = Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - width - 8));
+    let top = rect.bottom + 6;
+    if (top + height > window.innerHeight - 8) {
+      top = Math.max(8, rect.top - height - 6);
+    }
+    picker.style.left = left + 'px';
+    picker.style.top = top + 'px';
+  }
+
   function bindEvents() {
+    setupDatePicker();
     $('#languageSelect').on('change', changeLanguage);
     $('#topLanguageToggle').on('click', function (e) {
       e.preventDefault();
