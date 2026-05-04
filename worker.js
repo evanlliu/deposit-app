@@ -20,6 +20,7 @@
 //   RESEND_API_KEY    Resend email API key
 //   MAIL_FROM         Sender, e.g. "Deposit Reminder <onboarding@resend.dev>"
 //   EXCHANGE_RATE_HOST_API_KEY  Optional. Used by cloud email reminders to refresh rates before sending.
+// v44: Email template variables now support active table column codes and keep legacy aliases.
 // v42: Email reminder supports push windows and config-fingerprint based duplicate reset.
 // v34: Explicitly preserves/saves new UI settings in data.json, including timeZone and columnWidths.
 // v31: PUT uses GitHub sha optimistic locking; timezone-aware reminders/rate refresh; keeps Worker-owned fields safe.
@@ -44,11 +45,14 @@ const DEFAULT_EMAIL_REMINDER = {
 
 
 const MAIL_TEMPLATE_VARIABLES = [
-  'bank', 'principalTry', 'interestTry', 'principalPlusInterestTry',
-  'openDate', 'startDate', 'endDate', 'depositDays', 'remainingDays',
-  'usdCnyOpen', 'tryCnyOpen', 'usdCnyEnd', 'tryCnyEnd',
-  'principalCny', 'principalUsd', 'principalPlusInterestCny', 'principalPlusInterestUsd',
-  'interestCny', 'gainCny', 'gainUsd', 'annualRateTry', 'annualRateCny', 'remark'
+  // Active table column codes, excluding the UI-only actions column.
+  'seq', 'remainingDays', 'bank', 'openDate', 'usdCnyOpen', 'tryCnyOpen',
+  'startDate', 'endDate', 'usdCnyNow', 'tryCnyNow', 'principalTry',
+  'interestTry', 'principalPlusInterestTry', 'depositDays', 'annualRateTry',
+  'annualRateCny', 'principalCny', 'principalUsd', 'principalPlusInterestCny',
+  'principalPlusInterestUsd', 'gainTry', 'gainCny', 'gainUsd', 'reminderEnabled',
+  // Backward-compatible aliases used by older templates.
+  'usdCnyEnd', 'tryCnyEnd', 'interestCny', 'remark'
 ];
 
 const DEFAULT_DATA = {
@@ -297,7 +301,7 @@ async function processEmailReminders(env, options = {}) {
 
   const candidates = [];
 
-  for (const r of active) {
+  for (const [index, r] of active.entries()) {
     const c = getCalc(r, timeZone);
     if (cfg.onlyEnabledRecords && !r.reminderEnabled) continue;
 
@@ -307,7 +311,7 @@ async function processEmailReminders(env, options = {}) {
       // Only a real Cloudflare Cron send should block the next Cron send.
       // Old/manual test records must not block scheduled reminders.
       if (options.force || !isBlockingCronReminder(previous, configFingerprint)) {
-        candidates.push({ r, c, key, triggerLabel: `提前 ${c.remainingDays} 天推送`, previousReminder: previous || null });
+        candidates.push({ r, c, index, key, triggerLabel: `提前 ${c.remainingDays} 天推送`, previousReminder: previous || null });
       }
     }
 
@@ -321,7 +325,7 @@ async function processEmailReminders(env, options = {}) {
       const intervalMs = Number(cfg.dueTodayIntervalHours) * 3600000;
       const clockToleranceMs = 70000;
       if (options.force || elapsedMs >= Math.max(0, intervalMs - clockToleranceMs)) {
-        candidates.push({ r, c, key, triggerLabel: `到期当天每 ${cfg.dueTodayIntervalHours} 小时推送`, previousReminder: previous || null });
+        candidates.push({ r, c, index, key, triggerLabel: `到期当天每 ${cfg.dueTodayIntervalHours} 小时推送`, previousReminder: previous || null });
       }
     }
   }
@@ -342,8 +346,8 @@ async function processEmailReminders(env, options = {}) {
 
   for (const item of candidates) {
     try {
-      const subject = renderTemplate(cfg.subjectTemplate, item.r, item.c);
-      const text = renderTemplate(cfg.bodyTemplate, item.r, item.c);
+      const subject = renderTemplate(cfg.subjectTemplate, item.r, item.c, item.index);
+      const text = renderTemplate(cfg.bodyTemplate, item.r, item.c, item.index);
       await sendEmailWithResend(env, cfg.mailTo, subject, text);
       if (shouldRecordSent) {
         sentReminders[item.key] = {
@@ -800,8 +804,8 @@ async function sendCloudTestEmail(env, body = {}) {
     remark: '这是一封云端测试邮件，不代表真实定存。'
   };
   const calc = getCalc(fakeRecord, timeZone);
-  const subject = '[测试] ' + renderTemplate(cfg.subjectTemplate, fakeRecord, calc);
-  const text = renderTemplate(cfg.bodyTemplate, fakeRecord, calc);
+  const subject = '[测试] ' + renderTemplate(cfg.subjectTemplate, fakeRecord, calc, 0);
+  const text = renderTemplate(cfg.bodyTemplate, fakeRecord, calc, 0);
 
   const resendResult = await sendEmailWithResend(env, to, subject, text);
   return { to, subject, timeZone, resendResult };
@@ -938,25 +942,19 @@ function getCalc(r, timeZone) {
   return { depositDays, remainingDays, principalPlusInterestTry, interestTry, principalCny, principalUsd, principalPlusInterestCny, principalPlusInterestUsd, gainTry, gainCny, gainUsd, interestCny, annualRateCny };
 }
 
-function renderTemplate(template, r, c) {
-  const values = mailValueMap(r, c);
+function renderTemplate(template, r, c, index) {
+  const values = mailValueMap(r, c, index);
   return String(template || '').replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key) => values[key] ?? '');
 }
 
 function buildSelectedFieldsText(fields, r, c) {
-  const labels = {
-    bank: '银行', principalTry: '本金 TRY', interestTry: '利息 TRY', principalPlusInterestTry: '本金+利息 TRY',
-    openDate: '开户日期', startDate: '开始日期', endDate: '到期日期', depositDays: '存款天数', remainingDays: '剩余天数',
-    usdCnyOpen: '开户 USD→CNY', tryCnyOpen: '开户 TRY→CNY', usdCnyEnd: '结束 USD→CNY', tryCnyEnd: '结束 TRY→CNY',
-    principalCny: '本金 CNY', principalUsd: '本金 USD', principalPlusInterestCny: '本金+利息 CNY', principalPlusInterestUsd: '本金+利息 USD',
-    interestCny: '利息 CNY', gainCny: '获得 CNY', gainUsd: '获得 USD', annualRateTry: '年利率 TRY', annualRateCny: '年利率 CNY', remark: '备注'
-  };
   const values = mailValueMap(r, c);
-  return normalizeMailFields(fields).map(k => `${labels[k] || k}：${values[k] ?? ''}`).join('\n');
+  return normalizeMailFields(fields).map(k => `${k}：${values[k] ?? ''}`).join('\n');
 }
 
-function mailValueMap(r, c) {
+function mailValueMap(r, c, index) {
   return {
+    seq: Number.isFinite(index) ? index + 1 : '',
     bank: r.bank || '',
     openDate: r.openDate || '',
     startDate: r.startDate || '',
@@ -965,6 +963,8 @@ function mailValueMap(r, c) {
     remainingDays: c.remainingDays,
     usdCnyOpen: r.usdCnyOpen ?? '',
     tryCnyOpen: r.tryCnyOpen ?? '',
+    usdCnyNow: r.usdCnyNow ?? '',
+    tryCnyNow: r.tryCnyNow ?? '',
     usdCnyEnd: r.usdCnyNow ?? '',
     tryCnyEnd: r.tryCnyNow ?? '',
     principalTry: fmt(r.principalTry),
@@ -975,10 +975,12 @@ function mailValueMap(r, c) {
     principalPlusInterestCny: fmt(c.principalPlusInterestCny),
     principalPlusInterestUsd: fmt(c.principalPlusInterestUsd),
     interestCny: fmt(c.interestCny),
+    gainTry: fmt(c.gainTry),
     gainCny: fmt(c.gainCny),
     gainUsd: fmt(c.gainUsd),
     annualRateTry: fmt(r.annualRateTry, 2) + '%',
     annualRateCny: fmt(c.annualRateCny, 2) + '%',
+    reminderEnabled: r.reminderEnabled ? 'YES' : 'NO',
     remark: r.remark || ''
   };
 }

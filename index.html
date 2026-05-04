@@ -634,6 +634,21 @@
       padding: 7px 10px;
       border-radius: 999px;
       font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+    }
+    .mail-var-btn-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 180px;
+    }
+    .mail-var-code {
+      color: var(--muted);
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
     .mail-var-btn:hover {
       background: #eff6ff;
@@ -1941,11 +1956,11 @@
             <div class="mail-variable-box">
               <div class="mail-variable-head">
                 <strong>点击变量，自动插入到标题或内容的光标位置</strong>
-                <span>例如点击“银行”会插入 {{bank}}</span>
+                <span>显示名称跟随当前定存表列名，点击后插入固定 code，例如 {{bank}}</span>
               </div>
               <div class="mail-variable-grid" id="mailVariableBox"></div>
               <div class="mail-variable-note">
-                说明：“利息 CNY”= 利息 TRY × 结束 TRY→CNY 汇率；“获得 CNY”= 本金+利息按结束汇率折算后减去本金按开户汇率折算后的结果，包含汇率变化影响。
+                说明：模板变量显示名称跟随“当前定存”表的列名设置；按钮里的 code 保持不变，保存到邮件模板的也是 {{code}}。
               </div>
             </div>
           </div>
@@ -1955,7 +1970,7 @@
           </div>
         </div>
         <div class="hint">
-          邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；邮件正文只发送“邮件内容模板”里的内容，不会再额外追加字段。你可以点击“模板变量”按钮插入字段，例如点击“银行”会插入 {{bank}}。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；允许推送时间段可设置为 09:00-18:00，留空表示全天；两个规则都填写时会同时生效。
+          邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；邮件正文只发送“邮件内容模板”里的内容，不会再额外追加字段。你可以点击“模板变量”按钮插入字段，显示名称跟随当前定存表列名，点击后插入固定 code，例如 {{bank}}。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；允许推送时间段可设置为 09:00-18:00，留空表示全天；两个规则都填写时会同时生效。
         </div>
       </div>
       <div class="modal-foot">
@@ -2051,30 +2066,9 @@
     { key: 'actions', label: '操作', locked: true }
   ];
 
-  const MAIL_TEMPLATE_VARIABLES = [
-    { key: 'bank', label: '银行', desc: '银行名称' },
-    { key: 'principalTry', label: '本金 TRY', desc: '本金金额' },
-    { key: 'interestTry', label: '利息 TRY', desc: '本金+利息 - 本金' },
-    { key: 'principalPlusInterestTry', label: '本金+利息 TRY', desc: '到期总金额' },
-    { key: 'openDate', label: '开户日期', desc: '开户日期' },
-    { key: 'startDate', label: '开始日期', desc: '计息开始日期' },
-    { key: 'endDate', label: '到期日期', desc: '结束日期/到期日期' },
-    { key: 'depositDays', label: '存款天数', desc: '结束日期 - 开始日期' },
-    { key: 'remainingDays', label: '剩余天数', desc: '到期日期 - 今天' },
-    { key: 'tryCnyOpen', label: '开户 TRY→CNY', desc: '开户日 TRY 对 CNY 汇率' },
-    { key: 'tryCnyEnd', label: '结束 TRY→CNY', desc: '结束日 TRY 对 CNY 汇率' },
-    { key: 'usdCnyOpen', label: '开户 USD→CNY', desc: '开户日 USD 对 CNY 汇率' },
-    { key: 'usdCnyEnd', label: '结束 USD→CNY', desc: '结束日 USD 对 CNY 汇率' },
-    { key: 'principalCny', label: '本金 CNY', desc: '本金按开户汇率折算' },
-    { key: 'principalUsd', label: '本金 USD', desc: '本金折算 USD' },
-    { key: 'principalPlusInterestCny', label: '本金+利息 CNY', desc: '到期总额按结束汇率折算' },
-    { key: 'principalPlusInterestUsd', label: '本金+利息 USD', desc: '到期总额折算 USD' },
-    { key: 'interestCny', label: '利息 CNY', desc: '利息 TRY × 结束 TRY→CNY 汇率' },
-    { key: 'gainCny', label: '获得 CNY', desc: '考虑汇率变化后的 CNY 收益' },
-    { key: 'gainUsd', label: '获得 USD', desc: '考虑汇率变化后的 USD 收益' },
-    { key: 'annualRateTry', label: '年利率 TRY', desc: '手动录入的 TRY 年利率' },
-    { key: 'annualRateCny', label: '年利率 CNY', desc: '按 CNY 收益计算' },
-    { key: 'remark', label: '备注', desc: '记录备注' }
+  const MAIL_TEMPLATE_EXCLUDED_COLUMN_KEYS = new Set(['actions']);
+  const MAIL_TEMPLATE_LEGACY_KEYS = [
+    'usdCnyEnd', 'tryCnyEnd', 'interestCny', 'remark'
   ];
 
   let lastMailTemplateTarget = null;
@@ -2110,7 +2104,7 @@
       sync: { title: '同步设置', apiUrl: 'Cloudflare Worker API 地址', password: '访问密码', hint: 'API 地址和访问密码会写入云端配置/备份 JSON。任意设备保存一次后，其他设备打开页面会自动读取云端配置和数据。你仍然可以在这里自定义 Worker 地址和访问密码。' },
       rate: { historyRange: '历史刷新范围', title: '汇率设置', provider: '默认汇率来源', fallback: '失败时自动切换备用来源', tcmbType: 'TCMB 汇率类型', exchangeRateApiKey: 'ExchangeRate-API Key，可选', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'exchangerate.host 获取最新 API 返回数据', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: '是否把汇率 API Key 同步到云端', optYesRefresh: 'YES，每次刷新时都重新调用 API 获取并覆盖 GitHub 今日汇率缓存', optNoRefresh: 'NO，优先使用 GitHub 里今天已缓存的汇率；如果今天没有缓存，才调用 API 获取', optNoKeys: 'NO，不同步密钥，推荐更安全', optYesKeys: 'YES，同步到 GitHub data.json，换设备不用重新填写', hint: '开户汇率和结束汇率都会按这里选择的来源获取。TCMB 更适合 TRY 场景；Frankfurter 无需 Key；ExchangeRate-API 不填 Key 时只使用开放最新汇率；exchangerate.host 和 currencyapi.com 需要 API Key。exchangerate.host 会把当天获取到的最近一年汇率缓存到 GitHub 的 data.json；如果“获取最新 API 返回数据”选择 NO，则当天后续刷新优先使用 GitHub 缓存，避免重复消耗 API 次数；如果选择 YES，则每次刷新都会重新调用 API 并覆盖今天的缓存。' },
       column: { title: '列配置', activeTitle: '当前定存列配置', historyTitle: '历史记录列配置', activeHint: '当前定存表和历史记录表独立保存配置。可以隐藏列、修改显示列名，也可以设置列宽；字段 code 不会变化。', historyHint: '历史记录可以单独修改列名和列宽，例如把“银行”改成“土耳其银行”，不会影响当前定存表。', bottomHint: '“序号”列也可以隐藏/显示；“操作”列固定显示但可以设置列宽。列名、列宽和列显示配置会一起保存到云端，多设备同步。列宽留空就是自适应；填写数字代表 px。', displayName: '显示名称：{name}', widthPx: '列宽 px', widthPlaceholder: '自适应', lockedVisible: '固定显示' },
-      mail: { title: '邮件提醒设置', enabled: '是否启用邮件提醒', to: '收件邮箱', advanceDays: '提前几天推送', dueHours: '到期当天每几小时推送', pushStartTime: '允许推送开始时间', pushEndTime: '允许推送结束时间', onlyEnabled: '只提醒已开启提醒的记录', timeZone: '页面/提醒时区', timeZoneCustom: '自定义时区', subject: '邮件标题模板', body: '邮件内容模板', variables: '模板变量', varHead: '点击变量，自动插入到标题或内容的光标位置', varSub: '例如点击“银行”会插入 {{bank}}', varNote: '说明：“利息 CNY”= 利息 TRY × 结束 TRY→CNY 汇率；“获得 CNY”= 本金+利息按结束汇率折算后减去本金按开户汇率折算后的结果，包含汇率变化影响。', preview: '邮件预览', previewButtonHint: '点击“预览提醒邮件”。', hint: '邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；邮件正文只发送“邮件内容模板”里的内容，不会再额外追加字段。你可以点击“模板变量”按钮插入字段，例如点击“银行”会插入 {{bank}}。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；允许推送时间段可设置为 09:00-18:00，留空表示全天；两个规则都填写时会同时生效。', noMatch: '当前没有符合提醒条件的定存。\n例如设置提前 7 天，只有剩余天数等于 7 的记录才会进入邮件提醒。', previewSubject: '标题：{subject}\n\n内容：\n{body}', previewMore: '\n\n共 {count} 条符合条件，实际推送时会逐条发送。' },
+      mail: { title: '邮件提醒设置', enabled: '是否启用邮件提醒', to: '收件邮箱', advanceDays: '提前几天推送', dueHours: '到期当天每几小时推送', pushStartTime: '允许推送开始时间', pushEndTime: '允许推送结束时间', onlyEnabled: '只提醒已开启提醒的记录', timeZone: '页面/提醒时区', timeZoneCustom: '自定义时区', subject: '邮件标题模板', body: '邮件内容模板', variables: '模板变量', varHead: '点击变量，自动插入到标题或内容的光标位置', varSub: '显示名称跟随当前定存表列名，点击后插入固定 code，例如 {{bank}}', varNote: '说明：模板变量显示名称跟随“当前定存”表的列名设置；按钮里的 code 保持不变，保存到邮件模板的也是 {{code}}。', preview: '邮件预览', previewButtonHint: '点击“预览提醒邮件”。', hint: '邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；邮件正文只发送“邮件内容模板”里的内容，不会再额外追加字段。你可以点击“模板变量”按钮插入字段，显示名称跟随当前定存表列名，点击后插入固定 code，例如 {{bank}}。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；允许推送时间段可设置为 09:00-18:00，留空表示全天；两个规则都填写时会同时生效。', noMatch: '当前没有符合提醒条件的定存。\n例如设置提前 7 天，只有剩余天数等于 7 的记录才会进入邮件提醒。', previewSubject: '标题：{subject}\n\n内容：\n{body}', previewMore: '\n\n共 {count} 条符合条件，实际推送时会逐条发送。' },
       mobile: { startEnd: '开始/结束', interestTry: '利息 TRY', annualRateTry: '年利率 TRY', annualRateCny: '年利率 CNY', principalCny: '本金 CNY', gainCny: '获得 CNY', deleteReason: '删除原因', reminder: '提醒', exchangeTry: '兑换 TRY', exchangeCny: '兑换 CNY', exchangeReason: '兑换原因', remark: '备注', history: '历史', expired: '已到期' },
       empty: { active: '暂无当前定存，点击“新增定存”开始。', history: '暂无历史记录。', mobileActive: '暂无当前定存。', mobileHistory: '暂无历史记录。' },
       columns: {}, mailVars: {}, messages: { statusLoaded: '已加载本地数据，正在尝试自动云端同步...', rateInfo: '汇率：当前全部；历史近 {days} 天。', savedColumns: '列配置、列名和列宽已保存并同步', resetColumns: '列配置、列名和列宽已恢复默认并同步' }
@@ -2128,7 +2122,7 @@
       sync: { title: 'Sync Settings', apiUrl: 'Cloudflare Worker API URL', password: 'Access Password', hint: 'The API URL and password are saved to cloud configuration / backup JSON. After one device saves them, other devices can automatically load cloud configuration and data. You can still customize the Worker URL and password here.' },
       rate: { historyRange: 'History refresh range', title: 'Rate Settings', provider: 'Default Rate Provider', fallback: 'Auto fallback on failure', tcmbType: 'TCMB Rate Type', exchangeRateApiKey: 'ExchangeRate-API Key, optional', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'Fetch latest API response from exchangerate.host', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: 'Sync rate API keys to cloud', optYesRefresh: 'YES, call API every refresh and overwrite today’s GitHub rate cache', optNoRefresh: 'NO, use today’s GitHub cache first; call API only if no cache exists today', optNoKeys: 'NO, do not sync keys, safer', optYesKeys: 'YES, sync to GitHub data.json for other devices', hint: 'Opening and ending rates are fetched from the selected source. exchangerate.host caches the last-year rates in GitHub data.json to reduce API calls.' },
       column: { title: 'Column Settings', activeTitle: 'Active Deposit Columns', historyTitle: 'History Columns', activeHint: 'Active and history tables keep independent settings. You can hide columns, rename display labels, and set widths; field codes do not change.', historyHint: 'History column names and widths can be customized separately without affecting active deposits.', bottomHint: 'The sequence column can also be hidden/shown; the action column stays visible but its width can be customized. Column labels, widths, and visibility are synced across devices. Leave width blank for auto; numbers are px.', displayName: 'Display name: {name}', widthPx: 'Width px', widthPlaceholder: 'Auto', lockedVisible: 'Always visible' },
-      mail: { title: 'Email Reminder Settings', enabled: 'Enable Email Reminder', to: 'Recipient Email', advanceDays: 'Advance Reminder Days', dueHours: 'Due-day Repeat Every X Hours', pushStartTime: 'Allowed push start time', pushEndTime: 'Allowed push end time', onlyEnabled: 'Only records with reminder enabled', timeZone: 'Page / reminder time zone', timeZoneCustom: 'Custom time zone', subject: 'Email Subject Template', body: 'Email Body Template', variables: 'Template Variables', varHead: 'Click a variable to insert it at the cursor position', varSub: 'For example, Bank inserts {{bank}}', varNote: 'Note: Interest CNY = Interest TRY × end TRY→CNY rate; Gain CNY includes FX impact.', preview: 'Email Preview', previewButtonHint: 'Click “Preview Email”.', hint: 'Email rules are saved to the cloud. Sending is performed by Cloudflare Worker + Resend. The email body only uses your body template and does not append extra fields. You can set an allowed push window such as 09:00-18:00; blank means all day. Changing reminder settings resets the duplicate-prevention schedule.', noMatch: 'No matching deposits for reminder.\nFor example, if advance days is 7, only records with 7 remaining days match.', previewSubject: 'Subject: {subject}\n\nBody:\n{body}', previewMore: '\n\n{count} matching records. Actual sending will send one email per record.' },
+      mail: { title: 'Email Reminder Settings', enabled: 'Enable Email Reminder', to: 'Recipient Email', advanceDays: 'Advance Reminder Days', dueHours: 'Due-day Repeat Every X Hours', pushStartTime: 'Allowed push start time', pushEndTime: 'Allowed push end time', onlyEnabled: 'Only records with reminder enabled', timeZone: 'Page / reminder time zone', timeZoneCustom: 'Custom time zone', subject: 'Email Subject Template', body: 'Email Body Template', variables: 'Template Variables', varHead: 'Click a variable to insert it at the cursor position', varSub: 'Names follow Active table columns; click to insert fixed code, e.g. {{bank}}', varNote: 'Note: variable names follow the Active table column names; the inserted code stays fixed as {{code}}.', preview: 'Email Preview', previewButtonHint: 'Click “Preview Email”.', hint: 'Email rules are saved to the cloud. Sending is performed by Cloudflare Worker + Resend. The email body only uses your body template and does not append extra fields. Template variable names follow the Active table column names, while inserted code stays fixed such as {{bank}}. You can set an allowed push window such as 09:00-18:00; blank means all day. Changing reminder settings resets the duplicate-prevention schedule.', noMatch: 'No matching deposits for reminder.\nFor example, if advance days is 7, only records with 7 remaining days match.', previewSubject: 'Subject: {subject}\n\nBody:\n{body}', previewMore: '\n\n{count} matching records. Actual sending will send one email per record.' },
       mobile: { startEnd: 'Start/End', interestTry: 'Interest TRY', annualRateTry: 'Annual Rate TRY', annualRateCny: 'Annual Rate CNY', principalCny: 'Principal CNY', gainCny: 'Gain CNY', deleteReason: 'Delete Reason', reminder: 'Reminder', exchangeTry: 'Exchange TRY', exchangeCny: 'Exchange CNY', exchangeReason: 'Exchange Reason', remark: 'Note', history: 'History', expired: 'Due' },
       empty: { active: 'No active deposits. Click “Add Deposit” to start.', history: 'No history records.', mobileActive: 'No active deposits.', mobileHistory: 'No history records.' },
       columns: {}, mailVars: {}, messages: { statusLoaded: 'Local data loaded, trying automatic cloud sync...', rateInfo: 'Rates: active all; history last {days} days.', savedColumns: 'Column settings, labels, and widths saved and synced', resetColumns: 'Column settings, labels, and widths reset and synced' }
@@ -2146,7 +2140,7 @@
       sync: { title: 'Senkron Ayarları', apiUrl: 'Cloudflare Worker API Adresi', password: 'Erişim Şifresi', hint: 'API adresi ve şifre bulut yapılandırmasına / yedek JSON’a kaydedilir. Bir cihazda kaydedildiğinde diğer cihazlar otomatik olarak bulut verilerini alabilir.' },
       rate: { historyRange: 'Geçmiş yenileme aralığı', title: 'Kur Ayarları', provider: 'Varsayılan Kur Kaynağı', fallback: 'Hata olursa yedek kaynağa geç', tcmbType: 'TCMB Kur Tipi', exchangeRateApiKey: 'ExchangeRate-API Key, opsiyonel', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'exchangerate.host güncel API verisini al', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: 'Kur API key buluta senkronlansın mı', optYesRefresh: 'YES, her yenilemede API çağır ve bugünkü GitHub kur önbelleğini güncelle', optNoRefresh: 'NO, önce bugünkü GitHub önbelleğini kullan; yoksa API çağır', optNoKeys: 'NO, key senkronlama; daha güvenli', optYesKeys: 'YES, GitHub data.json içine senkronla', hint: 'Açılış ve bitiş kurları seçilen kaynaktan alınır. exchangerate.host son bir yıllık kurları GitHub data.json içinde önbelleğe alır.' },
       column: { title: 'Sütun Ayarları', activeTitle: 'Aktif Mevduat Sütunları', historyTitle: 'Geçmiş Sütunları', activeHint: 'Aktif ve geçmiş tabloları bağımsız ayarlar tutar. Sütun gizleyebilir, görünen adları değiştirebilir ve genişlik ayarlayabilirsiniz; field code değişmez.', historyHint: 'Geçmiş sütun adları ve genişlikleri aktif tabloyu etkilemeden ayrı düzenlenebilir.', bottomHint: 'Sıra sütunu da gizlenebilir/gösterilebilir; işlem sütunu görünür kalır ama genişliği özelleştirilebilir. Sütun adları, genişlikleri ve görünürlük ayarları cihazlar arasında senkronlanır. Genişlik boşsa otomatik; sayı px anlamına gelir.', displayName: 'Görünen ad: {name}', widthPx: 'Genişlik px', widthPlaceholder: 'Otomatik', lockedVisible: 'Sabit görünür' },
-      mail: { title: 'E-posta Hatırlatma Ayarları', enabled: 'E-posta hatırlatmayı etkinleştir', to: 'Alıcı e-posta', advanceDays: 'Kaç gün önce hatırlat', dueHours: 'Vade günü kaç saatte bir', pushStartTime: 'İzin verilen başlangıç saati', pushEndTime: 'İzin verilen bitiş saati', onlyEnabled: 'Yalnız hatırlatma açık kayıtlar', timeZone: 'Sayfa / hatırlatma saat dilimi', timeZoneCustom: 'Özel saat dilimi', subject: 'E-posta başlık şablonu', body: 'E-posta içerik şablonu', variables: 'Şablon Değişkenleri', varHead: 'Değişkene tıklayın, imlecin olduğu yere eklensin', varSub: 'Örneğin Banka {{bank}} ekler', varNote: 'Not: Faiz CNY = Faiz TRY × bitiş TRY→CNY kuru; Getiri CNY kur etkisini içerir.', preview: 'E-posta Önizleme', previewButtonHint: '“E-postayı Önizle” düğmesine tıklayın.', hint: 'E-posta kuralları buluta kaydedilir. Gönderim Cloudflare Worker + Resend ile yapılır. İçerik yalnızca şablondaki metni kullanır. 09:00-18:00 gibi izin verilen gönderim aralığı ayarlanabilir; boşsa tüm gün. Ayarlar değişirse tekrar engelleme takvimi yeni kurala göre sıfırlanır.', noMatch: 'Hatırlatma koşuluna uyan mevduat yok.\nÖrn. 7 gün önce seçilirse yalnız kalan gün 7 olan kayıtlar eşleşir.', previewSubject: 'Başlık: {subject}\n\nİçerik:\n{body}', previewMore: '\n\n{count} kayıt eşleşti. Gönderimde her kayıt için ayrı e-posta gönderilir.' },
+      mail: { title: 'E-posta Hatırlatma Ayarları', enabled: 'E-posta hatırlatmayı etkinleştir', to: 'Alıcı e-posta', advanceDays: 'Kaç gün önce hatırlat', dueHours: 'Vade günü kaç saatte bir', pushStartTime: 'İzin verilen başlangıç saati', pushEndTime: 'İzin verilen bitiş saati', onlyEnabled: 'Yalnız hatırlatma açık kayıtlar', timeZone: 'Sayfa / hatırlatma saat dilimi', timeZoneCustom: 'Özel saat dilimi', subject: 'E-posta başlık şablonu', body: 'E-posta içerik şablonu', variables: 'Şablon Değişkenleri', varHead: 'Değişkene tıklayın, imlecin olduğu yere eklensin', varSub: 'Adlar aktif tablo sütunlarını izler; tıklanınca sabit code eklenir, örn. {{bank}}', varNote: 'Not: değişken adları aktif tablo sütun adlarını izler; eklenen code {{code}} olarak sabit kalır.', preview: 'E-posta Önizleme', previewButtonHint: '“E-postayı Önizle” düğmesine tıklayın.', hint: 'E-posta kuralları buluta kaydedilir. Gönderim Cloudflare Worker + Resend ile yapılır. İçerik yalnızca şablondaki metni kullanır. Şablon değişken adları aktif tablo sütun adlarını izler; eklenen code {{bank}} gibi sabit kalır. 09:00-18:00 gibi izin verilen gönderim aralığı ayarlanabilir; boşsa tüm gün. Ayarlar değişirse tekrar engelleme takvimi yeni kurala göre sıfırlanır.', noMatch: 'Hatırlatma koşuluna uyan mevduat yok.\nÖrn. 7 gün önce seçilirse yalnız kalan gün 7 olan kayıtlar eşleşir.', previewSubject: 'Başlık: {subject}\n\nİçerik:\n{body}', previewMore: '\n\n{count} kayıt eşleşti. Gönderimde her kayıt için ayrı e-posta gönderilir.' },
       mobile: { startEnd: 'Başlangıç/Bitiş', interestTry: 'Faiz TRY', annualRateTry: 'Yıllık Oran TRY', annualRateCny: 'Yıllık Oran CNY', principalCny: 'Ana Para CNY', gainCny: 'Getiri CNY', deleteReason: 'Silme Nedeni', reminder: 'Hatırlatma', exchangeTry: 'Değişim TRY', exchangeCny: 'Değişim CNY', exchangeReason: 'Değişim Nedeni', remark: 'Not', history: 'Geçmiş', expired: 'Vadesi doldu' },
       empty: { active: 'Aktif mevduat yok. Başlamak için “Mevduat Ekle” tıklayın.', history: 'Geçmiş kayıt yok.', mobileActive: 'Aktif mevduat yok.', mobileHistory: 'Geçmiş kayıt yok.' },
       columns: {}, mailVars: {}, messages: { statusLoaded: 'Yerel veri yüklendi, otomatik bulut senkronu deneniyor...', rateInfo: 'Kur: aktif tümü; geçmiş son {days} gün.', savedColumns: 'Sütun ayarları, adları ve genişlikleri kaydedildi ve senkronlandı', resetColumns: 'Sütun ayarları, adları ve genişlikleri sıfırlandı ve senkronlandı' }
@@ -2198,12 +2192,31 @@
     return columnLabelText(getDefaultColumnLabelHtml(type, col));
   }
 
+  function getMailTemplateVariables() {
+    return ACTIVE_COLUMNS
+      .filter(col => !MAIL_TEMPLATE_EXCLUDED_COLUMN_KEYS.has(col.key))
+      .map(col => ({
+        key: col.key,
+        label: columnLabelText(columnLabelHtml('active', col)),
+        desc: `${columnLabelText(columnLabelHtml('active', col))} / code: {{${col.key}}}`
+      }));
+  }
+
+  function getMailTemplateAllowedKeys() {
+    const activeKeys = ACTIVE_COLUMNS.filter(col => !MAIL_TEMPLATE_EXCLUDED_COLUMN_KEYS.has(col.key)).map(col => col.key);
+    return Array.from(new Set(activeKeys.concat(MAIL_TEMPLATE_LEGACY_KEYS)));
+  }
+
   function getMailVariableLabel(key) {
+    const dynamic = getMailTemplateVariables().find(x => x.key === key);
+    if (dynamic) return dynamic.label;
     const data = (MAIL_VAR_I18N[currentLanguage()] || MAIL_VAR_I18N.zh)[key];
     return data ? data[0] : key;
   }
 
   function getMailVariableDesc(key) {
+    const dynamic = getMailTemplateVariables().find(x => x.key === key);
+    if (dynamic) return dynamic.desc;
     const data = (MAIL_VAR_I18N[currentLanguage()] || MAIL_VAR_I18N.zh)[key];
     return data ? data[1] : key;
   }
@@ -4538,6 +4551,7 @@
     appData.settings.columnWidths = nextWidths;
     $('#columnModal').hide();
     persistData();
+    renderMailVariableButtons();
     updateStatus(t('messages.savedColumns'));
   }
 
@@ -4549,6 +4563,7 @@
     renderColumnConfigBox('active');
     renderColumnConfigBox('history');
     persistData();
+    renderMailVariableButtons();
     updateStatus(t('messages.resetColumns'));
   }
 
@@ -4737,7 +4752,7 @@
 
   function normalizeMailFields(fields) {
     // v20 起邮件正文只使用“邮件内容模板”，不再额外追加勾选字段。
-    const allowed = MAIL_TEMPLATE_VARIABLES.map(x => x.key);
+    const allowed = getMailTemplateAllowedKeys();
     const arr = Array.isArray(fields) ? fields : [];
     return arr.filter(x => allowed.includes(x));
   }
@@ -4751,8 +4766,8 @@
   }
 
   function renderMailVariableButtons() {
-    const html = MAIL_TEMPLATE_VARIABLES.map(v => {
-      return `<button type="button" class="mail-var-btn" data-var="${escapeAttr(v.key)}" title="${escapeAttr(getMailVariableDesc(v.key))}">${escapeHtml(getMailVariableLabel(v.key))}</button>`;
+    const html = getMailTemplateVariables().map(v => {
+      return `<button type="button" class="mail-var-btn" data-var="${escapeAttr(v.key)}" title="${escapeAttr(getMailVariableDesc(v.key))}"><span class="mail-var-btn-name">${escapeHtml(v.label)}</span><span class="mail-var-code">{{${escapeHtml(v.key)}}}</span></button>`;
     }).join('');
     $('#mailVariableBox').html(html);
   }
@@ -4889,9 +4904,15 @@
     return normalizeMailFields(fields).map(k => `${labels[k] || k}：${values[k] ?? ''}`).join('\n');
   }
 
+  function getActiveRecordSeq(r) {
+    const index = appData.activeRecords.findIndex(item => item === r || (item.id && r && item.id === r.id));
+    return index >= 0 ? index + 1 : '';
+  }
+
   function mailValueMap(r, c) {
     const interestCny = n(c.interestTry) * n(r.tryCnyNow);
     return {
+      seq: getActiveRecordSeq(r),
       bank: r.bank || '',
       openDate: r.openDate || '',
       startDate: r.startDate || '',
@@ -4900,6 +4921,8 @@
       remainingDays: c.remainingDays,
       usdCnyOpen: r.usdCnyOpen ?? '',
       tryCnyOpen: r.tryCnyOpen ?? '',
+      usdCnyNow: r.usdCnyNow ?? '',
+      tryCnyNow: r.tryCnyNow ?? '',
       usdCnyEnd: r.usdCnyNow ?? '',
       tryCnyEnd: r.tryCnyNow ?? '',
       principalTry: fmt(r.principalTry),
@@ -4910,10 +4933,12 @@
       principalPlusInterestCny: fmt(c.principalPlusInterestCny),
       principalPlusInterestUsd: fmt(c.principalPlusInterestUsd),
       interestCny: fmt(interestCny),
+      gainTry: fmt(c.gainTry),
       gainCny: fmt(c.gainCny),
       gainUsd: fmt(c.gainUsd),
       annualRateTry: fmt(r.annualRateTry, 2) + '%',
       annualRateCny: fmt(c.annualRateCny, 2) + '%',
+      reminderEnabled: r.reminderEnabled ? 'YES' : 'NO',
       remark: r.remark || ''
     };
   }
