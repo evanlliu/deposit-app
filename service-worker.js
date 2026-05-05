@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v53-remaining-days-filter';
+const CACHE_VERSION = 'deposit-app-v54-floating-filters';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];
