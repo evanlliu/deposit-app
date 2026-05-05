@@ -1968,30 +1968,80 @@
     }
 
     @media (max-width: 760px) {
-      .search-fold { overflow: visible; }
+      /* v55: keep the desktop floating filter panel, but restore the mobile in-page folded style. */
+      .search-fold {
+        overflow: hidden;
+      }
       .search-fold .mobile-fold-content {
         overflow: visible;
       }
       .advanced-filter-fold {
         width: 100%;
         min-width: 0;
+        grid-column: 1 / -1;
+        border: 1px dashed #cbd5e1;
+        border-radius: 10px;
+        background: #f8fafc;
+        overflow: hidden;
       }
       .advanced-filter-fold > summary {
         width: 100%;
         box-sizing: border-box;
+        min-height: 34px;
+        padding: 7px 10px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+      .advanced-filter-fold > summary:hover {
+        background: rgba(241, 245, 249, .9);
+      }
+      .advanced-filter-subtitle {
+        display: inline;
       }
       .advanced-filter-content {
-        position: fixed;
-        left: 12px;
-        right: 12px;
+        position: static;
+        left: auto;
+        right: auto;
         top: auto;
-        bottom: max(12px, env(safe-area-inset-bottom));
-        width: auto;
+        bottom: auto;
+        z-index: auto;
+        width: 100%;
         max-width: none;
-        max-height: min(76vh, 560px);
-        overflow: auto;
+        max-height: none;
+        overflow: visible;
+        display: grid;
         grid-template-columns: 1fr;
+        align-items: stretch;
+        gap: 8px;
+        padding: 0 10px 9px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
         transform: none;
+      }
+      .date-range-picker,
+      .remaining-days-filter {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+      .date-range-separator,
+      .remaining-days-separator {
+        display: none;
+      }
+      .date-range-part,
+      .date-input-wrap,
+      .date-range-date,
+      .filterbar input.date-range-date,
+      .remaining-days-part,
+      .remaining-days-input,
+      .filterbar input.remaining-days-input {
+        width: 100%;
+        max-width: 100%;
       }
       .clear-all-filters { width: 100%; }
     }
@@ -3682,19 +3732,20 @@
       if (!fold.contains(e.target)) fold.open = false;
     });
     $('#advancedFilterFold').on('toggle', function () {
-      if (this.open) {
+      const pop = this.querySelector('.advanced-filter-content');
+      if (!pop) return;
+      if (this.open && !window.matchMedia('(max-width: 760px)').matches) {
         const fold = this;
         setTimeout(() => {
-          const pop = fold.querySelector('.advanced-filter-content');
-          if (!pop) return;
-          const rect = pop.getBoundingClientRect();
+          const panel = fold.querySelector('.advanced-filter-content');
+          if (!panel) return;
+          const rect = panel.getBoundingClientRect();
           const overflowRight = rect.right - window.innerWidth + 12;
           const overflowLeft = 12 - rect.left;
-          pop.style.setProperty('--advanced-popover-x', overflowRight > 0 ? (-overflowRight) + 'px' : (overflowLeft > 0 ? overflowLeft + 'px' : '0px'));
+          panel.style.setProperty('--advanced-popover-x', overflowRight > 0 ? (-overflowRight) + 'px' : (overflowLeft > 0 ? overflowLeft + 'px' : '0px'));
         }, 0);
       } else {
-        const pop = this.querySelector('.advanced-filter-content');
-        if (pop) pop.style.removeProperty('--advanced-popover-x');
+        pop.style.removeProperty('--advanced-popover-x');
       }
     });
     $('#historyRateRefreshDays').on('input change', function () {
