@@ -438,6 +438,78 @@
       color: var(--primary);
       background: rgba(14, 165, 233, 0.08);
     }
+    .advanced-filter-fold {
+      grid-column: 1 / -1;
+      width: 100%;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      background: #f8fafc;
+      overflow: hidden;
+    }
+    .advanced-filter-fold > summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 7px 10px;
+      color: var(--text);
+      font-weight: 800;
+      user-select: none;
+      list-style: none;
+    }
+    .advanced-filter-fold > summary::-webkit-details-marker { display: none; }
+    .advanced-filter-fold > summary::before {
+      content: "▸";
+      color: var(--muted);
+      font-size: 12px;
+      transition: transform .15s ease;
+    }
+    .advanced-filter-fold[open] > summary::before { transform: rotate(90deg); }
+    .advanced-filter-subtitle {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .advanced-filter-content {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+      padding: 0 10px 9px;
+    }
+    .remaining-days-filter {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: nowrap;
+      min-width: 0;
+    }
+    .remaining-days-title {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .remaining-days-part {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .remaining-days-input,
+    .filterbar input.remaining-days-input {
+      width: 86px;
+      min-width: 72px;
+      max-width: 100px;
+    }
+    .remaining-days-separator {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
     .date-picker-popover {
       position: fixed;
       z-index: 3000;
@@ -1531,9 +1603,16 @@
       .search-fold .mobile-fold-content {
         width: 100%;
         display: grid;
-        grid-template-columns: minmax(180px, 260px) minmax(120px, 160px) minmax(110px, 140px) minmax(240px, 1fr);
+        grid-template-columns: minmax(220px, 320px) minmax(130px, 180px) minmax(0, 1fr);
         align-items: center;
         gap: 6px;
+      }
+
+      .advanced-filter-content {
+        display: grid;
+        grid-template-columns: minmax(120px, 150px) minmax(360px, auto) minmax(320px, 1fr);
+        align-items: center;
+        gap: 7px;
       }
 
       .date-range-input {
@@ -1795,18 +1874,25 @@
         width: auto;
       }
       .checkbox-grid { grid-template-columns: 1fr; }
-      .date-range-picker {
+      .advanced-filter-content,
+      .date-range-picker,
+      .remaining-days-filter {
         width: 100%;
         display: grid;
         grid-template-columns: 1fr;
         gap: 6px;
       }
-      .date-range-separator { display: none; }
+      .date-range-separator,
+      .remaining-days-separator { display: none; }
       .date-range-part,
       .date-input-wrap,
       .date-range-date,
       .filterbar input.date-range-date,
-      .date-range-clear {
+      .date-range-clear,
+      .remaining-days-part,
+      .remaining-days-input,
+      .filterbar input.remaining-days-input,
+      .remaining-days-clear {
         width: 100%;
         max-width: 100%;
       }
@@ -1947,31 +2033,52 @@
               <div class="mobile-fold-content">
                 <input id="searchInput" placeholder="搜索银行/备注/日期" />
                 <select id="bankFilter"><option value="">全部银行</option></select>
-                <select id="dateRangeField" aria-label="日期字段">
-                  <option value="all">全部日期</option>
-                  <option value="openDate">开户日期</option>
-                  <option value="startDate">开始日期</option>
-                  <option value="endDate">结束日期</option>
-                  <option value="deletedAt">删除时间</option>
-                </select>
-                <div class="date-range-picker" aria-label="时间区间">
-                  <label class="date-range-part">
-                    <span class="date-range-start-text">开始日期</span>
-                    <span class="date-input-wrap">
-                      <input id="dateRangeStart" class="date-range-date date-picker-input" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" data-date-picker="1" />
-                      <button class="date-picker-trigger" type="button" aria-label="选择开始日期">📅</button>
-                    </span>
-                  </label>
-                  <span class="date-range-separator">至</span>
-                  <label class="date-range-part">
-                    <span class="date-range-end-text">结束日期</span>
-                    <span class="date-input-wrap">
-                      <input id="dateRangeEnd" class="date-range-date date-picker-input" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" data-date-picker="1" />
-                      <button class="date-picker-trigger" type="button" aria-label="选择结束日期">📅</button>
-                    </span>
-                  </label>
-                  <button id="btnClearDateRange" class="secondary small date-range-clear" type="button">清空</button>
-                </div>
+                <details id="advancedFilterFold" class="advanced-filter-fold">
+                  <summary>
+                    <span class="advanced-filter-title">更多筛选</span>
+                    <span class="advanced-filter-subtitle">时间区间、剩余天数</span>
+                  </summary>
+                  <div class="advanced-filter-content">
+                    <select id="dateRangeField" aria-label="日期字段">
+                      <option value="all">全部日期</option>
+                      <option value="openDate">开户日期</option>
+                      <option value="startDate">开始日期</option>
+                      <option value="endDate">结束日期</option>
+                      <option value="deletedAt">删除时间</option>
+                    </select>
+                    <div class="date-range-picker" aria-label="时间区间">
+                      <label class="date-range-part">
+                        <span class="date-range-start-text">开始日期</span>
+                        <span class="date-input-wrap">
+                          <input id="dateRangeStart" class="date-range-date date-picker-input" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" data-date-picker="1" />
+                          <button class="date-picker-trigger" type="button" aria-label="选择开始日期">📅</button>
+                        </span>
+                      </label>
+                      <span class="date-range-separator">至</span>
+                      <label class="date-range-part">
+                        <span class="date-range-end-text">结束日期</span>
+                        <span class="date-input-wrap">
+                          <input id="dateRangeEnd" class="date-range-date date-picker-input" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" data-date-picker="1" />
+                          <button class="date-picker-trigger" type="button" aria-label="选择结束日期">📅</button>
+                        </span>
+                      </label>
+                      <button id="btnClearDateRange" class="secondary small date-range-clear" type="button">清空</button>
+                    </div>
+                    <div class="remaining-days-filter" aria-label="剩余天数区间">
+                      <span class="remaining-days-title">剩余天数区间</span>
+                      <label class="remaining-days-part">
+                        <span class="remaining-days-min-text">最小</span>
+                        <input id="remainingDaysMin" class="remaining-days-input" type="number" step="1" inputmode="numeric" placeholder="0" />
+                      </label>
+                      <span class="remaining-days-separator">至</span>
+                      <label class="remaining-days-part">
+                        <span class="remaining-days-max-text">最大</span>
+                        <input id="remainingDaysMax" class="remaining-days-input" type="number" step="1" inputmode="numeric" placeholder="10" />
+                      </label>
+                      <button id="btnClearRemainingDays" class="secondary small remaining-days-clear" type="button">清空剩余天数</button>
+                    </div>
+                  </div>
+                </details>
               </div>
             </details>
             <details class="mobile-fold export-fold">
@@ -2473,11 +2580,11 @@
       appTitle: '定期存款管理系统', shortTitle: '定期存款', appSubtitle: '当前定存 + 历史记录；只需录入关键字段，汇率和收益自动计算。',
       language: { label: '语言', zh: '中文', en: 'English', tr: 'Türkçe' },
       lock: { title: '定期存款管理系统', subtitle: '请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。', passwordLabel: '访问密码', passwordPlaceholder: '输入 APP_PASSWORD', apiUrlLabel: 'Cloudflare Worker API 地址', advanced: '高级设置：Worker API 地址', button: '解锁', verifying: '正在验证...', success: '验证成功，正在加载数据...', passwordRequired: '请输入访问密码。', apiUrlRequired: '请填写 Cloudflare Worker API 地址。', failed: '验证失败', failedWithMessage: '解锁失败：{message}', cachedSuccess: '锁屏会话未过期，已自动解锁。当前有效期：{minutes} 分钟。' },
-      fold: { settingsTitle: '设置 / 更多', settingsSub: '同步、邮件、列、汇率', rateTitle: '刷新汇率', rateSub: '汇率、历史范围', searchTitle: '查询 / 筛选', searchSub: '搜索、银行、时间区间', exportTitle: '导出 / 备份', exportSub: 'JSON、CSV、备份、导入', expand: '展开', collapse: '收起' },
+      fold: { settingsTitle: '设置 / 更多', settingsSub: '同步、邮件、列、汇率', rateTitle: '刷新汇率', rateSub: '汇率、历史范围', searchTitle: '查询 / 筛选', searchSub: '搜索、银行、更多筛选', exportTitle: '导出 / 备份', exportSub: 'JSON、CSV、备份、导入', expand: '展开', collapse: '收起' },
       buttons: { add: '新增定存', refreshCloud: '从云端刷新', sync: '同步设置', mail: '邮件提醒', columns: '列配置', rate: '汇率设置', refreshRates: '刷新汇率', exportJson: '导出JSON', exportCsv: '导出CSV', backupJson: '备份JSON', importBackup: '导入备份', current: '当前定存', history: '历史记录', close: '关闭', cancel: '取消', save: '保存', edit: '编辑', moveHistory: '移入历史', restore: '恢复', deleteForever: '永久删除', resetColumns: '恢复默认列', previewMail: '预览提醒邮件', sendCloudTestMail: '发送云端测试邮件', cloudTestReminder: '云端测试一次提醒', saveMail: '保存邮件设置', saveSync: '保存同步设置', saveRate: '保存汇率设置', estimateInterest: '估算利息', fetchOpenRates: '按开户日期获取汇率', fetchEndRates: '按结束日期获取汇率', fetchAllRates: '自动填入全部汇率' },
       tabs: { active: '当前定存', history: '历史记录' },
-      common: { allBanks: '全部银行', allDates: '全部日期', localMode: '本地模式', total: '合计：', none: '-', yes: 'YES', no: 'NO', days: '天', records: '笔', code: 'code', dateRangeStart: '开始日期', dateRangeEnd: '结束日期', dateRangeTo: '至', clearDateRange: '清空', datePlaceholder: 'YYYY-MM-DD', pickDate: '选择日期' },
-      placeholders: { search: '搜索银行/备注/日期', dateRange: '时间区间：2026/04/04-2026/05/04', bank: '例如 YAP(G)', principalTry: '例如 400000', principalPlusInterestTry: '例如 412295.89', annualRateTry: '例如 40', remark: '例如：一个月定期、已续存、资金来源说明等', deleteReason: '例如：已到期、手动删除、提前取出', exchangeTry: '例如 393820', exchangeCny: '例如 59722', exchangeReason: '例如：和 OPPO 苏建明换', apiUrl: 'https://你的worker.workers.dev/data', apiPassword: '和 Worker 里的 APP_PASSWORD 一样', mailTo: '例如 you@example.com', mailAdvanceDays: '例如 1 或 3，留空则不提前推送', dueHours: '例如 1 或 2，留空则不当天循环推送', pushStartTime: '例如 09:00，留空表示 00:00', pushEndTime: '例如 18:00，留空表示 23:59', mailSubject: '例如：定存到期提醒：{{bank}} {{principalTry}} TRY', mailBody: '你可以直接点击下面的变量按钮插入，例如选择“银行”会插入 {{bank}}', exchangeRateApiKey: '不填则使用 open.er-api.com 最新汇率；历史日期需要付费历史接口权限', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key；支持 live / historical / timeframe', currencyApiKey: 'currencyapi.com 需要 API Key；支持 latest / historical', timeZoneCustom: '例如 America/Monterrey', lockTimeoutMinutes: '例如 2，0 表示每次都要输入' },
+      common: { allBanks: '全部银行', allDates: '全部日期', localMode: '本地模式', total: '合计：', none: '-', yes: 'YES', no: 'NO', days: '天', records: '笔', code: 'code', dateRangeStart: '开始日期', dateRangeEnd: '结束日期', dateRangeTo: '至', clearDateRange: '清空', datePlaceholder: 'YYYY-MM-DD', pickDate: '选择日期', moreFilters: '更多筛选', moreFiltersSub: '时间区间、剩余天数', remainingDaysRange: '剩余天数区间', remainingDaysMin: '最小', remainingDaysMax: '最大', clearRemainingDays: '清空剩余天数' },
+      placeholders: { search: '搜索银行/备注/日期', dateRange: '时间区间：2026/04/04-2026/05/04', remainingDaysMin: '例如 0', remainingDaysMax: '例如 10', bank: '例如 YAP(G)', principalTry: '例如 400000', principalPlusInterestTry: '例如 412295.89', annualRateTry: '例如 40', remark: '例如：一个月定期、已续存、资金来源说明等', deleteReason: '例如：已到期、手动删除、提前取出', exchangeTry: '例如 393820', exchangeCny: '例如 59722', exchangeReason: '例如：和 OPPO 苏建明换', apiUrl: 'https://你的worker.workers.dev/data', apiPassword: '和 Worker 里的 APP_PASSWORD 一样', mailTo: '例如 you@example.com', mailAdvanceDays: '例如 1 或 3，留空则不提前推送', dueHours: '例如 1 或 2，留空则不当天循环推送', pushStartTime: '例如 09:00，留空表示 00:00', pushEndTime: '例如 18:00，留空表示 23:59', mailSubject: '例如：定存到期提醒：{{bank}} {{principalTry}} TRY', mailBody: '你可以直接点击下面的变量按钮插入，例如选择“银行”会插入 {{bank}}', exchangeRateApiKey: '不填则使用 open.er-api.com 最新汇率；历史日期需要付费历史接口权限', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key；支持 live / historical / timeframe', currencyApiKey: 'currencyapi.com 需要 API Key；支持 latest / historical', timeZoneCustom: '例如 America/Monterrey', lockTimeoutMinutes: '例如 2，0 表示每次都要输入' },
       summary: { count: '当前笔数', principalTry: '本金合计 TRY', interestTry: '利息合计 TRY', principalCny: '本金合计 CNY', gainCny: '获得 CNY', reminder: '提醒', reminderValue: '7天内 {soon} / 到期 {expired}' },
       history: { deletedAt: '删除时间' },
       record: { addTitle: '新增定存', editTitle: '编辑定存', bank: '银行', openDate: '开户日期', startDate: '开始日期', endDate: '结束日期', principalTry: '本金 TRY', principalPlusInterestTry: '本金+利息 TRY', annualRateTry: '年利率 TRY %', taxRate: '税率 %', interestTry: '利息 TRY', reminderEnabled: '是否创建提醒', autoEstimateInterest: '自动估算利息', noAutoCover: '不自动覆盖', autoCover: '根据年利率自动覆盖本金+利息', rateAuto: '汇率自动获取', openUsdCny: '开户 USD→CNY 汇率', openTryCny: '开户 TRY→CNY 汇率', endUsdCny: '结束 USD→CNY 汇率', endTryCny: '结束 TRY→CNY 汇率', remark: '备注', historyExtra: '历史记录补充', deleteReason: '删除原因', exchangeTry: '兑换 TRY', exchangeCny: '兑换 CNY', exchangeReason: '兑换原因', hint: '说明：现在只需要手动录入开户日期、开始日期、结束日期、本金 TRY、本金+利息 TRY、年利率 TRY。利息、存款天数、剩余天数、CNY/USD 换算、CNY 年化收益率都会自动计算。结束日期如果是未来日期，系统会暂时使用最新可用汇率，等到结束日期后可以点击“刷新汇率”重新按开户日期和结束日期更新汇率。', calcTitle: '自动计算：', calcLine1: '存款天数：{depositDays} 天；剩余天数：{remainingDays} 天；利息 TRY：{interestTry}', calcOpenRate: '开户汇率：USD→CNY {usdOpen}，TRY→CNY {tryOpen}', calcEndRate: '结束汇率：USD→CNY {usdEnd}，TRY→CNY {tryEnd}', calcCny: '本金 CNY：{principalCny}；本金+利息 CNY：{totalCny}；获得 CNY：{gainCny}', calcUsd: '本金 USD：{principalUsd}；本金+利息 USD：{totalUsd}；获得 USD：{gainUsd}；CNY 年化：{annualRateCny}%' },
@@ -2544,11 +2651,11 @@
       appTitle: 'Time Deposit Manager', shortTitle: 'Deposits', appSubtitle: 'Active deposits + history; enter key fields only, rates and returns are calculated automatically.',
       language: { label: 'Language', zh: '中文', en: 'English', tr: 'Türkçe' },
       lock: { title: 'Time Deposit Manager', subtitle: 'Enter the APP_PASSWORD from your Cloudflare Worker. Data is loaded only after unlocking. Within the lock timeout, refresh/reopen will not ask again.', passwordLabel: 'Access Password', passwordPlaceholder: 'Enter APP_PASSWORD', apiUrlLabel: 'Cloudflare Worker API URL', advanced: 'Advanced: Worker API URL', button: 'Unlock', verifying: 'Verifying...', success: 'Verified. Loading data...', passwordRequired: 'Please enter the access password.', apiUrlRequired: 'Please enter the Cloudflare Worker API URL.', failed: 'Verification failed', failedWithMessage: 'Unlock failed: {message}', cachedSuccess: 'Lock session is still valid. Auto-unlocked. Current timeout: {minutes} minutes.' },
-      fold: { settingsTitle: 'Settings / More', settingsSub: 'Sync, mail, columns, rates', rateTitle: 'Refresh Rates', rateSub: 'Rates and history range', searchTitle: 'Search / Filter', searchSub: 'Search, bank, date range', exportTitle: 'Export / Backup', exportSub: 'JSON, CSV, backup, import', expand: 'Expand', collapse: 'Collapse' },
+      fold: { settingsTitle: 'Settings / More', settingsSub: 'Sync, mail, columns, rates', rateTitle: 'Refresh Rates', rateSub: 'Rates and history range', searchTitle: 'Search / Filter', searchSub: 'Search, bank, more filters', exportTitle: 'Export / Backup', exportSub: 'JSON, CSV, backup, import', expand: 'Expand', collapse: 'Collapse' },
       buttons: { add: 'Add Deposit', refreshCloud: 'Refresh from Cloud', sync: 'Sync Settings', mail: 'Email Reminder', columns: 'Column Settings', rate: 'Rate Settings', refreshRates: 'Refresh Rates', exportJson: 'Export JSON', exportCsv: 'Export CSV', backupJson: 'Backup JSON', importBackup: 'Import Backup', current: 'Active Deposits', history: 'History', close: 'Close', cancel: 'Cancel', save: 'Save', edit: 'Edit', moveHistory: 'Move to History', restore: 'Restore', deleteForever: 'Delete Forever', resetColumns: 'Reset Columns', previewMail: 'Preview Email', sendCloudTestMail: 'Send Cloud Test Email', cloudTestReminder: 'Run Cloud Test Reminder', saveMail: 'Save Email Settings', saveSync: 'Save Sync Settings', saveRate: 'Save Rate Settings', estimateInterest: 'Estimate Interest', fetchOpenRates: 'Fetch Open-Date Rates', fetchEndRates: 'Fetch End-Date Rates', fetchAllRates: 'Auto Fill All Rates' },
       tabs: { active: 'Active Deposits', history: 'History' },
-      common: { allBanks: 'All Banks', allDates: 'All Dates', localMode: 'Local Mode', total: 'Total:', none: '-', yes: 'YES', no: 'NO', days: 'days', records: 'records', code: 'code', dateRangeStart: 'Start Date', dateRangeEnd: 'End Date', dateRangeTo: 'to', clearDateRange: 'Clear', datePlaceholder: 'YYYY-MM-DD', pickDate: 'Pick date' },
-      placeholders: { search: 'Search bank/note/date', dateRange: 'Date range: 2026/04/04-2026/05/04', bank: 'e.g. YAP(G)', principalTry: 'e.g. 400000', principalPlusInterestTry: 'e.g. 412295.89', annualRateTry: 'e.g. 40', remark: 'e.g. one-month deposit, renewed, source of funds', deleteReason: 'e.g. matured, manual delete, early withdrawal', exchangeTry: 'e.g. 393820', exchangeCny: 'e.g. 59722', exchangeReason: 'e.g. exchanged with OPPO Su Jianming', apiUrl: 'https://your-worker.workers.dev/data', apiPassword: 'Same as APP_PASSWORD in Worker', mailTo: 'e.g. you@example.com', mailAdvanceDays: 'e.g. 1 or 3; blank = no advance reminder', dueHours: 'e.g. 1 or 2; blank = no due-day repeating reminder', pushStartTime: 'e.g. 09:00; blank = 00:00', pushEndTime: 'e.g. 18:00; blank = 23:59', mailSubject: 'e.g. Deposit reminder: {{bank}} {{principalTry}} TRY', mailBody: 'Click variable buttons below to insert, e.g. Bank inserts {{bank}}', exchangeRateApiKey: 'Leave blank to use open.er-api.com latest rates; historical dates need paid access', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key; supports live / historical / timeframe', currencyApiKey: 'currencyapi.com API Key; supports latest / historical', timeZoneCustom: 'e.g. America/Monterrey', lockTimeoutMinutes: 'e.g. 2; 0 = always require password' },
+      common: { allBanks: 'All Banks', allDates: 'All Dates', localMode: 'Local Mode', total: 'Total:', none: '-', yes: 'YES', no: 'NO', days: 'days', records: 'records', code: 'code', dateRangeStart: 'Start Date', dateRangeEnd: 'End Date', dateRangeTo: 'to', clearDateRange: 'Clear', datePlaceholder: 'YYYY-MM-DD', pickDate: 'Pick date', moreFilters: 'More filters', moreFiltersSub: 'Date range and remaining days', remainingDaysRange: 'Remaining days range', remainingDaysMin: 'Min', remainingDaysMax: 'Max', clearRemainingDays: 'Clear remaining days' },
+      placeholders: { search: 'Search bank/note/date', dateRange: 'Date range: 2026/04/04-2026/05/04', remainingDaysMin: 'e.g. 0', remainingDaysMax: 'e.g. 10', bank: 'e.g. YAP(G)', principalTry: 'e.g. 400000', principalPlusInterestTry: 'e.g. 412295.89', annualRateTry: 'e.g. 40', remark: 'e.g. one-month deposit, renewed, source of funds', deleteReason: 'e.g. matured, manual delete, early withdrawal', exchangeTry: 'e.g. 393820', exchangeCny: 'e.g. 59722', exchangeReason: 'e.g. exchanged with OPPO Su Jianming', apiUrl: 'https://your-worker.workers.dev/data', apiPassword: 'Same as APP_PASSWORD in Worker', mailTo: 'e.g. you@example.com', mailAdvanceDays: 'e.g. 1 or 3; blank = no advance reminder', dueHours: 'e.g. 1 or 2; blank = no due-day repeating reminder', pushStartTime: 'e.g. 09:00; blank = 00:00', pushEndTime: 'e.g. 18:00; blank = 23:59', mailSubject: 'e.g. Deposit reminder: {{bank}} {{principalTry}} TRY', mailBody: 'Click variable buttons below to insert, e.g. Bank inserts {{bank}}', exchangeRateApiKey: 'Leave blank to use open.er-api.com latest rates; historical dates need paid access', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key; supports live / historical / timeframe', currencyApiKey: 'currencyapi.com API Key; supports latest / historical', timeZoneCustom: 'e.g. America/Monterrey', lockTimeoutMinutes: 'e.g. 2; 0 = always require password' },
       summary: { count: 'Active Count', principalTry: 'Total Principal TRY', interestTry: 'Total Interest TRY', principalCny: 'Total Principal CNY', gainCny: 'Gain CNY', reminder: 'Reminder', reminderValue: 'within 7 days {soon} / due {expired}' },
       history: { deletedAt: 'Deleted At' },
       record: { addTitle: 'Add Deposit', editTitle: 'Edit Deposit', bank: 'Bank', openDate: 'Opening Date', startDate: 'Start Date', endDate: 'End Date', principalTry: 'Principal TRY', principalPlusInterestTry: 'Principal + Interest TRY', annualRateTry: 'Annual Rate TRY %', taxRate: 'Tax Rate %', interestTry: 'Interest TRY', reminderEnabled: 'Create Reminder', autoEstimateInterest: 'Auto Estimate Interest', noAutoCover: 'Do not auto overwrite', autoCover: 'Overwrite principal+interest by annual rate', rateAuto: 'Rate Auto Fetch', openUsdCny: 'Open USD→CNY Rate', openTryCny: 'Open TRY→CNY Rate', endUsdCny: 'End USD→CNY Rate', endTryCny: 'End TRY→CNY Rate', remark: 'Note', historyExtra: 'History Extra Info', deleteReason: 'Delete Reason', exchangeTry: 'Exchange TRY', exchangeCny: 'Exchange CNY', exchangeReason: 'Exchange Reason', hint: 'Note: now you only need to manually enter opening date, start date, end date, principal TRY, principal+interest TRY, and annual rate TRY. Interest, deposit days, remaining days, CNY/USD conversion and CNY annualized return are calculated automatically.', calcTitle: 'Auto calculation:', calcLine1: 'Deposit days: {depositDays} days; remaining days: {remainingDays} days; interest TRY: {interestTry}', calcOpenRate: 'Open rate: USD→CNY {usdOpen}, TRY→CNY {tryOpen}', calcEndRate: 'End rate: USD→CNY {usdEnd}, TRY→CNY {tryEnd}', calcCny: 'Principal CNY: {principalCny}; Principal+Interest CNY: {totalCny}; Gain CNY: {gainCny}', calcUsd: 'Principal USD: {principalUsd}; Principal+Interest USD: {totalUsd}; Gain USD: {gainUsd}; CNY Annualized: {annualRateCny}%' },
@@ -2615,11 +2722,11 @@
       appTitle: 'Vadeli Mevduat Yönetimi', shortTitle: 'Mevduat', appSubtitle: 'Aktif mevduatlar + geçmiş; yalnızca temel alanları girin, kurlar ve getiriler otomatik hesaplanır.',
       language: { label: 'Dil', zh: '中文', en: 'English', tr: 'Türkçe' },
       lock: { title: 'Vadeli Mevduat Yöneticisi', subtitle: 'Cloudflare Worker içindeki APP_PASSWORD değerini girin. Veriler yalnızca kilit açıldıktan sonra yüklenir. Kilit süresi dolmadan yenileme/yeniden açma tekrar şifre istemez.', passwordLabel: 'Erişim Şifresi', passwordPlaceholder: 'APP_PASSWORD girin', apiUrlLabel: 'Cloudflare Worker API Adresi', advanced: 'Gelişmiş: Worker API Adresi', button: 'Kilidi Aç', verifying: 'Doğrulanıyor...', success: 'Doğrulandı, veriler yükleniyor...', passwordRequired: 'Lütfen erişim şifresini girin.', apiUrlRequired: 'Lütfen Cloudflare Worker API adresini girin.', failed: 'Doğrulama başarısız', failedWithMessage: 'Kilit açılamadı: {message}', cachedSuccess: 'Kilit oturumu hâlâ geçerli. Otomatik açıldı. Geçerlilik: {minutes} dakika.' },
-      fold: { settingsTitle: 'Ayarlar / Daha fazla', settingsSub: 'Senkron, e-posta, sütun, kur', rateTitle: 'Kurları Yenile', rateSub: 'Kur ve geçmiş aralığı', searchTitle: 'Ara / Filtrele', searchSub: 'Arama, banka, tarih aralığı', exportTitle: 'Dışa Aktar / Yedek', exportSub: 'JSON, CSV, yedek, içe aktar', expand: 'Aç', collapse: 'Kapat' },
+      fold: { settingsTitle: 'Ayarlar / Daha fazla', settingsSub: 'Senkron, e-posta, sütun, kur', rateTitle: 'Kurları Yenile', rateSub: 'Kur ve geçmiş aralığı', searchTitle: 'Ara / Filtrele', searchSub: 'Arama, banka, ek filtreler', exportTitle: 'Dışa Aktar / Yedek', exportSub: 'JSON, CSV, yedek, içe aktar', expand: 'Aç', collapse: 'Kapat' },
       buttons: { add: 'Mevduat Ekle', refreshCloud: 'Buluttan Yenile', sync: 'Senkron Ayarları', mail: 'E-posta Hatırlatma', columns: 'Sütun Ayarları', rate: 'Kur Ayarları', refreshRates: 'Kurları Yenile', exportJson: 'JSON Dışa Aktar', exportCsv: 'CSV Dışa Aktar', backupJson: 'JSON Yedekle', importBackup: 'Yedek İçe Aktar', current: 'Aktif Mevduatlar', history: 'Geçmiş', close: 'Kapat', cancel: 'İptal', save: 'Kaydet', edit: 'Düzenle', moveHistory: 'Geçmişe Taşı', restore: 'Geri Al', deleteForever: 'Kalıcı Sil', resetColumns: 'Sütunları Sıfırla', previewMail: 'E-postayı Önizle', sendCloudTestMail: 'Bulut Test E-postası Gönder', cloudTestReminder: 'Bulut Test Hatırlatması', saveMail: 'E-posta Ayarlarını Kaydet', saveSync: 'Senkron Ayarlarını Kaydet', saveRate: 'Kur Ayarlarını Kaydet', estimateInterest: 'Faizi Hesapla', fetchOpenRates: 'Açılış Tarihi Kurunu Al', fetchEndRates: 'Bitiş Tarihi Kurunu Al', fetchAllRates: 'Tüm Kurları Otomatik Doldur' },
       tabs: { active: 'Aktif Mevduatlar', history: 'Geçmiş' },
-      common: { allBanks: 'Tüm Bankalar', allDates: 'Tüm Tarihler', localMode: 'Yerel Mod', total: 'Toplam:', none: '-', yes: 'YES', no: 'NO', days: 'gün', records: 'kayıt', code: 'code', dateRangeStart: 'Başlangıç', dateRangeEnd: 'Bitiş', dateRangeTo: 'ile', clearDateRange: 'Temizle', datePlaceholder: 'YYYY-MM-DD', pickDate: 'Tarih seç' },
-      placeholders: { search: 'Banka / not / tarih ara', dateRange: 'Tarih aralığı: 2026/04/04-2026/05/04', bank: 'örn. YAP(G)', principalTry: 'örn. 400000', principalPlusInterestTry: 'örn. 412295.89', annualRateTry: 'örn. 40', remark: 'örn. bir aylık mevduat, yenilendi, fon kaynağı', deleteReason: 'örn. vadesi doldu, manuel silindi, erken çekim', exchangeTry: 'örn. 393820', exchangeCny: 'örn. 59722', exchangeReason: 'örn. OPPO Su Jianming ile değişim', apiUrl: 'https://worker.workers.dev/data', apiPassword: 'Worker içindeki APP_PASSWORD ile aynı', mailTo: 'örn. you@example.com', mailAdvanceDays: 'örn. 1 veya 3; boşsa erken hatırlatma yok', dueHours: 'örn. 1 veya 2; boşsa vade günü tekrar yok', pushStartTime: 'örn. 09:00; boş = 00:00', pushEndTime: 'örn. 18:00; boş = 23:59', mailSubject: 'örn. Mevduat hatırlatma: {{bank}} {{principalTry}} TRY', mailBody: 'Aşağıdaki değişken düğmelerine tıklayarak ekleyin', exchangeRateApiKey: 'Boş bırakılırsa open.er-api.com güncel kuru kullanılır; geçmiş tarih ücretli yetki gerektirir', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key', currencyApiKey: 'currencyapi.com API Key', timeZoneCustom: 'örn. Europe/Istanbul', lockTimeoutMinutes: 'örn. 2; 0 = her zaman şifre iste' },
+      common: { allBanks: 'Tüm Bankalar', allDates: 'Tüm Tarihler', localMode: 'Yerel Mod', total: 'Toplam:', none: '-', yes: 'YES', no: 'NO', days: 'gün', records: 'kayıt', code: 'code', dateRangeStart: 'Başlangıç', dateRangeEnd: 'Bitiş', dateRangeTo: 'ile', clearDateRange: 'Temizle', datePlaceholder: 'YYYY-MM-DD', pickDate: 'Tarih seç', moreFilters: 'Ek filtreler', moreFiltersSub: 'Tarih aralığı ve kalan gün', remainingDaysRange: 'Kalan gün aralığı', remainingDaysMin: 'Min', remainingDaysMax: 'Maks', clearRemainingDays: 'Kalan günü temizle' },
+      placeholders: { search: 'Banka / not / tarih ara', dateRange: 'Tarih aralığı: 2026/04/04-2026/05/04', remainingDaysMin: 'örn. 0', remainingDaysMax: 'örn. 10', bank: 'örn. YAP(G)', principalTry: 'örn. 400000', principalPlusInterestTry: 'örn. 412295.89', annualRateTry: 'örn. 40', remark: 'örn. bir aylık mevduat, yenilendi, fon kaynağı', deleteReason: 'örn. vadesi doldu, manuel silindi, erken çekim', exchangeTry: 'örn. 393820', exchangeCny: 'örn. 59722', exchangeReason: 'örn. OPPO Su Jianming ile değişim', apiUrl: 'https://worker.workers.dev/data', apiPassword: 'Worker içindeki APP_PASSWORD ile aynı', mailTo: 'örn. you@example.com', mailAdvanceDays: 'örn. 1 veya 3; boşsa erken hatırlatma yok', dueHours: 'örn. 1 veya 2; boşsa vade günü tekrar yok', pushStartTime: 'örn. 09:00; boş = 00:00', pushEndTime: 'örn. 18:00; boş = 23:59', mailSubject: 'örn. Mevduat hatırlatma: {{bank}} {{principalTry}} TRY', mailBody: 'Aşağıdaki değişken düğmelerine tıklayarak ekleyin', exchangeRateApiKey: 'Boş bırakılırsa open.er-api.com güncel kuru kullanılır; geçmiş tarih ücretli yetki gerektirir', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key', currencyApiKey: 'currencyapi.com API Key', timeZoneCustom: 'örn. Europe/Istanbul', lockTimeoutMinutes: 'örn. 2; 0 = her zaman şifre iste' },
       summary: { count: 'Aktif Kayıt', principalTry: 'Toplam Ana Para TRY', interestTry: 'Toplam Faiz TRY', principalCny: 'Toplam Ana Para CNY', gainCny: 'Getiri CNY', reminder: 'Hatırlatma', reminderValue: '7 gün içinde {soon} / vadesi dolan {expired}' },
       history: { deletedAt: 'Silinme Zamanı' },
       record: { addTitle: 'Mevduat Ekle', editTitle: 'Mevduatı Düzenle', bank: 'Banka', openDate: 'Açılış Tarihi', startDate: 'Başlangıç Tarihi', endDate: 'Bitiş Tarihi', principalTry: 'Ana Para TRY', principalPlusInterestTry: 'Ana Para + Faiz TRY', annualRateTry: 'Yıllık Oran TRY %', taxRate: 'Vergi Oranı %', interestTry: 'Faiz TRY', reminderEnabled: 'Hatırlatma Oluştur', autoEstimateInterest: 'Faizi Otomatik Hesapla', noAutoCover: 'Otomatik üzerine yazma', autoCover: 'Yıllık orana göre toplamı güncelle', rateAuto: 'Kur Otomatik Al', openUsdCny: 'Açılış USD→CNY Kuru', openTryCny: 'Açılış TRY→CNY Kuru', endUsdCny: 'Bitiş USD→CNY Kuru', endTryCny: 'Bitiş TRY→CNY Kuru', remark: 'Not', historyExtra: 'Geçmiş Ek Bilgi', deleteReason: 'Silme Nedeni', exchangeTry: 'Değişim TRY', exchangeCny: 'Değişim CNY', exchangeReason: 'Değişim Nedeni', hint: 'Not: yalnızca açılış tarihi, başlangıç tarihi, bitiş tarihi, ana para TRY, ana para+faiz TRY ve yıllık oran TRY girilir. Diğer değerler otomatik hesaplanır.', calcTitle: 'Otomatik hesaplama:', calcLine1: 'Mevduat günü: {depositDays}; kalan gün: {remainingDays}; faiz TRY: {interestTry}', calcOpenRate: 'Açılış kuru: USD→CNY {usdOpen}, TRY→CNY {tryOpen}', calcEndRate: 'Bitiş kuru: USD→CNY {usdEnd}, TRY→CNY {tryEnd}', calcCny: 'Ana para CNY: {principalCny}; Ana para+faiz CNY: {totalCny}; Getiri CNY: {gainCny}', calcUsd: 'Ana para USD: {principalUsd}; Ana para+faiz USD: {totalUsd}; Getiri USD: {gainUsd}; CNY yıllık: {annualRateCny}%' },
@@ -2808,6 +2915,15 @@
     $('.date-picker-input').attr('placeholder', t('common.datePlaceholder'));
     $('.date-picker-trigger').attr('aria-label', t('common.pickDate'));
     $('#btnClearDateRange').text(t('common.clearDateRange'));
+    $('.advanced-filter-title').text(t('common.moreFilters'));
+    $('.advanced-filter-subtitle').text(t('common.moreFiltersSub'));
+    $('.remaining-days-title').text(t('common.remainingDaysRange'));
+    $('.remaining-days-min-text').text(t('common.remainingDaysMin'));
+    $('.remaining-days-max-text').text(t('common.remainingDaysMax'));
+    $('.remaining-days-separator').text(t('common.dateRangeTo'));
+    $('#btnClearRemainingDays').text(t('common.clearRemainingDays'));
+    setPlaceholder('#remainingDaysMin', 'placeholders.remainingDaysMin');
+    setPlaceholder('#remainingDaysMax', 'placeholders.remainingDaysMax');
     $('#bankFilter option[value=""]').text(t('common.allBanks'));
     $('#dateRangeField option[value="all"]').text(t('common.allDates'));
     $('#dateRangeField option[value="openDate"]').text(t('record.openDate'));
@@ -3450,10 +3566,15 @@
     $('#btnExportBackupJson').on('click', exportBackupJson);
     $('#btnImport').on('click', () => $('#importFile').click());
     $('#importFile').on('change', importJson);
-    $('#searchInput, #bankFilter, #dateRangeField, #dateRangeStart, #dateRangeEnd').on('input change', renderAll);
+    $('#searchInput, #bankFilter, #dateRangeField, #dateRangeStart, #dateRangeEnd, #remainingDaysMin, #remainingDaysMax').on('input change', renderAll);
     $('#btnClearDateRange').on('click', function (e) {
       e.preventDefault();
       $('#dateRangeStart, #dateRangeEnd').val('');
+      renderAll();
+    });
+    $('#btnClearRemainingDays').on('click', function (e) {
+      e.preventDefault();
+      $('#remainingDaysMin, #remainingDaysMax').val('');
       renderAll();
     });
     $('#historyRateRefreshDays').on('input change', function () {
@@ -5061,13 +5182,15 @@
     const bank = $('#bankFilter').val() || '';
     const dateRange = getSelectedDateRange();
     const dateField = $('#dateRangeField').val() || 'all';
+    const remainingDaysRange = getSelectedRemainingDaysRange();
 
     return list.filter(r => {
       const bankOk = !bank || r.bank === bank;
       const text = [r.bank, r.openDate, r.startDate, r.endDate, r.deletedAt, r.remark, r.deleteReason, r.exchangeReason].join(' ').toLowerCase();
       const qOk = !q || text.includes(q);
       const dateOk = !dateRange || isRecordInDateRange(r, dateRange, dateField);
-      return bankOk && qOk && dateOk;
+      const remainingOk = !remainingDaysRange || isRecordInRemainingDaysRange(r, remainingDaysRange);
+      return bankOk && qOk && dateOk && remainingOk;
     });
   }
 
@@ -5118,6 +5241,35 @@
       const ymd = normalizeLooseDate(record[key]) || normalizeDateOnly(record[key]);
       return !!ymd && ymd >= range.start && ymd <= range.end;
     });
+  }
+
+  function parseIntegerFilterValue(value) {
+    const text = String(value ?? '').trim();
+    if (!text) return null;
+    const num = Number(text);
+    if (!Number.isFinite(num)) return null;
+    return Math.trunc(num);
+  }
+
+  function getSelectedRemainingDaysRange() {
+    const minValue = parseIntegerFilterValue($('#remainingDaysMin').val());
+    const maxValue = parseIntegerFilterValue($('#remainingDaysMax').val());
+    if (minValue === null && maxValue === null) return null;
+
+    if (minValue !== null && maxValue !== null) {
+      return minValue <= maxValue
+        ? { min: minValue, max: maxValue }
+        : { min: maxValue, max: minValue };
+    }
+    return { min: minValue, max: maxValue };
+  }
+
+  function isRecordInRemainingDaysRange(record, range) {
+    const days = getCalc(record).remainingDays;
+    if (!Number.isFinite(days)) return false;
+    if (range.min !== null && range.min !== undefined && days < range.min) return false;
+    if (range.max !== null && range.max !== undefined && days > range.max) return false;
+    return true;
   }
 
   function renderBankFilter() {
