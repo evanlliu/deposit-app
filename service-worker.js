@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v55-mobile-fold-filters';
+const CACHE_VERSION = 'deposit-app-v56-ios-numeric-lock';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];

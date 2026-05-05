@@ -2089,7 +2089,7 @@
       <p id="lockSubtitle">请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。</p>
       <form id="lockForm" class="lock-form" autocomplete="off">
         <label id="lockPasswordLabel" class="lock-label" for="lockPassword">访问密码</label>
-        <input id="lockPassword" type="password" autocomplete="current-password" placeholder="输入 APP_PASSWORD" />
+        <input id="lockPassword" type="password" inputmode="numeric" pattern="[0-9]*" enterkeyhint="go" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" autofocus placeholder="输入 APP_PASSWORD" />
         <details class="lock-advanced">
           <summary id="lockAdvancedTitle">高级设置：Worker API 地址</summary>
           <div class="lock-advanced-body">
@@ -3222,7 +3222,27 @@
     $('#lockApiUrl').val(apiUrl);
     $('#lockPassword').val('');
     setLockStatus('', '');
-    setTimeout(() => $('#lockPassword').trigger('focus'), 80);
+    focusLockPasswordInput({ select: true });
+  }
+
+  function focusLockPasswordInput(options) {
+    const shouldSelect = !!(options && options.select);
+    const input = document.getElementById('lockPassword');
+    if (!input) return;
+    const doFocus = () => {
+      try {
+        input.focus({ preventScroll: true });
+      } catch (e) {
+        try { input.focus(); } catch (_) {}
+      }
+      if (shouldSelect) {
+        try { input.select(); } catch (e) {}
+      }
+    };
+    doFocus();
+    requestAnimationFrame(doFocus);
+    setTimeout(doFocus, 120);
+    setTimeout(doFocus, 360);
   }
 
   function setLockStatus(message, type) {
@@ -3354,7 +3374,7 @@
     const password = $('#lockPassword').val() || '';
     if (!password) {
       setLockStatus(t('lock.passwordRequired'), 'error');
-      $('#lockPassword').trigger('focus');
+      focusLockPasswordInput({ select: true });
       return;
     }
     const btn = $('#btnUnlock');
@@ -3381,7 +3401,7 @@
     } catch (err) {
       sessionAuthPassword = '';
       setLockStatus(t('lock.failedWithMessage', { message: err.message || String(err) }), 'error');
-      $('#lockPassword').trigger('focus').trigger('select');
+      focusLockPasswordInput({ select: true });
     } finally {
       btn.prop('disabled', false).text(t('lock.button') || oldText);
     }
