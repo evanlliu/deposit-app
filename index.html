@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>定存系统 v70</title>
+  <title>定存系统 v71</title>
   <meta name="theme-color" content="#2563eb" />
   <meta name="application-name" content="定期存款" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -2854,7 +2854,7 @@
   <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
     <div class="lock-card">
       <div class="lock-icon" aria-hidden="true">🔐</div>
-      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v70</span></h1>
+      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v71</span></h1>
       <p id="lockSubtitle">请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。</p>
       <form id="lockForm" class="lock-form" autocomplete="off">
         <label id="lockPasswordLabel" class="lock-label" for="lockPassword">访问密码</label>
@@ -2875,7 +2875,7 @@
   <header>
     <div class="wrap topbar">
       <div class="title">
-        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v70</span></h1>
+        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v71</span></h1>
       </div>
       <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
@@ -3036,8 +3036,8 @@
 
   <div class="mobile-fab-actions" aria-label="快捷操作">
     <button id="fabAdd" class="mobile-fab-btn fab-add" type="button" title="新增定存" aria-label="新增定存">＋</button>
-    <button id="fabRefreshCloud" class="mobile-fab-btn fab-cloud" type="button" title="从云端刷新" aria-label="从云端刷新">☁</button>
-    <button id="fabRefreshRates" class="mobile-fab-btn fab-rate" type="button" title="刷新汇率" aria-label="刷新汇率">汇</button>
+    <button id="fabRefreshCloud" class="mobile-fab-btn fab-cloud" type="button" title="从云端刷新" aria-label="从云端刷新">↻</button>
+    <button id="fabRefreshRates" class="mobile-fab-btn fab-rate" type="button" title="刷新汇率" aria-label="刷新汇率">💲</button>
   </div>
 
   <div class="modal-mask" id="recordModal">
@@ -3491,7 +3491,7 @@ BOC = BOC"></textarea>
     'lastRateFetchDate'
   ];
 
-  const APP_VERSION = 'v70';
+  const APP_VERSION = 'v71';
 
   const I18N = {
     zh: {

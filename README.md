@@ -1,3 +1,15 @@
+## v71 移动端悬浮按钮图标调整
+
+- 移动端“从云端刷新”悬浮按钮图标改为 `↻`。
+- 移动端“刷新汇率”悬浮按钮图标改为 `💲`。
+- 仅调整图标显示，不改动按钮功能、数据结构或 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v71-mobile-fab-icons`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
 ## v70 移动端 Safari 日期输入框宽度修复
 
 - 修复移动端 Safari 新增 / 编辑弹窗中日期输入框宽度过大导致互相重叠的问题。
