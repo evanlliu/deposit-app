@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v65-mobile-floating-actions-compact';
+const CACHE_VERSION = 'deposit-app-v66-form-bank-mobile-cleanup';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];
