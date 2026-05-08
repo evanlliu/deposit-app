@@ -1,3 +1,17 @@
+## v65 移动端悬浮按钮与提示行优化
+
+- 提示行删除“云端同步模式 · ”前缀，只显示真正的状态内容和时间。
+- 移动端把多语言悬浮按钮合并到右下角悬浮操作按钮组旁，视觉上与新增、云端刷新、刷新汇率放在一起。
+- 移动端悬浮按钮整体缩小，减少遮挡内容。
+- PC 端仍保留原有语言切换和按钮布局。
+- 不改动 `data.json` 结构，不需要更新 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v65-mobile-floating-actions-compact`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
 ## v64 移动端悬浮按钮优化
 
 - 移动端将“新增定存”“从云端刷新”“刷新汇率”改为右下角悬浮图标按钮，减少顶部占用行数。

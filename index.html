@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>定存系统 v64</title>
+  <title>定存系统 v65</title>
   <meta name="theme-color" content="#2563eb" />
   <meta name="application-name" content="定期存款" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -2249,25 +2249,25 @@
 
       .mobile-fab-actions {
         position: fixed;
-        right: 12px;
-        bottom: calc(16px + env(safe-area-inset-bottom));
+        right: 10px;
+        bottom: calc(12px + env(safe-area-inset-bottom));
         z-index: 120;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 6px;
       }
 
       .mobile-fab-btn {
-        width: 48px;
-        height: 48px;
+        width: 38px;
+        height: 38px;
         border: 0;
         border-radius: 999px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
+        font-size: 16px;
         font-weight: 900;
-        box-shadow: 0 14px 30px rgba(15, 23, 42, .24);
+        box-shadow: 0 10px 22px rgba(15, 23, 42, .22);
         touch-action: manipulation;
       }
 
@@ -2285,6 +2285,39 @@
       .mobile-fab-btn.fab-rate {
         background: #16a34a;
         color: #fff;
+      }
+
+      .top-language {
+        top: auto !important;
+        left: auto !important;
+        right: 10px !important;
+        bottom: calc(144px + env(safe-area-inset-bottom)) !important;
+        z-index: 121;
+      }
+
+      .top-language-toggle {
+        width: 38px;
+        height: 38px;
+        box-shadow: 0 10px 22px rgba(15, 23, 42, .18);
+      }
+
+      .top-language-globe {
+        font-size: 16px;
+      }
+
+      .top-language-badge {
+        right: -3px;
+        bottom: -3px;
+        width: 17px;
+        height: 17px;
+        font-size: 9px;
+      }
+
+      .top-language-panel {
+        top: auto;
+        right: 46px;
+        bottom: 0;
+        width: min(130px, calc(100vw - 64px));
       }
 
       .action-fold {
@@ -2770,7 +2803,7 @@
   <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
     <div class="lock-card">
       <div class="lock-icon" aria-hidden="true">🔐</div>
-      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v64</span></h1>
+      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v65</span></h1>
       <p id="lockSubtitle">请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。</p>
       <form id="lockForm" class="lock-form" autocomplete="off">
         <label id="lockPasswordLabel" class="lock-label" for="lockPassword">访问密码</label>
@@ -2791,7 +2824,7 @@
   <header>
     <div class="wrap topbar">
       <div class="title">
-        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v64</span></h1>
+        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v65</span></h1>
       </div>
       <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
@@ -3423,7 +3456,7 @@
     'lastRateFetchDate'
   ];
 
-  const APP_VERSION = 'v64';
+  const APP_VERSION = 'v65';
 
   const I18N = {
     zh: {
@@ -7344,9 +7377,7 @@
   }
 
   function updateStatus(text) {
-    const cfg = getConfig();
-    const mode = cfg.apiUrl ? t('messages.modeCloud') : t('messages.modeLocal');
-    $('#statusLine').text(`${mode} · ${text}`);
+    $('#statusLine').text(text || '');
   }
 
   function numberValue(selector) {
