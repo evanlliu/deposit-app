@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>定存系统 v66</title>
+  <title>定存系统 v67</title>
   <meta name="theme-color" content="#2563eb" />
   <meta name="application-name" content="定期存款" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -262,8 +262,13 @@
       display: none;
     }
 
+    .bank-input-text {
+      display: none !important;
+    }
+
     .bank-input-select {
-      display: none;
+      display: block;
+      width: 100%;
     }
 
     .compact-hint {
@@ -2274,6 +2279,12 @@
         gap: 5px;
       }
 
+
+      body.record-modal-open .mobile-fab-actions,
+      body.record-modal-open .top-language {
+        display: none !important;
+      }
+
       .mobile-fab-btn {
         width: 34px;
         height: 34px;
@@ -2323,8 +2334,9 @@
       }
 
       .top-language-globe {
-        font-size: 14px;
+        font-size: 16px;
         font-weight: 900;
+        line-height: 1;
         transform: none;
       }
 
@@ -2822,7 +2834,7 @@
   <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
     <div class="lock-card">
       <div class="lock-icon" aria-hidden="true">🔐</div>
-      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v66</span></h1>
+      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v67</span></h1>
       <p id="lockSubtitle">请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。</p>
       <form id="lockForm" class="lock-form" autocomplete="off">
         <label id="lockPasswordLabel" class="lock-label" for="lockPassword">访问密码</label>
@@ -2843,7 +2855,7 @@
   <header>
     <div class="wrap topbar">
       <div class="title">
-        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v66</span></h1>
+        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v67</span></h1>
       </div>
       <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
@@ -2873,7 +2885,7 @@
 
   <div class="top-language" id="topLanguage">
     <button id="topLanguageToggle" class="top-language-toggle" type="button" aria-label="Language">
-      <span class="top-language-globe">文</span>
+      <span class="top-language-globe">🌐</span>
       <span id="topLanguageBadge" class="top-language-badge">中</span>
     </button>
     <div class="top-language-panel" role="menu" aria-label="Language">
@@ -3129,7 +3141,7 @@
 YAP
 ICBC
 BOC"></textarea>
-            <div id="bankOptionsConfigHint" class="hint compact-hint">每行一个银行名称；移动端新增/编辑时只能从这里选择。</div>
+            <div id="bankOptionsConfigHint" class="hint compact-hint">每行一个银行名称；新增/编辑时只能从这里选择。</div>
           </div>
         </div>
         <div class="hint">
@@ -3459,7 +3471,7 @@ BOC"></textarea>
     'lastRateFetchDate'
   ];
 
-  const APP_VERSION = 'v66';
+  const APP_VERSION = 'v67';
 
   const I18N = {
     zh: {
@@ -3474,7 +3486,7 @@ BOC"></textarea>
       summary: { count: '当前笔数', principalTry: '本金合计 TRY', interestTry: '利息合计 TRY', principalCny: '本金合计 CNY', gainCny: '总利息 CNY', reminder: '提醒', reminderValue: '7天内 {soon} / 到期 {expired}' },
       history: { deletedAt: '删除时间' },
       record: { addTitle: '新增定存', editTitle: '编辑定存', bank: '银行', openDate: '开户日期', startDate: '开始日期', endDate: '结束日期', principalTry: '本金 TRY', principalPlusInterestTry: '本金+利息 TRY', annualRateTry: '年利率 TRY %', taxRate: '税率 %', interestTry: '利息 TRY', reminderEnabled: '是否创建提醒', autoEstimateInterest: '自动估算利息', noAutoCover: '不自动覆盖', autoCover: '根据年利率自动覆盖本金+利息', rateAuto: '汇率自动获取', openUsdCny: '开户 USD→CNY 汇率', openTryCny: '开户 TRY→CNY 汇率', endUsdCny: '结束 USD→CNY 汇率', endTryCny: '结束 TRY→CNY 汇率', remark: '备注', historyExtra: '历史记录补充', deleteReason: '删除原因', exchangeTry: '兑换 TRY', exchangeCny: '兑换 CNY', exchangeReason: '兑换原因', hint: '说明：现在只需要手动录入开户日期、开始日期、结束日期、本金 TRY、本金+利息 TRY、年利率 TRY。利息、存款天数、剩余天数、CNY/USD 换算、CNY 年化收益率都会自动计算。结束日期如果是未来日期，系统会暂时使用最新可用汇率，等到结束日期后可以点击“刷新汇率”重新按开户日期和结束日期更新汇率。', calcTitle: '自动计算：', calcLine1: '存款天数：{depositDays} 天；剩余天数：{remainingDays} 天；利息 TRY：{interestTry}', calcOpenRate: '开户汇率：USD→CNY {usdOpen}，TRY→CNY {tryOpen}', calcEndRate: '结束汇率：USD→CNY {usdEnd}，TRY→CNY {tryEnd}', calcCny: '本金 CNY：{principalCny}；本金+利息 CNY：{totalCny}；利息 CNY：{gainCny}', calcUsd: '本金 USD：{principalUsd}；本金+利息 USD：{totalUsd}；获得 USD：{gainUsd}；CNY 年化：{annualRateCny}%' },
-      sync: { title: '同步设置', apiUrl: 'Cloudflare Worker API 地址', password: '访问密码', lockTimeout: '锁屏密码有效期（分钟）', bankOptions: '银行下拉项配置', bankOptionsHint: '每行一个银行名称；移动端新增/编辑时只能从这里选择。', hint: 'API 地址和访问密码会写入云端配置/备份 JSON。锁屏有效期也会保存到 data.json 并多设备同步；但每台设备的解锁计时单独保存在本机。0 表示每次刷新/打开都必须输入密码。' },
+      sync: { title: '同步设置', apiUrl: 'Cloudflare Worker API 地址', password: '访问密码', lockTimeout: '锁屏密码有效期（分钟）', bankOptions: '银行下拉项配置', bankOptionsHint: '每行一个银行名称；新增/编辑时只能从这里选择。', hint: 'API 地址和访问密码会写入云端配置/备份 JSON。锁屏有效期也会保存到 data.json 并多设备同步；但每台设备的解锁计时单独保存在本机。0 表示每次刷新/打开都必须输入密码。' },
       rate: { historyRange: '历史刷新范围', title: '汇率设置', provider: '默认汇率来源', fallback: '失败时自动切换备用来源', tcmbType: 'TCMB 汇率类型', exchangeRateApiKey: 'ExchangeRate-API Key，可选', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'exchangerate.host 获取最新 API 返回数据', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: '是否把汇率 API Key 同步到云端', optYesRefresh: 'YES，每次刷新时都重新调用 API 获取并覆盖 GitHub 今日汇率缓存', optNoRefresh: 'NO，优先使用 GitHub 里今天已缓存的汇率；如果今天没有缓存，才调用 API 获取', optNoKeys: 'NO，不同步密钥，推荐更安全', optYesKeys: 'YES，同步到 GitHub data.json，换设备不用重新填写', hint: '开户汇率和结束汇率都会按这里选择的来源获取。TCMB 更适合 TRY 场景；Frankfurter 无需 Key；ExchangeRate-API 不填 Key 时只使用开放最新汇率；exchangerate.host 和 currencyapi.com 需要 API Key。exchangerate.host 会把当天获取到的最近一年汇率缓存到 GitHub 的 data.json；如果“获取最新 API 返回数据”选择 NO，则当天后续刷新优先使用 GitHub 缓存，避免重复消耗 API 次数；如果选择 YES，则每次刷新都会重新调用 API 并覆盖今天的缓存。' },
       column: { title: '列配置', activeTitle: '当前定存列配置', historyTitle: '历史记录列配置', activeHint: '当前定存表和历史记录表独立保存配置。可以隐藏列、修改显示列名，也可以设置列宽；字段 code 不会变化。', historyHint: '历史记录可以单独修改列名和列宽，例如把“银行”改成“土耳其银行”，不会影响当前定存表。', bottomHint: '“序号”列也可以隐藏/显示；“操作”列固定显示但可以设置列宽。列名、列宽和列显示配置会一起保存到云端，多设备同步。列宽留空就是自适应；填写数字代表 px。', displayName: '显示名称：{name}', widthPx: '列宽 px', widthPlaceholder: '自适应', lockedVisible: '固定显示' },
       mail: { title: '邮件提醒设置', enabled: '是否启用邮件提醒', to: '收件邮箱', advanceDays: '提前几天推送', dueHours: '到期当天每几小时推送', pushStartTime: '允许推送开始时间', pushEndTime: '允许推送结束时间', onlyEnabled: '只提醒已开启提醒的记录', timeZone: '页面/提醒时区', timeZoneCustom: '自定义时区', subject: '邮件标题模板', body: '邮件内容模板', variables: '模板变量', varHead: '点击变量，自动插入到标题或内容的光标位置', varSub: '显示名称跟随当前定存表列名，点击后插入固定 code，例如 {{bank}}', varNote: '说明：模板变量显示名称跟随“当前定存”表的列名设置；按钮里的 code 保持不变，保存到邮件模板的也是 {{code}}。', preview: '邮件预览', previewButtonHint: '点击“预览提醒邮件”。', hint: '邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；邮件正文只发送“邮件内容模板”里的内容，不会再额外追加字段。你可以点击“模板变量”按钮插入字段，显示名称跟随当前定存表列名，点击后插入固定 code，例如 {{bank}}。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；允许推送时间段可设置为 09:00-18:00，留空表示全天；两个规则都填写时会同时生效。', noMatch: '当前没有符合提醒条件的定存。\n例如设置提前 7 天，只有剩余天数等于 7 的记录才会进入邮件提醒。', previewSubject: '标题：{subject}\n\n内容：\n{body}', previewMore: '\n\n共 {count} 条符合条件，实际推送时会逐条发送。' },
@@ -4436,15 +4448,23 @@ BOC"></textarea>
     if (!$modal.length) return;
     $modal.show();
     document.body.classList.add('modal-open');
+    if ($modal.attr('id') === 'recordModal') {
+      document.body.classList.add('record-modal-open');
+    }
   }
 
   function closeAppModal(modalRef) {
     const $modal = typeof modalRef === 'string' ? $('#' + modalRef) : $(modalRef);
+    const modalId = $modal.attr('id');
     if ($modal.length) {
       $modal.hide();
     }
+    if (modalId === 'recordModal') {
+      document.body.classList.remove('record-modal-open');
+    }
     if (!$('.modal-mask:visible').length) {
       document.body.classList.remove('modal-open');
+      document.body.classList.remove('record-modal-open');
     }
   }
 
@@ -6326,26 +6346,29 @@ BOC"></textarea>
   function renderBankControls(selectedValue) {
     const selected = String(selectedValue || '').trim();
     const suggestionBanks = getAllBankOptions(selected);
-    const selectableBanks = normalizeBankOptions([...getConfiguredBankOptions(), selected]);
+    const configuredBanks = getConfiguredBankOptions();
+    const selectableBanks = normalizeBankOptions(selected ? [...configuredBanks, selected] : configuredBanks);
     $('#bankList').html(suggestionBanks.map(b => `<option value="${escapeAttr(b)}"></option>`).join(''));
-    const emptyText = currentLanguage() === 'zh' ? '请选择银行' : (currentLanguage() === 'tr' ? 'Banka seçin' : 'Select bank');
-    const selectHtml = `<option value="">${escapeHtml(emptyText)}</option>` + selectableBanks.map(b => `<option value="${escapeAttr(b)}">${escapeHtml(b)}</option>`).join('');
+    const selectHtml = selectableBanks.map(b => `<option value="${escapeAttr(b)}">${escapeHtml(b)}</option>`).join('');
     $('#bankSelect').html(selectHtml);
-    setBankInputValue(selected);
+    setBankInputValue(selected || selectableBanks[0] || '');
   }
 
   function setBankInputValue(value) {
     const bank = String(value || '').trim();
-    $('#bank').val(bank);
     const $select = $('#bankSelect');
     const hasOption = $select.find('option').toArray().some(opt => opt.value === bank);
-    if (hasOption) $select.val(bank);
-    else $select.val('');
+    if (hasOption) {
+      $select.val(bank);
+    } else {
+      const firstValue = $select.find('option').first().val() || bank;
+      $select.val(firstValue);
+    }
+    $('#bank').val($select.val() || bank);
   }
 
   function getBankInputValue() {
-    const mobileSelectVisible = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
-    const value = mobileSelectVisible ? ($('#bankSelect').val() || '') : ($('#bank').val() || '');
+    const value = $('#bankSelect').val() || $('#bank').val() || '';
     return String(value || '').trim();
   }
 
