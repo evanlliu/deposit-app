@@ -1,3 +1,32 @@
+## v69 银行 code/name 绑定
+
+- 银行下拉项配置升级为 `code = name` 格式。
+- `code` 用来绑定新旧数据，默认沿用当前银行名称。
+- `name` 作为页面显示名称，可以随时修改。
+- 当前定存、历史记录里的 `bank` 字段继续保存 `code`，不改 `data.json` 主结构。
+- 表格、筛选、移动端卡片、邮件模板里的银行名称显示为最新 `name`。
+- 调整银行顺序不会影响旧数据；只要 `code` 不变，旧数据会自动显示最新 `name`。
+- 移除 v68 按同位置判断“旧名称 → 新名称”的同步逻辑，避免排序时误判。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v69-bank-code-name`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
+## v68 银行名称同步旧数据
+
+- 在“更多 → 同步设置 → 银行下拉项配置”里修改银行名称后，会自动同步更新旧数据里的银行名称。
+- 同步范围包括当前定存 `activeRecords` 和历史记录 `historyRecords`。
+- 处理方式是按银行配置列表的同一行位置识别“旧名称 → 新名称”，只同步明确的改名，不会因为新增、删除或单纯排序而批量误改。
+- 不改动 `data.json` 结构，不需要更新 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v68-bank-rename-sync`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
 ## v67 银行选择与移动端悬浮按钮优化
 
 - 移动端新增 / 编辑定存时隐藏右侧悬浮按钮组，避免遮挡表单。
