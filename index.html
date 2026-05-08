@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>定期存款管理系统 v58</title>
+  <title>定期存款管理系统 v60</title>
   <meta name="theme-color" content="#2563eb" />
   <meta name="application-name" content="定期存款" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -64,7 +64,8 @@
       display: none !important;
     }
 
-    body.app-locked {
+    body.app-locked,
+    body.modal-open {
       overflow: hidden;
     }
 
@@ -755,16 +756,23 @@
       z-index: 100;
       background: rgba(15, 23, 42, .45);
       padding: 16px;
-      overflow: auto;
+      overflow: hidden;
+      box-sizing: border-box;
     }
 
     .modal {
       width: min(940px, 100%);
-      margin: 30px auto;
+      max-width: 100%;
+      max-height: calc(100vh - 32px);
+      max-height: calc(100dvh - 32px);
+      margin: 16px auto;
       background: white;
       border-radius: 14px;
       box-shadow: 0 30px 80px rgba(0,0,0,.25);
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
     .modal-head {
@@ -778,7 +786,13 @@
     }
 
     .modal-head h2 { margin: 0; font-size: 18px; }
-    .modal-body { padding: 16px; }
+    .modal-body {
+      padding: 16px;
+      overflow: auto;
+      overflow-x: hidden;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
+    }
     .modal-foot {
       display: flex;
       justify-content: flex-end;
@@ -820,27 +834,36 @@
     .hidden-file { display: none; }
 
     #columnModal .modal {
-      width: min(1520px, calc(100vw - 24px));
+      width: min(1420px, calc(100vw - 24px));
       max-height: calc(100vh - 24px);
-      display: flex;
-      flex-direction: column;
+      max-height: calc(100dvh - 24px);
+      margin: 12px auto;
     }
     #columnModal .modal-body {
-      overflow: auto;
-      max-height: calc(100vh - 170px);
+      flex: 1 1 auto;
+      max-height: none;
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+    }
+    #columnModal * {
+      box-sizing: border-box;
     }
     .column-config-layout {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(min(520px, 100%), 1fr));
+      gap: 14px;
       align-items: start;
+      width: 100%;
+      min-width: 0;
     }
     .column-config-box {
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 16px;
+      padding: 14px;
       background: linear-gradient(180deg, #f8fbff 0%, #fdfefe 100%);
       min-width: 0;
+      overflow: hidden;
     }
     .column-config-box h3 {
       margin: 0 0 10px;
@@ -853,10 +876,12 @@
     .nested-grid { box-shadow: none; margin-top: 6px; }
     .checkbox-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+      gap: 10px;
       padding: 8px 0;
       align-items: stretch;
+      width: 100%;
+      min-width: 0;
     }
     .checkbox-grid label {
       display: flex;
@@ -871,12 +896,13 @@
       margin-top: 2px;
     }
     .column-config-item {
-      padding: 12px;
+      padding: 11px;
       border: 1px solid var(--line);
       border-radius: 14px;
       background: white;
       color: var(--text);
       min-width: 0;
+      max-width: 100%;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
@@ -887,6 +913,9 @@
       border: 0;
       background: transparent;
       font-weight: 700;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 8px;
       align-items: flex-start;
       line-height: 1.35;
       min-width: 0;
@@ -906,6 +935,8 @@
     }
     .column-label-input {
       width: 100%;
+      min-width: 0;
+      max-width: 100%;
       min-height: 38px;
       padding: 8px 10px;
       font-size: 13px;
@@ -914,19 +945,29 @@
     .column-width-row {
       margin-top: 8px;
       display: grid;
-      grid-template-columns: 1fr 96px;
+      grid-template-columns: minmax(0, 1fr) minmax(72px, 96px);
       gap: 8px;
       align-items: center;
       color: var(--muted);
       font-size: 12px;
       line-height: 1.35;
+      min-width: 0;
     }
     .column-width-input {
       width: 100%;
+      min-width: 0;
+      max-width: 100%;
       min-height: 34px;
       padding: 7px 9px;
       font-size: 13px;
       text-align: right;
+    }
+
+    .column-width-row span,
+    .column-locked-note {
+      min-width: 0;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
     .locked-column {
       background: #fbfdff;
@@ -1866,12 +1907,22 @@
       .desktop-table { display: none; }
       .mobile-list { display: grid; }
       .form-grid { grid-template-columns: 1fr; }
-      .modal { margin: 0 auto; border-radius: 16px; }
+      .modal {
+        margin: 0 auto;
+        border-radius: 16px;
+        max-height: calc(100vh - 16px);
+        max-height: calc(100dvh - 16px);
+      }
       .modal-mask { padding: 8px; }
+      .modal-head, .modal-foot { padding: 12px; }
+      .modal-body { padding: 12px; }
       .checkbox-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .column-config-layout { grid-template-columns: 1fr; }
-      #columnModal .modal { width: min(100%, calc(100vw - 12px)); max-height: calc(100vh - 12px); }
-      #columnModal .modal-body { max-height: calc(100vh - 150px); }
+      .column-config-layout { grid-template-columns: 1fr; gap: 12px; }
+      #columnModal .modal { width: min(100%, calc(100vw - 12px)); max-height: calc(100vh - 12px); max-height: calc(100dvh - 12px); }
+      #columnModal .modal-body { max-height: none; }
+      #columnModal .checkbox-grid { grid-template-columns: 1fr; }
+      #columnModal .modal-foot { display: grid; grid-template-columns: 1fr; }
+      #columnModal .modal-foot button { width: 100%; }
       .mobile-grid { grid-template-columns: 1fr 1fr; }
     }
 
@@ -2124,7 +2175,7 @@
   <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
     <div class="lock-card">
       <div class="lock-icon" aria-hidden="true">🔐</div>
-      <h1 id="lockTitle"><span id="lockTitleText">定期存款管理系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v58</span></h1>
+      <h1 id="lockTitle"><span id="lockTitleText">定期存款管理系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v60</span></h1>
       <p id="lockSubtitle">请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。</p>
       <form id="lockForm" class="lock-form" autocomplete="off">
         <label id="lockPasswordLabel" class="lock-label" for="lockPassword">访问密码</label>
@@ -2145,7 +2196,7 @@
   <header>
     <div class="wrap topbar">
       <div class="title">
-        <h1><span id="appTitleText">定期存款管理系统</span><span id="appVersionBadge" class="version-badge">v58</span></h1>
+        <h1><span id="appTitleText">定期存款管理系统</span><span id="appVersionBadge" class="version-badge">v60</span></h1>
       </div>
       <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
@@ -2763,7 +2814,7 @@
     'lastRateFetchDate'
   ];
 
-  const APP_VERSION = 'v58';
+  const APP_VERSION = 'v60';
 
   const I18N = {
     zh: {
@@ -3725,6 +3776,23 @@
     picker.style.top = top + 'px';
   }
 
+  function openAppModal(modalId) {
+    const $modal = typeof modalId === 'string' ? $('#' + modalId) : $(modalId);
+    if (!$modal.length) return;
+    $modal.show();
+    document.body.classList.add('modal-open');
+  }
+
+  function closeAppModal(modalRef) {
+    const $modal = typeof modalRef === 'string' ? $('#' + modalRef) : $(modalRef);
+    if ($modal.length) {
+      $modal.hide();
+    }
+    if (!$('.modal-mask:visible').length) {
+      document.body.classList.remove('modal-open');
+    }
+  }
+
   function bindEvents() {
     setupDatePicker();
     $('#lockForm').on('submit', handleUnlock);
@@ -3836,11 +3904,11 @@
 
     $('[data-close]').on('click', function (e) {
       e.preventDefault();
-      $('#' + $(this).data('close')).hide();
+      closeAppModal($(this).data('close'));
     });
 
     $('.modal-mask').on('click', function (e) {
-      if (e.target === this) $(this).hide();
+      if (e.target === this) closeAppModal(this);
     });
   }
 
@@ -4179,7 +4247,7 @@
 
   function openSyncModal() {
     loadConfigToForm();
-    $('#syncModal').show();
+    openAppModal('syncModal');
   }
 
   async function saveSyncSetting() {
@@ -4196,7 +4264,7 @@
     };
     recordAuthSession(cfg.apiUrl);
     saveLocalData();
-    $('#syncModal').hide();
+    closeAppModal('syncModal');
     if (!cfg.apiUrl) {
       updateStatus(t('messages.statusLocalModeSwitched'));
       return;
@@ -4368,7 +4436,7 @@
     $('#exchangeRateApiKey').val(rc.exchangeRateApiKey || '');
     $('#exchangeRateHostApiKey').val(rc.exchangeRateHostApiKey || '');
     $('#currencyApiKey').val(rc.currencyApiKey || '');
-    $('#rateModal').show();
+    openAppModal('rateModal');
   }
 
   function saveRateSetting() {
@@ -4386,7 +4454,7 @@
     saveRateLocalConfig(apiKeys);
     appData.settings.rateApiKeys = appData.settings.rateApiKeysCloudSync === 'YES' ? apiKeys : {};
     try { localStorage.removeItem(RATE_CACHE_KEY); } catch (e) {}
-    $('#rateModal').hide();
+    closeAppModal('rateModal');
     $('#rateInfo').text(t('messages.rateProviderInfo', { provider: getRateProviderLabel(appData.settings.rateProvider) }));
     persistData();
   }
@@ -4433,7 +4501,7 @@
     $('#interestTry').val('');
     $('#principalPlusInterestTry').val('');
     $('#reminderEnabled').val('YES');
-    $('#recordModal').show();
+    openAppModal('recordModal');
     updateFormPreview();
     autoFillFormRates(false).finally(updateFormPreview);
   }
@@ -4465,7 +4533,7 @@
     $('#exchangeTry').val(record.exchangeTry ? toInput(record.exchangeTry, 2) : '');
     $('#exchangeCny').val(record.exchangeCny ? toInput(record.exchangeCny, 2) : '');
     $('#exchangeReason').val(record.exchangeReason || '');
-    $('#recordModal').show();
+    openAppModal('recordModal');
     updateFormPreview();
   }
 
@@ -4506,7 +4574,7 @@
       }
     }
 
-    $('#recordModal').hide();
+    closeAppModal('recordModal');
     persistData();
   }
 
@@ -5881,7 +5949,7 @@
   function openColumnModal() {
     renderColumnConfigBox('active');
     renderColumnConfigBox('history');
-    $('#columnModal').show();
+    openAppModal('columnModal');
   }
 
   function renderColumnConfigBox(type) {
@@ -5932,7 +6000,7 @@
     appData.settings.columnVisibility = next;
     appData.settings.columnLabels = nextLabels;
     appData.settings.columnWidths = nextWidths;
-    $('#columnModal').hide();
+    closeAppModal('columnModal');
     persistData();
     renderMailVariableButtons();
     updateStatus(t('messages.savedColumns'));
@@ -6144,7 +6212,7 @@
     renderMailVariableButtons();
     loadMailSettingToForm();
     previewMailReminder(null, true);
-    $('#mailModal').show();
+    openAppModal('mailModal');
     lastMailTemplateTarget = document.getElementById('mailBodyTemplate');
   }
 
@@ -6234,7 +6302,7 @@
     appData.settings.timeZone = readTimeZoneFromForm();
     saveLocalData();
     persistData();
-    $('#mailModal').hide();
+    closeAppModal('mailModal');
     updateStatus(t('messages.statusMailSaved'));
   }
 

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v58-version-badge';
+const CACHE_VERSION = 'deposit-app-v60-modal-button-fix';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];
