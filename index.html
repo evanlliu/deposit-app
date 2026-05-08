@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>定期存款管理系统</title>
+  <title>定期存款管理系统 v58</title>
   <meta name="theme-color" content="#2563eb" />
   <meta name="application-name" content="定期存款" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -209,6 +209,39 @@
       margin: 0;
       font-size: 22px;
       line-height: 1.2;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .version-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+      box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.10);
+    }
+
+    .version-badge-lock {
+      padding: 5px 10px;
+      font-size: 12px;
+      vertical-align: middle;
+    }
+
+    #lockTitle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .title p {
@@ -1251,6 +1284,12 @@
       .title h1 {
         font-size: 18px;
         line-height: 1.15;
+        gap: 8px;
+      }
+
+      .version-badge {
+        padding: 3px 8px;
+        font-size: 12px;
       }
 
       .title p {
@@ -2085,7 +2124,7 @@
   <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
     <div class="lock-card">
       <div class="lock-icon" aria-hidden="true">🔐</div>
-      <h1 id="lockTitle">定期存款管理系统</h1>
+      <h1 id="lockTitle"><span id="lockTitleText">定期存款管理系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v58</span></h1>
       <p id="lockSubtitle">请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。</p>
       <form id="lockForm" class="lock-form" autocomplete="off">
         <label id="lockPasswordLabel" class="lock-label" for="lockPassword">访问密码</label>
@@ -2106,8 +2145,7 @@
   <header>
     <div class="wrap topbar">
       <div class="title">
-        <h1>定期存款管理系统</h1>
-        <p>当前定存 + 历史记录；只需录入关键字段，汇率和收益自动计算。</p>
+        <h1><span id="appTitleText">定期存款管理系统</span><span id="appVersionBadge" class="version-badge">v58</span></h1>
       </div>
       <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
@@ -2725,9 +2763,11 @@
     'lastRateFetchDate'
   ];
 
+  const APP_VERSION = 'v58';
+
   const I18N = {
     zh: {
-      appTitle: '定期存款管理系统', shortTitle: '定期存款', appSubtitle: '当前定存 + 历史记录；只需录入关键字段，汇率和收益自动计算。',
+      appTitle: '定期存款管理系统', shortTitle: '定期存款',
       language: { label: '语言', zh: '中文', en: 'English', tr: 'Türkçe' },
       lock: { title: '定期存款管理系统', subtitle: '请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。', passwordLabel: '访问密码', passwordPlaceholder: '输入 APP_PASSWORD', apiUrlLabel: 'Cloudflare Worker API 地址', advanced: '高级设置：Worker API 地址', button: '解锁', verifying: '正在验证...', success: '验证成功，正在加载数据...', passwordRequired: '请输入访问密码。', apiUrlRequired: '请填写 Cloudflare Worker API 地址。', failed: '验证失败', failedWithMessage: '解锁失败：{message}', cachedSuccess: '锁屏会话未过期，已自动解锁。当前有效期：{minutes} 分钟。' },
       fold: { settingsTitle: '设置 / 更多', settingsSub: '同步、邮件、列、汇率', rateTitle: '刷新汇率', rateSub: '汇率、历史范围', searchTitle: '查询 / 筛选', searchSub: '搜索、银行、更多筛选', exportTitle: '导出 / 备份', exportSub: 'JSON、CSV、备份、导入', expand: '展开', collapse: '收起' },
@@ -2798,7 +2838,7 @@
       }
     },
     en: {
-      appTitle: 'Time Deposit Manager', shortTitle: 'Deposits', appSubtitle: 'Active deposits + history; enter key fields only, rates and returns are calculated automatically.',
+      appTitle: 'Time Deposit Manager', shortTitle: 'Deposits',
       language: { label: 'Language', zh: '中文', en: 'English', tr: 'Türkçe' },
       lock: { title: 'Time Deposit Manager', subtitle: 'Enter the APP_PASSWORD from your Cloudflare Worker. Data is loaded only after unlocking. Within the lock timeout, refresh/reopen will not ask again.', passwordLabel: 'Access Password', passwordPlaceholder: 'Enter APP_PASSWORD', apiUrlLabel: 'Cloudflare Worker API URL', advanced: 'Advanced: Worker API URL', button: 'Unlock', verifying: 'Verifying...', success: 'Verified. Loading data...', passwordRequired: 'Please enter the access password.', apiUrlRequired: 'Please enter the Cloudflare Worker API URL.', failed: 'Verification failed', failedWithMessage: 'Unlock failed: {message}', cachedSuccess: 'Lock session is still valid. Auto-unlocked. Current timeout: {minutes} minutes.' },
       fold: { settingsTitle: 'Settings / More', settingsSub: 'Sync, mail, columns, rates', rateTitle: 'Refresh Rates', rateSub: 'Rates and history range', searchTitle: 'Search / Filter', searchSub: 'Search, bank, more filters', exportTitle: 'Export / Backup', exportSub: 'JSON, CSV, backup, import', expand: 'Expand', collapse: 'Collapse' },
@@ -2869,7 +2909,7 @@
       }
     },
     tr: {
-      appTitle: 'Vadeli Mevduat Yönetimi', shortTitle: 'Mevduat', appSubtitle: 'Aktif mevduatlar + geçmiş; yalnızca temel alanları girin, kurlar ve getiriler otomatik hesaplanır.',
+      appTitle: 'Vadeli Mevduat Yönetimi', shortTitle: 'Mevduat',
       language: { label: 'Dil', zh: '中文', en: 'English', tr: 'Türkçe' },
       lock: { title: 'Vadeli Mevduat Yöneticisi', subtitle: 'Cloudflare Worker içindeki APP_PASSWORD değerini girin. Veriler yalnızca kilit açıldıktan sonra yüklenir. Kilit süresi dolmadan yenileme/yeniden açma tekrar şifre istemez.', passwordLabel: 'Erişim Şifresi', passwordPlaceholder: 'APP_PASSWORD girin', apiUrlLabel: 'Cloudflare Worker API Adresi', advanced: 'Gelişmiş: Worker API Adresi', button: 'Kilidi Aç', verifying: 'Doğrulanıyor...', success: 'Doğrulandı, veriler yükleniyor...', passwordRequired: 'Lütfen erişim şifresini girin.', apiUrlRequired: 'Lütfen Cloudflare Worker API adresini girin.', failed: 'Doğrulama başarısız', failedWithMessage: 'Kilit açılamadı: {message}', cachedSuccess: 'Kilit oturumu hâlâ geçerli. Otomatik açıldı. Geçerlilik: {minutes} dakika.' },
       fold: { settingsTitle: 'Ayarlar / Daha fazla', settingsSub: 'Senkron, e-posta, sütun, kur', rateTitle: 'Kurları Yenile', rateSub: 'Kur ve geçmiş aralığı', searchTitle: 'Ara / Filtrele', searchSub: 'Arama, banka, ek filtreler', exportTitle: 'Dışa Aktar / Yedek', exportSub: 'JSON, CSV, yedek, içe aktar', expand: 'Aç', collapse: 'Kapat' },
@@ -3024,7 +3064,9 @@
   function applyI18n() {
     const lang = currentLanguage();
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : (lang === 'tr' ? 'tr' : 'en');
-    document.title = t('appTitle');
+    const appTitleText = t('appTitle');
+    const lockTitleText = t('lock.title');
+    document.title = `${appTitleText} ${APP_VERSION}`.trim();
     $('meta[name="application-name"]').attr('content', t('shortTitle'));
     $('meta[name="apple-mobile-web-app-title"]').attr('content', t('shortTitle'));
     $('#languageSelect').val(lang);
@@ -3033,8 +3075,10 @@
     $('.top-language-option').removeClass('active').attr('aria-pressed', 'false');
     $(`.top-language-option[data-lang="${lang}"]`).addClass('active').attr('aria-pressed', 'true');
 
-    setText('.title h1', 'appTitle');
-    setText('.title p', 'appSubtitle');
+    $('#appTitleText').text(appTitleText);
+    $('#appVersionBadge').text(APP_VERSION);
+    $('#lockTitleText').text(lockTitleText);
+    $('#lockVersionBadge').text(APP_VERSION);
     setText('#languageText', 'language.label');
     setText('#btnAdd', 'buttons.add');
     setText('#btnRefresh', 'buttons.refreshCloud');
@@ -3092,7 +3136,8 @@
   }
 
   function applyLockI18n() {
-    $('#lockTitle').text(t('lock.title'));
+    $('#lockTitleText').text(t('lock.title'));
+    $('#lockVersionBadge').text(APP_VERSION);
     $('#lockSubtitle').text(t('lock.subtitle'));
     $('#lockPasswordLabel').text(t('lock.passwordLabel'));
     $('#lockPassword').attr('placeholder', t('lock.passwordPlaceholder'));
