@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>定存系统 v69</title>
+  <title>定存系统 v70</title>
   <meta name="theme-color" content="#2563eb" />
   <meta name="application-name" content="定期存款" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -1938,7 +1938,25 @@
       .form-grid { grid-template-columns: 1fr; }
       #recordForm .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       #recordForm .form-field.full { grid-column: 1 / -1; }
-      #recordForm .record-date-field input { width: 100%; min-width: 0; padding-left: 9px; padding-right: 7px; }
+      #recordForm .record-date-field {
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+      }
+      #recordForm .record-date-field input[type="date"] {
+        display: block;
+        width: 100% !important;
+        min-width: 0 !important;
+        min-inline-size: 0 !important;
+        max-width: 100% !important;
+        max-inline-size: 100% !important;
+        box-sizing: border-box !important;
+        padding-left: 9px;
+        padding-right: 7px;
+        -webkit-appearance: none;
+        appearance: none;
+        text-align: center;
+      }
       #recordForm .bank-input-text { display: none !important; }
       #recordForm .bank-input-select { display: block; width: 100%; }
       #recordModal .modal-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -2281,7 +2299,9 @@
 
 
       body.record-modal-open .mobile-fab-actions,
-      body.record-modal-open .top-language {
+      body.record-modal-open .top-language,
+      .mobile-fab-actions[aria-hidden="true"],
+      #topLanguage[aria-hidden="true"] {
         display: none !important;
       }
 
@@ -2834,7 +2854,7 @@
   <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
     <div class="lock-card">
       <div class="lock-icon" aria-hidden="true">🔐</div>
-      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v69</span></h1>
+      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v70</span></h1>
       <p id="lockSubtitle">请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。</p>
       <form id="lockForm" class="lock-form" autocomplete="off">
         <label id="lockPasswordLabel" class="lock-label" for="lockPassword">访问密码</label>
@@ -2855,7 +2875,7 @@
   <header>
     <div class="wrap topbar">
       <div class="title">
-        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v69</span></h1>
+        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v70</span></h1>
       </div>
       <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
@@ -3471,7 +3491,7 @@ BOC = BOC"></textarea>
     'lastRateFetchDate'
   ];
 
-  const APP_VERSION = 'v69';
+  const APP_VERSION = 'v70';
 
   const I18N = {
     zh: {
@@ -4450,6 +4470,7 @@ BOC = BOC"></textarea>
     document.body.classList.add('modal-open');
     if ($modal.attr('id') === 'recordModal') {
       document.body.classList.add('record-modal-open');
+      $('.mobile-fab-actions, #topLanguage').attr('aria-hidden', 'true');
     }
   }
 
@@ -4461,6 +4482,7 @@ BOC = BOC"></textarea>
     }
     if (modalId === 'recordModal') {
       document.body.classList.remove('record-modal-open');
+      $('.mobile-fab-actions, #topLanguage').removeAttr('aria-hidden');
     }
     if (!$('.modal-mask:visible').length) {
       document.body.classList.remove('modal-open');

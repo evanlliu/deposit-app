@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v69-bank-code-name';
+const CACHE_VERSION = 'deposit-app-v70-mobile-date-width-fix';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];

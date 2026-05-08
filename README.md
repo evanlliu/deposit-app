@@ -1,3 +1,17 @@
+## v70 移动端 Safari 日期输入框宽度修复
+
+- 修复移动端 Safari 新增 / 编辑弹窗中日期输入框宽度过大导致互相重叠的问题。
+- 日期输入框宽度与其他输入框保持一致，使用 `width: 100%`、`min-width: 0`、`max-width: 100%` 和 `box-sizing: border-box` 约束。
+- 针对 iOS Safari 的 `input[type="date"]` 补充 `-webkit-appearance: none`，避免原生控件撑破网格。
+- 同时强化新增 / 编辑弹窗打开时隐藏移动端悬浮按钮，避免遮挡表单。
+- 不改动银行 code/name 绑定逻辑，不改动 data.json 结构，不改动 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v70-mobile-date-width-fix`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
 ## v69 银行 code/name 绑定
 
 - 银行下拉项配置升级为 `code = name` 格式。
