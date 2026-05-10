@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v71-mobile-fab-icons';
+const CACHE_VERSION = 'deposit-app-v73-mobile-modal-footer-row';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];

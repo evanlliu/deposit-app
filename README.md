@@ -1,3 +1,30 @@
+## v73 移动端配置弹窗底部按钮一行显示
+
+- 移动端配置弹窗底部按钮统一保持一行显示。
+- 修复同步设置弹窗中“取消 / 保存同步设置”被挤成两行的问题。
+- 列配置、汇率设置、邮件提醒等配置弹窗底部按钮也同步约束为同一行。
+- 按钮文字较长时自动压缩字号并使用省略显示，避免撑破弹窗。
+- 仅调整前端样式，不改动数据结构和 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v73-mobile-modal-footer-row`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
+## v72 移动端统计卡片跟随标签页
+
+- 切换到“当前定存”时，顶部统计卡片显示当前定存的当前笔数和总利息 CNY。
+- 切换到“历史记录”时，顶部统计卡片显示历史记录的当前笔数和总利息 CNY。
+- 切换标签页会自动刷新统计卡片。
+- 不改动 data.json 结构，不改动 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v72-mobile-summary-by-tab`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
 ## v71 移动端悬浮按钮图标调整
 
 - 移动端“从云端刷新”悬浮按钮图标改为 `↻`。

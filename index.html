@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>定存系统 v71</title>
+  <title>定存系统 v73</title>
   <meta name="theme-color" content="#2563eb" />
   <meta name="application-name" content="定期存款" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -1975,8 +1975,46 @@
       #columnModal .modal { width: min(100%, calc(100vw - 12px)); max-height: calc(100vh - 12px); max-height: calc(100dvh - 12px); }
       #columnModal .modal-body { max-height: none; }
       #columnModal .checkbox-grid { grid-template-columns: 1fr; }
-      #columnModal .modal-foot { display: grid; grid-template-columns: 1fr; }
-      #columnModal .modal-foot button { width: 100%; }
+      #columnModal .modal-foot { display: flex; grid-template-columns: none; }
+      #columnModal .modal-foot button { width: auto; }
+      #syncModal .modal-foot,
+      #rateModal .modal-foot,
+      #columnModal .modal-foot,
+      #mailModal .modal-foot,
+      .modal-foot {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center;
+        justify-content: stretch;
+        gap: 8px;
+        overflow-x: hidden;
+      }
+      #syncModal .modal-foot button,
+      #rateModal .modal-foot button,
+      #columnModal .modal-foot button,
+      #mailModal .modal-foot button,
+      .modal-foot button {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        width: auto !important;
+        max-width: 100%;
+        min-height: 40px;
+        padding-left: 6px;
+        padding-right: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+      }
+      #mailModal .modal-foot {
+        gap: 5px;
+      }
+      #mailModal .modal-foot button {
+        font-size: 10px;
+        padding-left: 4px;
+        padding-right: 4px;
+      }
       .mobile-grid { grid-template-columns: 1fr 1fr; }
     }
 
@@ -2854,7 +2892,7 @@
   <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
     <div class="lock-card">
       <div class="lock-icon" aria-hidden="true">🔐</div>
-      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v71</span></h1>
+      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v73</span></h1>
       <p id="lockSubtitle">请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。</p>
       <form id="lockForm" class="lock-form" autocomplete="off">
         <label id="lockPasswordLabel" class="lock-label" for="lockPassword">访问密码</label>
@@ -2875,7 +2913,7 @@
   <header>
     <div class="wrap topbar">
       <div class="title">
-        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v71</span></h1>
+        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v73</span></h1>
       </div>
       <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
@@ -3491,7 +3529,7 @@ BOC = BOC"></textarea>
     'lastRateFetchDate'
   ];
 
-  const APP_VERSION = 'v71';
+  const APP_VERSION = 'v73';
 
   const I18N = {
     zh: {
@@ -6200,22 +6238,26 @@ BOC = BOC"></textarea>
     renderMobileLists();
   }
 
-  function renderSummary() {
-    const active = appData.activeRecords;
-    const totals = active.reduce((acc, r) => {
+  function summarizeRecordsForCards(records, includeReminder) {
+    return (records || []).reduce((acc, r) => {
       const c = getCalc(r);
       acc.principalTry += n(r.principalTry);
       acc.interestTry += c.interestTry;
       acc.principalCny += c.principalCny;
       acc.gainCny += c.gainCny;
       acc.gainUsd += c.gainUsd;
-      if (c.remainingDays <= 7 && c.remainingDays > 0 && r.reminderEnabled) acc.soon++;
-      if (c.remainingDays <= 0 && r.reminderEnabled) acc.expired++;
+      if (includeReminder && c.remainingDays <= 7 && c.remainingDays > 0 && r.reminderEnabled) acc.soon++;
+      if (includeReminder && c.remainingDays <= 0 && r.reminderEnabled) acc.expired++;
       return acc;
     }, { principalTry: 0, interestTry: 0, principalCny: 0, gainCny: 0, gainUsd: 0, soon: 0, expired: 0 });
+  }
+
+  function renderSummary() {
+    const records = currentTab === 'history' ? appData.historyRecords : appData.activeRecords;
+    const totals = summarizeRecordsForCards(records, currentTab === 'active');
 
     const items = [
-      { key: 'count', label: t('summary.count'), value: active.length + ' ' + t('common.records') },
+      { key: 'count', label: t('summary.count'), value: records.length + ' ' + t('common.records') },
       { key: 'principalTry', label: t('summary.principalTry'), value: fmt(totals.principalTry) },
       { key: 'interestTry', label: t('summary.interestTry'), value: fmt(totals.interestTry) },
       { key: 'principalCny', label: t('summary.principalCny'), value: fmt(totals.principalCny) },
