@@ -1,3 +1,15 @@
+## v74 锁屏页面隐藏悬浮按钮
+
+- 修复移动端锁屏页面右侧仍显示悬浮按钮的问题。
+- 在 `app-locked` 状态下隐藏右侧悬浮按钮组和顶部语言悬浮按钮。
+- 不改动解锁逻辑，只调整锁屏页面显示。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v74-lock-hide-fabs`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
 ## v73 移动端配置弹窗底部按钮一行显示
 
 - 移动端配置弹窗底部按钮统一保持一行显示。
