@@ -1,3 +1,17 @@
+## v75 移入历史默认兑换信息修正
+
+- 当前定存移入历史时，`exchangeTry` 默认写入 `0`。
+- 当前定存移入历史时，`exchangeCny` 默认写入 `0`。
+- 当前定存移入历史时，`exchangeReason` 默认写入空字符串。
+- 后续可以在历史记录编辑页面按实际情况填写兑换 TRY、兑换 CNY、兑换原因。
+- 不改动 `data.json` 结构，不改动 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v75-history-exchange-defaults`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
 ## v74 锁屏页面隐藏悬浮按钮
 
 - 修复移动端锁屏页面右侧仍显示悬浮按钮的问题。

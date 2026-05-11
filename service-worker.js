@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v74-lock-hide-fabs';
+const CACHE_VERSION = 'deposit-app-v75-history-exchange-defaults';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];
