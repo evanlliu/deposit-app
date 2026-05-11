@@ -1,11 +1,13 @@
-## v75 移入历史默认兑换信息修正
+## v76 修复移入历史确认无反应
 
-- 当前定存移入历史时，`exchangeTry` 默认写入 `0`。
-- 当前定存移入历史时，`exchangeCny` 默认写入 `0`。
-- 当前定存移入历史时，`exchangeReason` 默认写入空字符串。
-- 后续可以在历史记录编辑页面按实际情况填写兑换 TRY、兑换 CNY、兑换原因。
+- 基于 v74 重新修复，避免 v75 的错误插入导致“确认后无反应”。
+- 当前定存移入历史时：
+  - `exchangeTry` 默认 `0`
+  - `exchangeCny` 默认 `0`
+  - `exchangeReason` 默认空字符串
+- 保留原有流程：从当前定存删除，并加入历史记录。
 - 不改动 `data.json` 结构，不改动 Cloudflare Worker。
-- `service-worker.js` 缓存版本更新为 `deposit-app-v75-history-exchange-defaults`。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v76-history-move-fix`。
 
 ### 本次需要更新的文件
 

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v75-history-exchange-defaults';
+const CACHE_VERSION = 'deposit-app-v76-history-move-fix';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];
