@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v80-formula-engine';
+const CACHE_VERSION = 'deposit-app-v81-table-cell-title';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];

@@ -1,3 +1,18 @@
+## v81 表格省略内容悬停显示完整内容
+
+- 表格单元格增加 `title` 提示。
+- 当前定存和历史记录表格中，如果内容因列宽显示为 `...`，鼠标悬停会显示完整内容。
+- 支持普通文本、金额、日期、银行名称、备注、兑换原因等列。
+- 不改动表格列配置逻辑。
+- 不改动自定义公式计算逻辑。
+- 不改动 `data.json` 结构，不改动 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v81-table-cell-title`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
 ## v80 启用自定义公式计算（第二阶段）
 
 - 启用 `settings.calculationFormulas` 中的自定义公式。
