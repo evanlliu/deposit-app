@@ -1,3 +1,74 @@
+## v80 启用自定义公式计算（第二阶段）
+
+- 启用 `settings.calculationFormulas` 中的自定义公式。
+- 当前定存和历史记录统一使用同一套公式计算逻辑。
+- 支持变量格式：`{{fieldCode}}`。
+- 支持函数：`TODAY()`、`DATEDIFF(date1, date2)`。
+- 启用计算字段：
+  - `remainingDays`
+  - `interestTry`
+  - `depositDays`
+  - `annualRateCny`
+  - `principalCny`
+  - `principalPlusInterestCny`
+  - `gainCny`
+- 公式写错时不会导致页面崩溃，会自动回退到原有默认计算逻辑。
+- 空值、`NaN`、`Infinity` 自动按 `0` 处理。
+- 不改动 `data.json` 结构，不改动 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v80-formula-engine`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
+## v79 计算公式配置页面一屏优化
+
+- 继续优化“计算公式配置”弹窗，PC 端尽量一屏显示完整内容。
+- 左侧公式输入改为更紧凑的一行式布局：字段信息 + 公式输入框。
+- 右侧公式变量按钮进一步压缩间距和高度，减少上下滚动。
+- 公式输入框默认紧凑显示，聚焦时自动增高，方便编辑长公式。
+- 移动端仍保持上下布局，避免横向拥挤。
+- 当前版本仍不启用公式引擎，现有计算逻辑不变。
+- 不改动 `data.json` 结构，不改动 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v79-formula-one-screen`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
+## v78 计算公式配置页面左右布局优化
+
+- “计算公式配置”弹窗改为左右两区。
+- 左侧显示公式输入区，右侧固定显示公式变量。
+- 点击右侧变量按钮，会插入到当前正在编辑的公式输入框光标位置。
+- 移动端自动切换为上下布局，避免横向拥挤。
+- 当前版本仍不启用公式引擎，现有计算逻辑不变。
+- 不改动 `data.json` 结构，不改动 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v78-formula-two-pane`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
+## v77 计算公式配置页面（第一阶段）
+
+- 新增“更多 → 计算公式配置”入口。
+- 新增计算公式配置弹窗，支持配置 7 个计算字段：剩余天数、利息 TRY、存款天、年利率 CNY、本金 CNY、本金+利息 CNY、利息 CNY。
+- 支持点击变量按钮插入 `{{code}}` 到当前公式输入框光标位置。
+- 支持保存到 `settings.calculationFormulas`，并随现有 data.json 同步。
+- 支持恢复默认公式。
+- 当前 v77 暂不启用公式引擎，现有计算逻辑保持不变，避免影响新增、编辑、移入历史、邮件提醒、汇率刷新等功能。
+- 不改动 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v77-formula-settings-stage1`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
 ## v76 修复移入历史确认无反应
 
 - 基于 v74 重新修复，避免 v75 的错误插入导致“确认后无反应”。

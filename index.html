@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>定存系统 v76</title>
+  <title>定存系统 v80</title>
   <meta name="theme-color" content="#2563eb" />
   <meta name="application-name" content="定期存款" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -2860,6 +2860,199 @@
       }
     }
 
+
+    .formula-modal {
+      width: min(1240px, calc(100vw - 24px));
+      max-width: min(1240px, calc(100vw - 24px));
+    }
+    .formula-modal .modal-body {
+      padding-top: 10px;
+      padding-bottom: 8px;
+    }
+    .formula-modal-body {
+      display: grid;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .formula-stage-note {
+      margin-top: 8px;
+      padding: 8px 10px;
+      color: #1d4ed8;
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .formula-two-pane {
+      display: grid;
+      grid-template-columns: minmax(0, 1.46fr) minmax(300px, .54fr);
+      gap: 10px;
+      align-items: stretch;
+      min-height: 0;
+    }
+    .formula-left-pane,
+    .formula-variable-panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(248, 250, 252, .86);
+      padding: 10px;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .formula-left-pane {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+    .formula-pane-title,
+    .formula-variable-title {
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 0;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+    .formula-config-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+      min-width: 0;
+    }
+    .formula-config-card {
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, .78);
+      padding: 7px 8px;
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+    .formula-config-row {
+      grid-template-columns: minmax(150px, 210px) minmax(0, 1fr);
+      align-items: center;
+    }
+    .formula-config-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 7px;
+      min-width: 0;
+    }
+    .formula-config-head span:first-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .formula-code-badge {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: 3px 7px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+      max-width: 94px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .formula-input {
+      width: 100%;
+      min-height: 38px;
+      height: 38px;
+      resize: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.25;
+      padding: 9px 10px;
+      box-sizing: border-box;
+      overflow: hidden;
+      white-space: pre-wrap;
+    }
+    .formula-input:focus {
+      height: 56px;
+      overflow: auto;
+      z-index: 2;
+    }
+    .formula-variable-panel {
+      position: static;
+      max-height: none;
+      overflow: hidden;
+      background: rgba(239, 246, 255, .72);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      align-content: start;
+      gap: 6px;
+    }
+    .formula-variable-panel .compact-hint {
+      font-size: 11px;
+      line-height: 1.3;
+      padding: 7px 8px;
+    }
+    .formula-variable-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-content: flex-start;
+      overflow: hidden;
+    }
+    .formula-var-btn {
+      border-radius: 999px;
+      padding: 6px 8px;
+      background: #fff;
+      border: 1px solid #dbeafe;
+      color: var(--text);
+      font-weight: 900;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 5px;
+      width: auto;
+      box-shadow: none;
+      min-height: 28px;
+      white-space: nowrap;
+      font-size: 12px;
+      max-width: 100%;
+    }
+    .formula-var-btn:hover {
+      transform: translateY(-1px);
+      border-color: var(--primary);
+    }
+    .formula-var-code {
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 130px;
+    }
+    @media (max-width: 860px) {
+      .formula-modal {
+        width: calc(100vw - 20px);
+        max-width: calc(100vw - 20px);
+      }
+      .formula-modal-body { overflow: visible; }
+      .formula-two-pane {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .formula-config-row {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+      }
+      .formula-config-card { padding: 9px; border-radius: 15px; }
+      .formula-config-head { align-items: center; }
+      .formula-config-head span:first-child { white-space: normal; }
+      .formula-code-badge { font-size: 11px; max-width: none; }
+      .formula-input { min-height: 58px; height: 58px; font-size: 12px; overflow: auto; }
+      .formula-input:focus { height: 70px; }
+      .formula-variable-grid { overflow: visible; }
+      .formula-var-btn { font-size: 12px; padding: 7px 9px; }
+      .formula-var-code { font-size: 10px; max-width: 110px; }
+    }
+
   </style>
 </head>
 <body class="app-booting app-locked">
@@ -2894,7 +3087,7 @@
   <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
     <div class="lock-card">
       <div class="lock-icon" aria-hidden="true">🔐</div>
-      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v76</span></h1>
+      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v80</span></h1>
       <p id="lockSubtitle">请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。</p>
       <form id="lockForm" class="lock-form" autocomplete="off">
         <label id="lockPasswordLabel" class="lock-label" for="lockPassword">访问密码</label>
@@ -2915,7 +3108,7 @@
   <header>
     <div class="wrap topbar">
       <div class="title">
-        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v76</span></h1>
+        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v80</span></h1>
       </div>
       <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
@@ -2930,6 +3123,7 @@
             <button id="btnMailSetting" class="secondary">邮件提醒</button>
             <button id="btnColumnSetting" class="secondary">列配置</button>
             <button id="btnRateSetting" class="secondary">汇率设置</button>
+            <button id="btnFormulaSetting" class="secondary">计算公式配置</button>
             <button type="button" class="secondary mobile-export-proxy" data-click-target="btnExportJson">导出JSON</button>
             <button type="button" class="secondary mobile-export-proxy" data-click-target="btnExportCsv">导出CSV</button>
             <button type="button" class="secondary mobile-export-proxy" data-click-target="btnExportBackupJson">备份JSON</button>
@@ -3211,6 +3405,37 @@ BOC = BOC"></textarea>
       <div class="modal-foot">
         <button class="secondary" data-close="syncModal">取消</button>
         <button id="btnSaveSync">保存同步设置</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal-mask" id="formulaModal">
+    <div class="modal formula-modal">
+      <div class="modal-head">
+        <h2>计算公式配置</h2>
+        <button class="secondary small" data-close="formulaModal">关闭</button>
+      </div>
+      <div class="modal-body formula-modal-body">
+        <div class="hint formula-stage-note" id="formulaStageNote">
+          当前 v80 已启用公式引擎；当前定存和历史记录统一使用下方公式计算。
+        </div>
+        <div class="formula-two-pane">
+          <section class="formula-left-pane" aria-label="计算公式输入区">
+            <div class="formula-pane-title" id="formulaInputTitle">公式输入</div>
+            <div class="formula-config-list" id="formulaConfigList"></div>
+          </section>
+          <aside class="formula-variable-panel" aria-label="公式变量">
+            <div class="formula-variable-title" id="formulaVariableTitle">公式变量</div>
+            <div class="hint compact-hint" id="formulaVariableHint">点击变量，自动插入到当前公式输入框光标位置。</div>
+            <div class="formula-variable-grid" id="formulaVariableBox"></div>
+          </aside>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="secondary" id="btnResetFormulaSetting" type="button">恢复默认公式</button>
+        <button class="secondary" data-close="formulaModal" type="button">取消</button>
+        <button id="btnSaveFormulaSetting" type="button">保存公式配置</button>
       </div>
     </div>
   </div>
@@ -3513,6 +3738,7 @@ BOC = BOC"></textarea>
   ];
 
   let lastMailTemplateTarget = null;
+  let lastFormulaTarget = null;
   let cloudState = { sha: null, loadedAt: '' };
 
   const COMMON_TIME_ZONES = [
@@ -3531,15 +3757,15 @@ BOC = BOC"></textarea>
     'lastRateFetchDate'
   ];
 
-  const APP_VERSION = 'v76';
+  const APP_VERSION = 'v80';
 
   const I18N = {
     zh: {
       appTitle: '定存系统', shortTitle: '定存',
       language: { label: '语言', zh: '中文', en: 'English', tr: 'Türkçe' },
       lock: { title: '定存系统', subtitle: '请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。', passwordLabel: '访问密码', passwordPlaceholder: '输入 APP_PASSWORD', apiUrlLabel: 'Cloudflare Worker API 地址', advanced: '高级设置：Worker API 地址', button: '解锁', verifying: '正在验证...', success: '验证成功，正在加载数据...', passwordRequired: '请输入访问密码。', apiUrlRequired: '请填写 Cloudflare Worker API 地址。', failed: '验证失败', failedWithMessage: '解锁失败：{message}', cachedSuccess: '锁屏会话未过期，已自动解锁。当前有效期：{minutes} 分钟。' },
-      fold: { settingsTitle: '更多', settingsSub: '同步、邮件、列、汇率、导出', rateTitle: '刷新汇率', rateSub: '手动刷新', searchTitle: '查询 / 筛选', searchSub: '搜索、银行、更多筛选', exportTitle: '导出 / 备份', exportSub: 'JSON、CSV、备份、导入', expand: '展开', collapse: '收起' },
-      buttons: { add: '新增定存', refreshCloud: '从云端刷新', sync: '同步设置', mail: '邮件提醒', columns: '列配置', rate: '汇率设置', refreshRates: '刷新汇率', exportJson: '导出JSON', exportCsv: '导出CSV', backupJson: '备份JSON', importBackup: '导入备份', current: '当前定存', history: '历史记录', close: '关闭', cancel: '取消', save: '保存', edit: '编辑', moveHistory: '移入历史', restore: '恢复', deleteForever: '永久删除', resetColumns: '恢复默认列', previewMail: '预览提醒邮件', sendCloudTestMail: '发送云端测试邮件', cloudTestReminder: '云端测试一次提醒', saveMail: '保存邮件设置', saveSync: '保存同步设置', saveRate: '保存汇率设置', estimateInterest: '估算利息', fetchOpenRates: '按开户日期获取汇率', fetchEndRates: '按结束日期获取汇率', fetchAllRates: '自动填入全部汇率' },
+      fold: { settingsTitle: '更多', settingsSub: '同步、邮件、列、公式、汇率、导出', rateTitle: '刷新汇率', rateSub: '手动刷新', searchTitle: '查询 / 筛选', searchSub: '搜索、银行、更多筛选', exportTitle: '导出 / 备份', exportSub: 'JSON、CSV、备份、导入', expand: '展开', collapse: '收起' },
+      buttons: { add: '新增定存', refreshCloud: '从云端刷新', sync: '同步设置', mail: '邮件提醒', columns: '列配置', rate: '汇率设置', formula: '计算公式配置', saveFormula: '保存公式配置', resetFormula: '恢复默认公式', refreshRates: '刷新汇率', exportJson: '导出JSON', exportCsv: '导出CSV', backupJson: '备份JSON', importBackup: '导入备份', current: '当前定存', history: '历史记录', close: '关闭', cancel: '取消', save: '保存', edit: '编辑', moveHistory: '移入历史', restore: '恢复', deleteForever: '永久删除', resetColumns: '恢复默认列', previewMail: '预览提醒邮件', sendCloudTestMail: '发送云端测试邮件', cloudTestReminder: '云端测试一次提醒', saveMail: '保存邮件设置', saveSync: '保存同步设置', saveRate: '保存汇率设置', estimateInterest: '估算利息', fetchOpenRates: '按开户日期获取汇率', fetchEndRates: '按结束日期获取汇率', fetchAllRates: '自动填入全部汇率' },
       tabs: { active: '当前定存', history: '历史记录' },
       common: { allBanks: '全部银行', allDates: '全部日期', localMode: '本地模式', total: '合计：', none: '-', yes: 'YES', no: 'NO', days: '天', records: '笔', code: 'code', dateRangeStart: '开始日期', dateRangeEnd: '结束日期', dateRangeTo: '至', clearDateRange: '清空', datePlaceholder: 'YYYY-MM-DD', pickDate: '选择日期', moreFilters: '更多筛选', moreFiltersSub: '时间区间、剩余天数', remainingDaysRange: '剩余天数区间', remainingDaysMin: '最小', remainingDaysMax: '最大', clearRemainingDays: '清空剩余天数', clearAllFilters: '清空查询' },
       placeholders: { search: '搜索银行/备注/日期', dateRange: '时间区间：2026/04/04-2026/05/04', remainingDaysMin: '例如 0', remainingDaysMax: '例如 10', bank: '例如 YAP(G)', principalTry: '例如 400000', principalPlusInterestTry: '例如 412295.89', annualRateTry: '例如 40', remark: '例如：一个月定期、已续存、资金来源说明等', deleteReason: '例如：已到期、手动删除、提前取出', exchangeTry: '例如 393820', exchangeCny: '例如 59722', exchangeReason: '例如：和 OPPO 苏建明换', apiUrl: 'https://你的worker.workers.dev/data', apiPassword: '和 Worker 里的 APP_PASSWORD 一样', mailTo: '例如 you@example.com', mailAdvanceDays: '例如 1 或 3，留空则不提前推送', dueHours: '例如 1 或 2，留空则不当天循环推送', pushStartTime: '例如 09:00，留空表示 00:00', pushEndTime: '例如 18:00，留空表示 23:59', mailSubject: '例如：定存到期提醒：{{bank}} {{principalTry}} TRY', mailBody: '你可以直接点击下面的变量按钮插入，例如选择“银行”会插入 {{bank}}', exchangeRateApiKey: '不填则使用 open.er-api.com 最新汇率；历史日期需要付费历史接口权限', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key；支持 live / historical / timeframe', currencyApiKey: 'currencyapi.com 需要 API Key；支持 latest / historical', timeZoneCustom: '例如 America/Monterrey', lockTimeoutMinutes: '例如 2，0 表示每次都要输入', bankOptions: '每行一个银行，格式：code = name，例如：\nYAP(G) = Yapi Garanti\nYAP = YAP\nICBC = ICBC' },
@@ -3549,6 +3775,7 @@ BOC = BOC"></textarea>
       sync: { title: '同步设置', apiUrl: 'Cloudflare Worker API 地址', password: '访问密码', lockTimeout: '锁屏密码有效期（分钟）', bankOptions: '银行下拉项配置', bankOptionsHint: '每行一个银行，格式：code = name。code 绑定旧数据，name 是显示名称；调整顺序不会影响旧数据。', hint: 'API 地址和访问密码会写入云端配置/备份 JSON。锁屏有效期也会保存到 data.json 并多设备同步；但每台设备的解锁计时单独保存在本机。0 表示每次刷新/打开都必须输入密码。' },
       rate: { historyRange: '历史刷新范围', title: '汇率设置', provider: '默认汇率来源', fallback: '失败时自动切换备用来源', tcmbType: 'TCMB 汇率类型', exchangeRateApiKey: 'ExchangeRate-API Key，可选', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'exchangerate.host 获取最新 API 返回数据', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: '是否把汇率 API Key 同步到云端', optYesRefresh: 'YES，每次刷新时都重新调用 API 获取并覆盖 GitHub 今日汇率缓存', optNoRefresh: 'NO，优先使用 GitHub 里今天已缓存的汇率；如果今天没有缓存，才调用 API 获取', optNoKeys: 'NO，不同步密钥，推荐更安全', optYesKeys: 'YES，同步到 GitHub data.json，换设备不用重新填写', hint: '开户汇率和结束汇率都会按这里选择的来源获取。TCMB 更适合 TRY 场景；Frankfurter 无需 Key；ExchangeRate-API 不填 Key 时只使用开放最新汇率；exchangerate.host 和 currencyapi.com 需要 API Key。exchangerate.host 会把当天获取到的最近一年汇率缓存到 GitHub 的 data.json；如果“获取最新 API 返回数据”选择 NO，则当天后续刷新优先使用 GitHub 缓存，避免重复消耗 API 次数；如果选择 YES，则每次刷新都会重新调用 API 并覆盖今天的缓存。' },
       column: { title: '列配置', activeTitle: '当前定存列配置', historyTitle: '历史记录列配置', activeHint: '当前定存表和历史记录表独立保存配置。可以隐藏列、修改显示列名，也可以设置列宽；字段 code 不会变化。', historyHint: '历史记录可以单独修改列名和列宽，例如把“银行”改成“土耳其银行”，不会影响当前定存表。', bottomHint: '“序号”列也可以隐藏/显示；“操作”列固定显示但可以设置列宽。列名、列宽和列显示配置会一起保存到云端，多设备同步。列宽留空就是自适应；填写数字代表 px。', displayName: '显示名称：{name}', widthPx: '列宽 px', widthPlaceholder: '自适应', lockedVisible: '固定显示' },
+      formula: { title: '计算公式配置', stageNote: '当前 v80 已启用公式引擎；当前定存和历史记录统一使用下方公式计算。', variables: '公式变量', varHint: '点击变量，自动插入到当前公式输入框光标位置。', formulaLabel: '公式', saved: '计算公式配置已保存并同步。', reset: '计算公式已恢复默认并同步。' },
       mail: { title: '邮件提醒设置', enabled: '是否启用邮件提醒', to: '收件邮箱', advanceDays: '提前几天推送', dueHours: '到期当天每几小时推送', pushStartTime: '允许推送开始时间', pushEndTime: '允许推送结束时间', onlyEnabled: '只提醒已开启提醒的记录', timeZone: '页面/提醒时区', timeZoneCustom: '自定义时区', subject: '邮件标题模板', body: '邮件内容模板', variables: '模板变量', varHead: '点击变量，自动插入到标题或内容的光标位置', varSub: '显示名称跟随当前定存表列名，点击后插入固定 code，例如 {{bank}}', varNote: '说明：模板变量显示名称跟随“当前定存”表的列名设置；按钮里的 code 保持不变，保存到邮件模板的也是 {{code}}。', preview: '邮件预览', previewButtonHint: '点击“预览提醒邮件”。', hint: '邮件提醒规则会保存到云端。正式发送由 Cloudflare Worker + Resend 执行；邮件正文只发送“邮件内容模板”里的内容，不会再额外追加字段。你可以点击“模板变量”按钮插入字段，显示名称跟随当前定存表列名，点击后插入固定 code，例如 {{bank}}。提前几天推送可只填一个数字，例如 1 或 3；留空则不提前推送。到期当天每 X 小时推送留空则不循环推送；允许推送时间段可设置为 09:00-18:00，留空表示全天；两个规则都填写时会同时生效。', noMatch: '当前没有符合提醒条件的定存。\n例如设置提前 7 天，只有剩余天数等于 7 的记录才会进入邮件提醒。', previewSubject: '标题：{subject}\n\n内容：\n{body}', previewMore: '\n\n共 {count} 条符合条件，实际推送时会逐条发送。' },
       mobile: { moreInfo: '更多信息', startEnd: '开始/结束', interestTry: '利息 TRY', annualRateTry: '年利率 TRY', annualRateCny: '年利率 CNY', principalCny: '本金 CNY', gainCny: '利息 CNY', deleteReason: '删除原因', reminder: '提醒', exchangeTry: '兑换 TRY', exchangeCny: '兑换 CNY', exchangeReason: '兑换原因', remark: '备注', history: '历史', expired: '已到期' },
       empty: { active: '暂无当前定存，点击“新增定存”开始。', history: '暂无历史记录。', mobileActive: '暂无当前定存。', mobileHistory: '暂无历史记录。' },
@@ -3610,7 +3837,7 @@ BOC = BOC"></textarea>
       language: { label: 'Language', zh: '中文', en: 'English', tr: 'Türkçe' },
       lock: { title: 'Time Deposit Manager', subtitle: 'Enter the APP_PASSWORD from your Cloudflare Worker. Data is loaded only after unlocking. Within the lock timeout, refresh/reopen will not ask again.', passwordLabel: 'Access Password', passwordPlaceholder: 'Enter APP_PASSWORD', apiUrlLabel: 'Cloudflare Worker API URL', advanced: 'Advanced: Worker API URL', button: 'Unlock', verifying: 'Verifying...', success: 'Verified. Loading data...', passwordRequired: 'Please enter the access password.', apiUrlRequired: 'Please enter the Cloudflare Worker API URL.', failed: 'Verification failed', failedWithMessage: 'Unlock failed: {message}', cachedSuccess: 'Lock session is still valid. Auto-unlocked. Current timeout: {minutes} minutes.' },
       fold: { settingsTitle: 'More', settingsSub: 'Sync, mail, columns, rates, export', rateTitle: 'Refresh Rates', rateSub: 'Manual refresh', searchTitle: 'Search / Filter', searchSub: 'Search, bank, more filters', exportTitle: 'Export / Backup', exportSub: 'JSON, CSV, backup, import', expand: 'Expand', collapse: 'Collapse' },
-      buttons: { add: 'Add Deposit', refreshCloud: 'Refresh from Cloud', sync: 'Sync Settings', mail: 'Email Reminder', columns: 'Column Settings', rate: 'Rate Settings', refreshRates: 'Refresh Rates', exportJson: 'Export JSON', exportCsv: 'Export CSV', backupJson: 'Backup JSON', importBackup: 'Import Backup', current: 'Active Deposits', history: 'History', close: 'Close', cancel: 'Cancel', save: 'Save', edit: 'Edit', moveHistory: 'Move to History', restore: 'Restore', deleteForever: 'Delete Forever', resetColumns: 'Reset Columns', previewMail: 'Preview Email', sendCloudTestMail: 'Send Cloud Test Email', cloudTestReminder: 'Run Cloud Test Reminder', saveMail: 'Save Email Settings', saveSync: 'Save Sync Settings', saveRate: 'Save Rate Settings', estimateInterest: 'Estimate Interest', fetchOpenRates: 'Fetch Open-Date Rates', fetchEndRates: 'Fetch End-Date Rates', fetchAllRates: 'Auto Fill All Rates' },
+      buttons: { add: 'Add Deposit', refreshCloud: 'Refresh from Cloud', sync: 'Sync Settings', mail: 'Email Reminder', columns: 'Column Settings', rate: 'Rate Settings', formula: 'Formula Settings', saveFormula: 'Save Formulas', resetFormula: 'Reset Defaults', refreshRates: 'Refresh Rates', exportJson: 'Export JSON', exportCsv: 'Export CSV', backupJson: 'Backup JSON', importBackup: 'Import Backup', current: 'Active Deposits', history: 'History', close: 'Close', cancel: 'Cancel', save: 'Save', edit: 'Edit', moveHistory: 'Move to History', restore: 'Restore', deleteForever: 'Delete Forever', resetColumns: 'Reset Columns', previewMail: 'Preview Email', sendCloudTestMail: 'Send Cloud Test Email', cloudTestReminder: 'Run Cloud Test Reminder', saveMail: 'Save Email Settings', saveSync: 'Save Sync Settings', saveRate: 'Save Rate Settings', estimateInterest: 'Estimate Interest', fetchOpenRates: 'Fetch Open-Date Rates', fetchEndRates: 'Fetch End-Date Rates', fetchAllRates: 'Auto Fill All Rates' },
       tabs: { active: 'Active Deposits', history: 'History' },
       common: { allBanks: 'All Banks', allDates: 'All Dates', localMode: 'Local Mode', total: 'Total:', none: '-', yes: 'YES', no: 'NO', days: 'days', records: 'records', code: 'code', dateRangeStart: 'Start Date', dateRangeEnd: 'End Date', dateRangeTo: 'to', clearDateRange: 'Clear', datePlaceholder: 'YYYY-MM-DD', pickDate: 'Pick date', moreFilters: 'More filters', moreFiltersSub: 'Date range and remaining days', remainingDaysRange: 'Remaining days range', remainingDaysMin: 'Min', remainingDaysMax: 'Max', clearRemainingDays: 'Clear remaining days', clearAllFilters: 'Clear filters' },
       placeholders: { search: 'Search bank/note/date', dateRange: 'Date range: 2026/04/04-2026/05/04', remainingDaysMin: 'e.g. 0', remainingDaysMax: 'e.g. 10', bank: 'e.g. YAP(G)', principalTry: 'e.g. 400000', principalPlusInterestTry: 'e.g. 412295.89', annualRateTry: 'e.g. 40', remark: 'e.g. one-month deposit, renewed, source of funds', deleteReason: 'e.g. matured, manual delete, early withdrawal', exchangeTry: 'e.g. 393820', exchangeCny: 'e.g. 59722', exchangeReason: 'e.g. exchanged with OPPO Su Jianming', apiUrl: 'https://your-worker.workers.dev/data', apiPassword: 'Same as APP_PASSWORD in Worker', mailTo: 'e.g. you@example.com', mailAdvanceDays: 'e.g. 1 or 3; blank = no advance reminder', dueHours: 'e.g. 1 or 2; blank = no due-day repeating reminder', pushStartTime: 'e.g. 09:00; blank = 00:00', pushEndTime: 'e.g. 18:00; blank = 23:59', mailSubject: 'e.g. Deposit reminder: {{bank}} {{principalTry}} TRY', mailBody: 'Click variable buttons below to insert, e.g. Bank inserts {{bank}}', exchangeRateApiKey: 'Leave blank to use open.er-api.com latest rates; historical dates need paid access', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key; supports live / historical / timeframe', currencyApiKey: 'currencyapi.com API Key; supports latest / historical', timeZoneCustom: 'e.g. America/Monterrey', lockTimeoutMinutes: 'e.g. 2; 0 = always require password', bankOptions: 'One bank per line: code = name, e.g.:\nYAP(G) = Yapi Garanti\nYAP = YAP\nICBC = ICBC' },
@@ -3620,6 +3847,7 @@ BOC = BOC"></textarea>
       sync: { title: 'Sync Settings', apiUrl: 'Cloudflare Worker API URL', password: 'Access Password', lockTimeout: 'Lock password valid for (minutes)', bankOptions: 'Bank Dropdown Options', bankOptionsHint: 'One bank per line: code = name. Code binds old records; name is the display label. Reordering will not affect old records.', hint: 'The API URL and password are saved to cloud configuration / backup JSON. The lock timeout is also saved to data.json and synced across devices, but each device keeps its own unlock timer locally. 0 means the password is required every time.' },
       rate: { historyRange: 'History refresh range', title: 'Rate Settings', provider: 'Default Rate Provider', fallback: 'Auto fallback on failure', tcmbType: 'TCMB Rate Type', exchangeRateApiKey: 'ExchangeRate-API Key, optional', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'Fetch latest API response from exchangerate.host', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: 'Sync rate API keys to cloud', optYesRefresh: 'YES, call API every refresh and overwrite today’s GitHub rate cache', optNoRefresh: 'NO, use today’s GitHub cache first; call API only if no cache exists today', optNoKeys: 'NO, do not sync keys, safer', optYesKeys: 'YES, sync to GitHub data.json for other devices', hint: 'Opening and ending rates are fetched from the selected source. exchangerate.host caches the last-year rates in GitHub data.json to reduce API calls.' },
       column: { title: 'Column Settings', activeTitle: 'Active Deposit Columns', historyTitle: 'History Columns', activeHint: 'Active and history tables keep independent settings. You can hide columns, rename display labels, and set widths; field codes do not change.', historyHint: 'History column names and widths can be customized separately without affecting active deposits.', bottomHint: 'The sequence column can also be hidden/shown; the action column stays visible but its width can be customized. Column labels, widths, and visibility are synced across devices. Leave width blank for auto; numbers are px.', displayName: 'Display name: {name}', widthPx: 'Width px', widthPlaceholder: 'Auto', lockedVisible: 'Always visible' },
+      formula: { title: 'Formula Settings', stageNote: 'v80 formula engine is enabled. Active and history records use these formulas for calculated fields.', variables: 'Formula Variables', varHint: 'Click a variable to insert it at the cursor position of the active formula box.', formulaLabel: 'Formula', saved: 'Formula settings saved and synced.', reset: 'Formula defaults restored and synced.' },
       mail: { title: 'Email Reminder Settings', enabled: 'Enable Email Reminder', to: 'Recipient Email', advanceDays: 'Advance Reminder Days', dueHours: 'Due-day Repeat Every X Hours', pushStartTime: 'Allowed push start time', pushEndTime: 'Allowed push end time', onlyEnabled: 'Only records with reminder enabled', timeZone: 'Page / reminder time zone', timeZoneCustom: 'Custom time zone', subject: 'Email Subject Template', body: 'Email Body Template', variables: 'Template Variables', varHead: 'Click a variable to insert it at the cursor position', varSub: 'Names follow Active table columns; click to insert fixed code, e.g. {{bank}}', varNote: 'Note: variable names follow the Active table column names; the inserted code stays fixed as {{code}}.', preview: 'Email Preview', previewButtonHint: 'Click “Preview Email”.', hint: 'Email rules are saved to the cloud. Sending is performed by Cloudflare Worker + Resend. The email body only uses your body template and does not append extra fields. Template variable names follow the Active table column names, while inserted code stays fixed such as {{bank}}. You can set an allowed push window such as 09:00-18:00; blank means all day. Changing reminder settings resets the duplicate-prevention schedule.', noMatch: 'No matching deposits for reminder.\nFor example, if advance days is 7, only records with 7 remaining days match.', previewSubject: 'Subject: {subject}\n\nBody:\n{body}', previewMore: '\n\n{count} matching records. Actual sending will send one email per record.' },
       mobile: { moreInfo: 'More details', startEnd: 'Start/End', interestTry: 'Interest TRY', annualRateTry: 'Annual Rate TRY', annualRateCny: 'Annual Rate CNY', principalCny: 'Principal CNY', gainCny: 'Gain CNY', deleteReason: 'Delete Reason', reminder: 'Reminder', exchangeTry: 'Exchange TRY', exchangeCny: 'Exchange CNY', exchangeReason: 'Exchange Reason', remark: 'Note', history: 'History', expired: 'Due' },
       empty: { active: 'No active deposits. Click “Add Deposit” to start.', history: 'No history records.', mobileActive: 'No active deposits.', mobileHistory: 'No history records.' },
@@ -3681,7 +3909,7 @@ BOC = BOC"></textarea>
       language: { label: 'Dil', zh: '中文', en: 'English', tr: 'Türkçe' },
       lock: { title: 'Vadeli Mevduat Yöneticisi', subtitle: 'Cloudflare Worker içindeki APP_PASSWORD değerini girin. Veriler yalnızca kilit açıldıktan sonra yüklenir. Kilit süresi dolmadan yenileme/yeniden açma tekrar şifre istemez.', passwordLabel: 'Erişim Şifresi', passwordPlaceholder: 'APP_PASSWORD girin', apiUrlLabel: 'Cloudflare Worker API Adresi', advanced: 'Gelişmiş: Worker API Adresi', button: 'Kilidi Aç', verifying: 'Doğrulanıyor...', success: 'Doğrulandı, veriler yükleniyor...', passwordRequired: 'Lütfen erişim şifresini girin.', apiUrlRequired: 'Lütfen Cloudflare Worker API adresini girin.', failed: 'Doğrulama başarısız', failedWithMessage: 'Kilit açılamadı: {message}', cachedSuccess: 'Kilit oturumu hâlâ geçerli. Otomatik açıldı. Geçerlilik: {minutes} dakika.' },
       fold: { settingsTitle: 'Daha fazla', settingsSub: 'Senkron, e-posta, sütun, kur, dışa aktar', rateTitle: 'Kurları Yenile', rateSub: 'Manuel yenileme', searchTitle: 'Ara / Filtrele', searchSub: 'Arama, banka, ek filtreler', exportTitle: 'Dışa Aktar / Yedek', exportSub: 'JSON, CSV, yedek, içe aktar', expand: 'Aç', collapse: 'Kapat' },
-      buttons: { add: 'Mevduat Ekle', refreshCloud: 'Buluttan Yenile', sync: 'Senkron Ayarları', mail: 'E-posta Hatırlatma', columns: 'Sütun Ayarları', rate: 'Kur Ayarları', refreshRates: 'Kurları Yenile', exportJson: 'JSON Dışa Aktar', exportCsv: 'CSV Dışa Aktar', backupJson: 'JSON Yedekle', importBackup: 'Yedek İçe Aktar', current: 'Aktif Mevduatlar', history: 'Geçmiş', close: 'Kapat', cancel: 'İptal', save: 'Kaydet', edit: 'Düzenle', moveHistory: 'Geçmişe Taşı', restore: 'Geri Al', deleteForever: 'Kalıcı Sil', resetColumns: 'Sütunları Sıfırla', previewMail: 'E-postayı Önizle', sendCloudTestMail: 'Bulut Test E-postası Gönder', cloudTestReminder: 'Bulut Test Hatırlatması', saveMail: 'E-posta Ayarlarını Kaydet', saveSync: 'Senkron Ayarlarını Kaydet', saveRate: 'Kur Ayarlarını Kaydet', estimateInterest: 'Faizi Hesapla', fetchOpenRates: 'Açılış Tarihi Kurunu Al', fetchEndRates: 'Bitiş Tarihi Kurunu Al', fetchAllRates: 'Tüm Kurları Otomatik Doldur' },
+      buttons: { add: 'Mevduat Ekle', refreshCloud: 'Buluttan Yenile', sync: 'Senkron Ayarları', mail: 'E-posta Hatırlatma', columns: 'Sütun Ayarları', rate: 'Kur Ayarları', formula: 'Formül Ayarları', saveFormula: 'Formülleri Kaydet', resetFormula: 'Varsayılanı Yükle', refreshRates: 'Kurları Yenile', exportJson: 'JSON Dışa Aktar', exportCsv: 'CSV Dışa Aktar', backupJson: 'JSON Yedekle', importBackup: 'Yedek İçe Aktar', current: 'Aktif Mevduatlar', history: 'Geçmiş', close: 'Kapat', cancel: 'İptal', save: 'Kaydet', edit: 'Düzenle', moveHistory: 'Geçmişe Taşı', restore: 'Geri Al', deleteForever: 'Kalıcı Sil', resetColumns: 'Sütunları Sıfırla', previewMail: 'E-postayı Önizle', sendCloudTestMail: 'Bulut Test E-postası Gönder', cloudTestReminder: 'Bulut Test Hatırlatması', saveMail: 'E-posta Ayarlarını Kaydet', saveSync: 'Senkron Ayarlarını Kaydet', saveRate: 'Kur Ayarlarını Kaydet', estimateInterest: 'Faizi Hesapla', fetchOpenRates: 'Açılış Tarihi Kurunu Al', fetchEndRates: 'Bitiş Tarihi Kurunu Al', fetchAllRates: 'Tüm Kurları Otomatik Doldur' },
       tabs: { active: 'Aktif Mevduatlar', history: 'Geçmiş' },
       common: { allBanks: 'Tüm Bankalar', allDates: 'Tüm Tarihler', localMode: 'Yerel Mod', total: 'Toplam:', none: '-', yes: 'YES', no: 'NO', days: 'gün', records: 'kayıt', code: 'code', dateRangeStart: 'Başlangıç', dateRangeEnd: 'Bitiş', dateRangeTo: 'ile', clearDateRange: 'Temizle', datePlaceholder: 'YYYY-MM-DD', pickDate: 'Tarih seç', moreFilters: 'Ek filtreler', moreFiltersSub: 'Tarih aralığı ve kalan gün', remainingDaysRange: 'Kalan gün aralığı', remainingDaysMin: 'Min', remainingDaysMax: 'Maks', clearRemainingDays: 'Kalan günü temizle', clearAllFilters: 'Filtreleri temizle' },
       placeholders: { search: 'Banka / not / tarih ara', dateRange: 'Tarih aralığı: 2026/04/04-2026/05/04', remainingDaysMin: 'örn. 0', remainingDaysMax: 'örn. 10', bank: 'örn. YAP(G)', principalTry: 'örn. 400000', principalPlusInterestTry: 'örn. 412295.89', annualRateTry: 'örn. 40', remark: 'örn. bir aylık mevduat, yenilendi, fon kaynağı', deleteReason: 'örn. vadesi doldu, manuel silindi, erken çekim', exchangeTry: 'örn. 393820', exchangeCny: 'örn. 59722', exchangeReason: 'örn. OPPO Su Jianming ile değişim', apiUrl: 'https://worker.workers.dev/data', apiPassword: 'Worker içindeki APP_PASSWORD ile aynı', mailTo: 'örn. you@example.com', mailAdvanceDays: 'örn. 1 veya 3; boşsa erken hatırlatma yok', dueHours: 'örn. 1 veya 2; boşsa vade günü tekrar yok', pushStartTime: 'örn. 09:00; boş = 00:00', pushEndTime: 'örn. 18:00; boş = 23:59', mailSubject: 'örn. Mevduat hatırlatma: {{bank}} {{principalTry}} TRY', mailBody: 'Aşağıdaki değişken düğmelerine tıklayarak ekleyin', exchangeRateApiKey: 'Boş bırakılırsa open.er-api.com güncel kuru kullanılır; geçmiş tarih ücretli yetki gerektirir', exchangeRateHostApiKey: 'exchangerate.host / APILayer access_key', currencyApiKey: 'currencyapi.com API Key', timeZoneCustom: 'örn. Europe/Istanbul', lockTimeoutMinutes: 'örn. 2; 0 = her zaman şifre iste', bankOptions: 'Her satır: code = name, örn.:\nYAP(G) = Yapi Garanti\nYAP = YAP\nICBC = ICBC' },
@@ -3691,6 +3919,7 @@ BOC = BOC"></textarea>
       sync: { title: 'Senkron Ayarları', apiUrl: 'Cloudflare Worker API Adresi', password: 'Erişim Şifresi', lockTimeout: 'Kilit şifresi geçerlilik süresi (dakika)', bankOptions: 'Banka Açılır Liste Seçenekleri', bankOptionsHint: 'Her satır: code = name. Code eski kayıtları bağlar; name görünen addır. Sıralama eski kayıtları etkilemez.', hint: 'API adresi ve şifre bulut yapılandırmasına / yedek JSON’a kaydedilir. Kilit süresi de data.json içine kaydedilir ve cihazlar arasında senkronlanır; ancak her cihaz kilit zamanını kendi yerelinde tutar. 0 her açılışta şifre ister.' },
       rate: { historyRange: 'Geçmiş yenileme aralığı', title: 'Kur Ayarları', provider: 'Varsayılan Kur Kaynağı', fallback: 'Hata olursa yedek kaynağa geç', tcmbType: 'TCMB Kur Tipi', exchangeRateApiKey: 'ExchangeRate-API Key, opsiyonel', exchangeRateHostApiKey: 'exchangerate.host API Key', exchangeRateHostRefreshLatestApi: 'exchangerate.host güncel API verisini al', currencyApiKey: 'currencyapi.com API Key', cloudSyncKeys: 'Kur API key buluta senkronlansın mı', optYesRefresh: 'YES, her yenilemede API çağır ve bugünkü GitHub kur önbelleğini güncelle', optNoRefresh: 'NO, önce bugünkü GitHub önbelleğini kullan; yoksa API çağır', optNoKeys: 'NO, key senkronlama; daha güvenli', optYesKeys: 'YES, GitHub data.json içine senkronla', hint: 'Açılış ve bitiş kurları seçilen kaynaktan alınır. exchangerate.host son bir yıllık kurları GitHub data.json içinde önbelleğe alır.' },
       column: { title: 'Sütun Ayarları', activeTitle: 'Aktif Mevduat Sütunları', historyTitle: 'Geçmiş Sütunları', activeHint: 'Aktif ve geçmiş tabloları bağımsız ayarlar tutar. Sütun gizleyebilir, görünen adları değiştirebilir ve genişlik ayarlayabilirsiniz; field code değişmez.', historyHint: 'Geçmiş sütun adları ve genişlikleri aktif tabloyu etkilemeden ayrı düzenlenebilir.', bottomHint: 'Sıra sütunu da gizlenebilir/gösterilebilir; işlem sütunu görünür kalır ama genişliği özelleştirilebilir. Sütun adları, genişlikleri ve görünürlük ayarları cihazlar arasında senkronlanır. Genişlik boşsa otomatik; sayı px anlamına gelir.', displayName: 'Görünen ad: {name}', widthPx: 'Genişlik px', widthPlaceholder: 'Otomatik', lockedVisible: 'Sabit görünür' },
+      formula: { title: 'Formül Ayarları', stageNote: 'v80 formül motoru etkin. Aktif ve geçmiş kayıtlar hesaplanan alanlar için bu formülleri kullanır.', variables: 'Formül Değişkenleri', varHint: 'Değişkeni tıklayın, aktif formül alanındaki imleç konumuna eklensin.', formulaLabel: 'Formül', saved: 'Formül ayarları kaydedildi ve senkronize edildi.', reset: 'Varsayılan formüller geri yüklendi ve senkronize edildi.' },
       mail: { title: 'E-posta Hatırlatma Ayarları', enabled: 'E-posta hatırlatmayı etkinleştir', to: 'Alıcı e-posta', advanceDays: 'Kaç gün önce hatırlat', dueHours: 'Vade günü kaç saatte bir', pushStartTime: 'İzin verilen başlangıç saati', pushEndTime: 'İzin verilen bitiş saati', onlyEnabled: 'Yalnız hatırlatma açık kayıtlar', timeZone: 'Sayfa / hatırlatma saat dilimi', timeZoneCustom: 'Özel saat dilimi', subject: 'E-posta başlık şablonu', body: 'E-posta içerik şablonu', variables: 'Şablon Değişkenleri', varHead: 'Değişkene tıklayın, imlecin olduğu yere eklensin', varSub: 'Adlar aktif tablo sütunlarını izler; tıklanınca sabit code eklenir, örn. {{bank}}', varNote: 'Not: değişken adları aktif tablo sütun adlarını izler; eklenen code {{code}} olarak sabit kalır.', preview: 'E-posta Önizleme', previewButtonHint: '“E-postayı Önizle” düğmesine tıklayın.', hint: 'E-posta kuralları buluta kaydedilir. Gönderim Cloudflare Worker + Resend ile yapılır. İçerik yalnızca şablondaki metni kullanır. Şablon değişken adları aktif tablo sütun adlarını izler; eklenen code {{bank}} gibi sabit kalır. 09:00-18:00 gibi izin verilen gönderim aralığı ayarlanabilir; boşsa tüm gün. Ayarlar değişirse tekrar engelleme takvimi yeni kurala göre sıfırlanır.', noMatch: 'Hatırlatma koşuluna uyan mevduat yok.\nÖrn. 7 gün önce seçilirse yalnız kalan gün 7 olan kayıtlar eşleşir.', previewSubject: 'Başlık: {subject}\n\nİçerik:\n{body}', previewMore: '\n\n{count} kayıt eşleşti. Gönderimde her kayıt için ayrı e-posta gönderilir.' },
       mobile: { moreInfo: 'Daha fazla bilgi', startEnd: 'Başlangıç/Bitiş', interestTry: 'Faiz TRY', annualRateTry: 'Yıllık Oran TRY', annualRateCny: 'Yıllık Oran CNY', principalCny: 'Ana Para CNY', gainCny: 'Getiri CNY', deleteReason: 'Silme Nedeni', reminder: 'Hatırlatma', exchangeTry: 'Değişim TRY', exchangeCny: 'Değişim CNY', exchangeReason: 'Değişim Nedeni', remark: 'Not', history: 'Geçmiş', expired: 'Vadesi doldu' },
       empty: { active: 'Aktif mevduat yok. Başlamak için “Mevduat Ekle” tıklayın.', history: 'Geçmiş kayıt yok.', mobileActive: 'Aktif mevduat yok.', mobileHistory: 'Geçmiş kayıt yok.' },
@@ -3760,6 +3989,50 @@ BOC = BOC"></textarea>
     en: { bank:['Bank','Bank name'], principalTry:['Principal TRY','Principal amount'], interestTry:['Interest TRY','Total - principal'], principalPlusInterestTry:['Principal+Interest TRY','Maturity total'], openDate:['Opening Date','Opening date'], startDate:['Start Date','Interest start date'], endDate:['Due Date','End / maturity date'], depositDays:['Deposit Days','End date - start date'], remainingDays:['Remaining Days','Due date - today'], tryCnyOpen:['Open TRY→CNY','TRY/CNY rate on opening date'], tryCnyEnd:['End TRY→CNY','TRY/CNY rate on end date'], usdCnyOpen:['Open USD→CNY','USD/CNY rate on opening date'], usdCnyEnd:['End USD→CNY','USD/CNY rate on end date'], principalCny:['Principal CNY','Principal converted by open rate'], principalUsd:['Principal USD','Principal converted to USD'], principalPlusInterestCny:['Principal+Interest CNY','Maturity total converted by end rate'], principalPlusInterestUsd:['Principal+Interest USD','Maturity total converted to USD'], interestCny:['Interest CNY','Interest TRY × end TRY→CNY rate'], gainCny:['Gain CNY','CNY gain including FX impact'], gainUsd:['Gain USD','USD gain including FX impact'], annualRateTry:['Annual Rate TRY','Manual TRY annual rate'], annualRateCny:['Annual Rate CNY','Calculated by CNY gain'], remark:['Note','Record note'] },
     tr: { bank:['Banka','Banka adı'], principalTry:['Ana Para TRY','Ana para tutarı'], interestTry:['Faiz TRY','Toplam - ana para'], principalPlusInterestTry:['Ana Para+Faiz TRY','Vade toplamı'], openDate:['Açılış Tarihi','Açılış tarihi'], startDate:['Başlangıç Tarihi','Faiz başlangıcı'], endDate:['Vade Tarihi','Bitiş / vade tarihi'], depositDays:['Mevduat Günü','Bitiş - başlangıç'], remainingDays:['Kalan Gün','Vade - bugün'], tryCnyOpen:['Açılış TRY→CNY','Açılış günü TRY/CNY kuru'], tryCnyEnd:['Bitiş TRY→CNY','Bitiş günü TRY/CNY kuru'], usdCnyOpen:['Açılış USD→CNY','Açılış günü USD/CNY kuru'], usdCnyEnd:['Bitiş USD→CNY','Bitiş günü USD/CNY kuru'], principalCny:['Ana Para CNY','Açılış kuruyla çevrilen ana para'], principalUsd:['Ana Para USD','USD’ye çevrilen ana para'], principalPlusInterestCny:['Ana Para+Faiz CNY','Bitiş kuruyla çevrilen toplam'], principalPlusInterestUsd:['Ana Para+Faiz USD','USD’ye çevrilen toplam'], interestCny:['Faiz CNY','Faiz TRY × bitiş TRY→CNY kuru'], gainCny:['Getiri CNY','Kur etkisi dahil CNY getiri'], gainUsd:['Getiri USD','Kur etkisi dahil USD getiri'], annualRateTry:['Yıllık Oran TRY','Manuel TRY yıllık oran'], annualRateCny:['Yıllık Oran CNY','CNY getiriye göre hesaplanır'], remark:['Not','Kayıt notu'] }
   };
+
+
+  const CALCULATION_FORMULA_FIELDS = [
+    { key: 'remainingDays', labelKey: 'remainingDays' },
+    { key: 'interestTry', labelKey: 'interestTry' },
+    { key: 'depositDays', labelKey: 'depositDays' },
+    { key: 'annualRateCny', labelKey: 'annualRateCny' },
+    { key: 'principalCny', labelKey: 'principalCny' },
+    { key: 'principalPlusInterestCny', labelKey: 'principalPlusInterestCny' },
+    { key: 'gainCny', labelKey: 'gainCny' }
+  ];
+
+  function defaultCalculationFormulas() {
+    return {
+      remainingDays: 'DATEDIFF(TODAY(), {{endDate}})',
+      interestTry: '{{principalPlusInterestTry}} - {{principalTry}}',
+      depositDays: 'DATEDIFF({{startDate}}, {{endDate}})',
+      annualRateCny: '({{gainCny}} / {{principalCny}} / {{depositDays}}) * 365 * 100',
+      principalCny: '{{principalTry}} * {{tryCnyOpen}}',
+      principalPlusInterestCny: '{{principalPlusInterestTry}} * {{tryCnyNow}}',
+      gainCny: '{{principalPlusInterestCny}} - {{principalCny}}'
+    };
+  }
+
+  const CALCULATION_FORMULA_ORDER = [
+    'remainingDays',
+    'depositDays',
+    'interestTry',
+    'principalCny',
+    'principalPlusInterestCny',
+    'gainCny',
+    'annualRateCny'
+  ];
+
+  function normalizeCalculationFormulas(value) {
+    const defaults = defaultCalculationFormulas();
+    const raw = value && typeof value === 'object' ? value : {};
+    const out = {};
+    CALCULATION_FORMULA_FIELDS.forEach(item => {
+      const v = raw[item.key];
+      out[item.key] = typeof v === 'string' && v.trim() ? v : defaults[item.key];
+    });
+    return out;
+  }
 
   function currentLanguage() {
     if (!isUnlocked) {
@@ -3854,6 +4127,7 @@ BOC = BOC"></textarea>
     setText('#btnMailSetting', 'buttons.mail');
     setText('#btnColumnSetting', 'buttons.columns');
     setText('#btnRateSetting', 'buttons.rate');
+    setText('#btnFormulaSetting', 'buttons.formula');
     setText('#btnFetchRates', 'buttons.refreshRates');
     setText('#btnExportJson', 'buttons.exportJson');
     setText('#btnExportCsv', 'buttons.exportCsv');
@@ -3909,6 +4183,7 @@ BOC = BOC"></textarea>
     applySyncI18n();
     applyRateI18n();
     applyColumnI18n();
+    applyFormulaI18n();
     applyMailI18n();
   }
 
@@ -3988,6 +4263,19 @@ BOC = BOC"></textarea>
     $('#btnResetColumns').text(t('buttons.resetColumns'));
     $('#columnModal .modal-foot [data-close]').text(t('buttons.cancel'));
     $('#btnSaveColumnSetting').text(t('buttons.save'));
+  }
+
+
+  function applyFormulaI18n() {
+    $('#formulaModal h2').text(t('formula.title'));
+    $('#formulaInputTitle').text(t('formula.inputTitle'));
+    $('#formulaModal .modal-head [data-close]').text(t('buttons.close'));
+    $('#formulaStageNote').text(t('formula.stageNote'));
+    $('#formulaVariableTitle').text(t('formula.variables'));
+    $('#formulaVariableHint').text(t('formula.varHint'));
+    $('#formulaModal .modal-foot [data-close]').text(t('buttons.cancel'));
+    $('#btnSaveFormulaSetting').text(t('buttons.saveFormula'));
+    $('#btnResetFormulaSetting').text(t('buttons.resetFormula'));
   }
 
   function applyMailI18n() {
@@ -4557,7 +4845,10 @@ BOC = BOC"></textarea>
     $('#btnMailSetting').on('click', openMailModal);
     $('#btnColumnSetting').on('click', openColumnModal);
     $('#btnRateSetting').on('click', openRateModal);
+    $('#btnFormulaSetting').on('click', openFormulaModal);
     $('#btnSaveRateSetting').on('click', saveRateSetting);
+    $('#btnSaveFormulaSetting').on('click', saveFormulaSetting);
+    $('#btnResetFormulaSetting').on('click', resetFormulaSetting);
     $('#btnSaveMailSetting').on('click', saveMailSetting);
     $('#btnSaveColumnSetting').on('click', saveColumnSetting);
     $('#btnResetColumns').on('click', resetColumnSetting);
@@ -4574,6 +4865,8 @@ BOC = BOC"></textarea>
       }
     });
     $(document).on('click', '.mail-var-btn', function (e) { e.preventDefault(); insertMailVariable($(this).data('var')); });
+    $(document).on('focus click', '.formula-input', function () { lastFormulaTarget = this; });
+    $(document).on('click', '.formula-var-btn', function (e) { e.preventDefault(); insertFormulaVariable($(this).data('var'), $(this).data('raw')); });
     $('#btnSaveSync').on('click', saveSyncSetting);
     $('#btnRefresh').on('click', loadCloudData);
     $('#btnFetchRates').on('click', refreshAllRatesByOpenAndEndDate);
@@ -4688,6 +4981,7 @@ BOC = BOC"></textarea>
         lastRateFetchDate: '',
         historyRateRefreshDays: 30,
         bankOptions: defaultBankOptions(),
+        calculationFormulas: defaultCalculationFormulas(),
         emailReminder: defaultEmailReminder(),
         sentReminders: {},
         recordTombstones: {},
@@ -4714,6 +5008,7 @@ BOC = BOC"></textarea>
     settings.columnWidths = normalizeColumnWidths(rawSettings.columnWidths);
     settings.historyRateRefreshDays = normalizePositiveInt(settings.historyRateRefreshDays, 30);
     settings.bankOptions = normalizeBankOptions(settings.bankOptions);
+    settings.calculationFormulas = normalizeCalculationFormulas(rawSettings.calculationFormulas || settings.calculationFormulas);
     settings.rateProvider = normalizeRateProvider(settings.rateProvider);
     settings.rateFallbackEnabled = settings.rateFallbackEnabled === 'NO' ? 'NO' : 'YES';
     settings.tcmbRateType = normalizeTcmRateType(settings.tcmbRateType);
@@ -7053,7 +7348,7 @@ BOC = BOC"></textarea>
     return `<div class="mobile-field ${escapeAttr(extraClass || '')}"><div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(String(v))}</div></div>`;
   }
 
-  function getCalc(r) {
+  function getRawCalc(r) {
     const depositDays = Math.max(dateDiffDays(r.startDate, r.endDate), 0);
     const remainingDays = dateDiffDays(todayString(), r.endDate);
     const principalTry = n(r.principalTry);
@@ -7084,6 +7379,87 @@ BOC = BOC"></textarea>
       gainUsd,
       annualRateCny
     };
+  }
+
+  function normalizeFormulaNumber(value) {
+    const x = Number(value);
+    return Number.isFinite(x) ? x : 0;
+  }
+
+  function formulaValueToExpressionValue(value, key) {
+    const dateKeys = new Set(['openDate', 'startDate', 'endDate', 'deletedAt', 'updatedAt']);
+    if (dateKeys.has(key)) return JSON.stringify(String(value || '').slice(0, 10));
+    return String(normalizeFormulaNumber(value));
+  }
+
+  function evaluateFormulaExpression(formula, context) {
+    let expr = String(formula || '').trim();
+    if (!expr) return 0;
+
+    expr = expr.replace(/\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g, function (_, key) {
+      return formulaValueToExpressionValue(context[key], key);
+    });
+
+    const withoutAllowedWords = expr.replace(/\bDATEDIFF\b/g, '').replace(/\bTODAY\b/g, '');
+    if (/[A-Za-z_$]/.test(withoutAllowedWords)) {
+      throw new Error('Unsupported formula token');
+    }
+    if (/[^0-9+\-*/%().,\s'"<>!=?:]/.test(withoutAllowedWords)) {
+      throw new Error('Unsafe formula character');
+    }
+
+    const fn = new Function('DATEDIFF', 'TODAY', `"use strict"; return (${expr});`);
+    const result = fn(
+      function (a, b) { return dateDiffDays(String(a || '').slice(0, 10), String(b || '').slice(0, 10)); },
+      function () { return todayString(); }
+    );
+    return normalizeFormulaNumber(result);
+  }
+
+  function applyConfiguredFormulas(record, baseCalc) {
+    const formulas = normalizeCalculationFormulas((appData.settings || {}).calculationFormulas);
+    const context = Object.assign({}, record, baseCalc, {
+      bank: displayBankName(record.bank || record.bankCode || ''),
+      principalTry: n(record.principalTry),
+      principalPlusInterestTry: baseCalc.principalPlusInterestTry,
+      tryCnyOpen: n(record.tryCnyOpen),
+      tryCnyNow: n(record.tryCnyNow),
+      usdCnyOpen: n(record.usdCnyOpen),
+      usdCnyNow: n(record.usdCnyNow),
+      annualRateTry: n(record.annualRateTry)
+    });
+
+    const result = Object.assign({}, baseCalc);
+    CALCULATION_FORMULA_ORDER.forEach(key => {
+      const fallback = baseCalc[key];
+      try {
+        const value = evaluateFormulaExpression(formulas[key], context);
+        result[key] = normalizeFormulaNumber(value);
+      } catch (err) {
+        console.warn('Formula calculation failed:', key, formulas[key], err);
+        result[key] = normalizeFormulaNumber(fallback);
+      }
+      context[key] = result[key];
+    });
+
+    result.depositDays = Math.max(normalizeFormulaNumber(result.depositDays), 0);
+    result.interestTry = normalizeFormulaNumber(result.interestTry);
+    result.principalCny = normalizeFormulaNumber(result.principalCny);
+    result.principalPlusInterestCny = normalizeFormulaNumber(result.principalPlusInterestCny);
+    result.gainCny = normalizeFormulaNumber(result.gainCny);
+    result.annualRateCny = normalizeFormulaNumber(result.annualRateCny);
+
+    result.principalUsd = safeDiv(result.principalCny, n(record.usdCnyOpen));
+    result.principalPlusInterestUsd = safeDiv(result.principalPlusInterestCny, n(record.usdCnyNow));
+    result.gainTry = result.interestTry;
+    result.gainUsd = result.principalPlusInterestUsd - result.principalUsd;
+
+    return result;
+  }
+
+  function getCalc(r) {
+    const baseCalc = getRawCalc(r || {});
+    return applyConfiguredFormulas(r || {}, baseCalc);
   }
 
   function updateFormPreview() {
@@ -7163,6 +7539,95 @@ BOC = BOC"></textarea>
     const allowed = getMailTemplateAllowedKeys();
     const arr = Array.isArray(fields) ? fields : [];
     return arr.filter(x => allowed.includes(x));
+  }
+
+
+  function getCalculationFormulaFields() {
+    return CALCULATION_FORMULA_FIELDS.map(item => ({
+      key: item.key,
+      label: getMailVariableLabel(item.key)
+    }));
+  }
+
+  function getFormulaVariables() {
+    const vars = getMailTemplateVariables().map(v => ({ key: v.key, label: v.label, raw: false, desc: getMailVariableDesc(v.key) }));
+    vars.unshift({ key: 'DATEDIFF', label: 'DATEDIFF()', raw: true, value: 'DATEDIFF({{startDate}}, {{endDate}})', desc: '日期差：DATEDIFF(date1, date2)' });
+    vars.unshift({ key: 'TODAY', label: 'TODAY()', raw: true, value: 'TODAY()', desc: '今天日期' });
+    return vars;
+  }
+
+  function openFormulaModal() {
+    renderFormulaSettingForm();
+    renderFormulaVariableButtons();
+    applyFormulaI18n();
+    openAppModal('formulaModal');
+    lastFormulaTarget = document.querySelector('.formula-input');
+  }
+
+  function renderFormulaSettingForm() {
+    const formulas = normalizeCalculationFormulas(appData.settings && appData.settings.calculationFormulas);
+    const html = getCalculationFormulaFields().map(item => {
+      return `<div class="formula-config-card formula-config-row" data-formula-key="${escapeAttr(item.key)}">
+        <div class="formula-config-head">
+          <span>${escapeHtml(item.label)}</span>
+          <span class="formula-code-badge">${escapeHtml(item.key)}</span>
+        </div>
+        <label class="sr-only" for="formula_${escapeAttr(item.key)}">${escapeHtml(t('formula.formulaLabel'))}</label>
+        <textarea class="formula-input" id="formula_${escapeAttr(item.key)}" data-formula-key="${escapeAttr(item.key)}" rows="1" spellcheck="false">${escapeHtml(formulas[item.key] || '')}</textarea>
+      </div>`;
+    }).join('');
+    $('#formulaConfigList').html(html);
+  }
+
+  function renderFormulaVariableButtons() {
+    const html = getFormulaVariables().map(v => {
+      const insertValue = v.raw ? (v.value || v.key) : v.key;
+      return `<button type="button" class="formula-var-btn" data-var="${escapeAttr(insertValue)}" data-raw="${v.raw ? '1' : ''}" title="${escapeAttr(v.desc || v.label)}"><span>${escapeHtml(v.label)}</span><span class="formula-var-code">${v.raw ? escapeHtml(insertValue) : '{{' + escapeHtml(v.key) + '}}'}</span></button>`;
+    }).join('');
+    $('#formulaVariableBox').html(html);
+  }
+
+  function insertFormulaVariable(key, raw) {
+    const variable = raw ? String(key || '') : '{{' + key + '}}';
+    let el = lastFormulaTarget;
+    if (!el || !$(el).is('.formula-input')) el = document.querySelector('.formula-input');
+    if (!el) return;
+    const $el = $(el);
+    const current = String($el.val() || '');
+    const start = typeof el.selectionStart === 'number' ? el.selectionStart : current.length;
+    const end = typeof el.selectionEnd === 'number' ? el.selectionEnd : current.length;
+    const next = current.slice(0, start) + variable + current.slice(end);
+    $el.val(next).focus();
+    const pos = start + variable.length;
+    if (typeof el.setSelectionRange === 'function') el.setSelectionRange(pos, pos);
+  }
+
+  function readFormulaSettingFromForm() {
+    const formulas = {};
+    CALCULATION_FORMULA_FIELDS.forEach(item => {
+      const val = $(`#formula_${item.key}`).val();
+      formulas[item.key] = String(val || '').trim() || defaultCalculationFormulas()[item.key];
+    });
+    return normalizeCalculationFormulas(formulas);
+  }
+
+  function saveFormulaSetting(e) {
+    if (e) e.preventDefault();
+    appData.settings.calculationFormulas = readFormulaSettingFromForm();
+    saveLocalData();
+    persistData();
+    closeAppModal('formulaModal');
+    updateStatus(t('formula.saved'));
+  }
+
+  function resetFormulaSetting(e) {
+    if (e) e.preventDefault();
+    if (!confirm('是否恢复默认计算公式？')) return;
+    appData.settings.calculationFormulas = defaultCalculationFormulas();
+    renderFormulaSettingForm();
+    saveLocalData();
+    persistData();
+    updateStatus(t('formula.reset'));
   }
 
   function openMailModal() {
