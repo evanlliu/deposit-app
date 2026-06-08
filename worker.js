@@ -589,8 +589,7 @@ function getExchangeRateHostApiKey(env, data) {
 async function ensureExchangeRateHostYearCache(env, data, apiKey, today) {
   const settings = data.settings || (data.settings = {});
   const cache = settings.exchangeRateHostYearCache;
-  const forceApi = settings.exchangeRateHostRefreshLatestApi === 'YES';
-  if (!forceApi && cache && cache.fetchedOn === today && cache.rates && Object.keys(cache.rates).length > 0) {
+  if (cache && cache.fetchedOn === today && cache.rates && Object.keys(cache.rates).length > 0) {
     cache._justFetched = false;
     return cache;
   }

@@ -1,3 +1,17 @@
+## v83 exchangerate.host 每日缓存保护
+
+- 刷新汇率时，Cloudflare Worker 会先检查 `data.json` 里的 `settings.exchangeRateHostYearCache`。
+- 如果今天已经成功获取并缓存过 exchangerate.host 年度汇率，则当天后续刷新直接复用 GitHub `data.json` 缓存，不再重复调用 exchangerate.host API。
+- 即使旧配置里 `exchangeRateHostRefreshLatestApi` 曾被设为 `YES`，同一天也不会绕过今日缓存重复请求 API。
+- 前端最新汇率缓存也改为同一天优先复用本地今日缓存，避免重复 live 请求。
+- 不改动 `data.json` 结构。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v83-exchange-host-daily-cache`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：`worker.js`
+
 ## v82 移动端更多信息显示本金+利息 TRY
 
 - 移动端当前定存卡片的“更多信息”增加 `本金+利息 (TRY)`。
