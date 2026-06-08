@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>定存系统 v81</title>
+  <title>定存系统 v82</title>
   <meta name="theme-color" content="#2563eb" />
   <meta name="application-name" content="定期存款" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -3087,7 +3087,7 @@
   <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
     <div class="lock-card">
       <div class="lock-icon" aria-hidden="true">🔐</div>
-      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v81</span></h1>
+      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v82</span></h1>
       <p id="lockSubtitle">请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。</p>
       <form id="lockForm" class="lock-form" autocomplete="off">
         <label id="lockPasswordLabel" class="lock-label" for="lockPassword">访问密码</label>
@@ -3108,7 +3108,7 @@
   <header>
     <div class="wrap topbar">
       <div class="title">
-        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v81</span></h1>
+        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v82</span></h1>
       </div>
       <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
@@ -3757,7 +3757,7 @@ BOC = BOC"></textarea>
     'lastRateFetchDate'
   ];
 
-  const APP_VERSION = 'v81';
+  const APP_VERSION = 'v82';
 
   const I18N = {
     zh: {
@@ -7308,9 +7308,11 @@ BOC = BOC"></textarea>
       const actions = type === 'active'
         ? `<button class="small secondary" data-edit="${escapeAttr(r.id)}">${escapeHtml(t('buttons.edit'))}</button><button class="small danger" data-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.moveHistory'))}</button>`
         : `<button class="small secondary" data-edit-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.edit'))}</button><button class="small green" data-restore="${escapeAttr(r.id)}">${escapeHtml(t('buttons.restore'))}</button><button class="small danger" data-delete-history="${escapeAttr(r.id)}">${escapeHtml(t('buttons.deleteForever'))}</button>`;
+      const principalPlusInterestTryLabel = getColumnLabelText(type, (type === 'history' ? HISTORY_COLUMNS : ACTIVE_COLUMNS).find(col => col.key === 'principalPlusInterestTry'));
 
       const extraFields = type === 'history'
         ? `
+          ${mobileField(principalPlusInterestTryLabel, fmt(c.principalPlusInterestTry), 'is-money')}
           ${mobileField(t('mobile.deleteReason'), r.deleteReason || '-', 'mobile-remark')}
           ${mobileField(t('mobile.exchangeTry'), fmt(r.exchangeTry))}
           ${mobileField(t('mobile.exchangeCny'), fmt(r.exchangeCny))}
@@ -7318,6 +7320,7 @@ BOC = BOC"></textarea>
           ${mobileField(t('mobile.remark'), r.remark || '-', 'mobile-remark')}
         `
         : `
+          ${mobileField(principalPlusInterestTryLabel, fmt(c.principalPlusInterestTry), 'is-money')}
           ${mobileField(t('mobile.principalCny'), fmt(c.principalCny), 'is-money')}
           ${mobileField(t('mobile.reminder'), r.reminderEnabled ? 'YES' : 'NO')}
           ${mobileField(t('mobile.remark'), r.remark || '-', 'mobile-remark')}

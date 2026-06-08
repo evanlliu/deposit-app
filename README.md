@@ -1,3 +1,17 @@
+## v82 移动端更多信息显示本金+利息 TRY
+
+- 移动端当前定存卡片的“更多信息”增加 `本金+利息 (TRY)`。
+- 移动端历史记录卡片的“更多信息”增加 `本金+利息 (TRY)`。
+- 不改动桌面端表格列配置逻辑。
+- 不改动自定义公式计算逻辑。
+- 不改动 `data.json` 结构，不改动 Cloudflare Worker。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v82-mobile-total-try`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：无需更新
+
 ## v81 表格省略内容悬停显示完整内容
 
 - 表格单元格增加 `title` 提示。
