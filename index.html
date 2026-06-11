@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>定存系统 v83</title>
+  <title>定存系统 v85</title>
   <meta name="theme-color" content="#2563eb" />
   <meta name="application-name" content="定期存款" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -3087,7 +3087,7 @@
   <div id="lockScreen" class="lock-screen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
     <div class="lock-card">
       <div class="lock-icon" aria-hidden="true">🔐</div>
-      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v83</span></h1>
+      <h1 id="lockTitle"><span id="lockTitleText">定存系统</span><span id="lockVersionBadge" class="version-badge version-badge-lock">v85</span></h1>
       <p id="lockSubtitle">请输入 Cloudflare Worker 里的 APP_PASSWORD，解锁后才会读取和显示数据。未超过锁屏有效期时，刷新/重新打开无需再次输入。</p>
       <form id="lockForm" class="lock-form" autocomplete="off">
         <label id="lockPasswordLabel" class="lock-label" for="lockPassword">访问密码</label>
@@ -3108,7 +3108,7 @@
   <header>
     <div class="wrap topbar">
       <div class="title">
-        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v83</span></h1>
+        <h1><span id="appTitleText">定存系统</span><span id="appVersionBadge" class="version-badge">v85</span></h1>
       </div>
       <div class="toolbar top-actions">
         <button id="btnAdd">新增定存</button>
@@ -3757,7 +3757,7 @@ BOC = BOC"></textarea>
     'lastRateFetchDate'
   ];
 
-  const APP_VERSION = 'v83';
+  const APP_VERSION = 'v85';
 
   const I18N = {
     zh: {
@@ -6024,17 +6024,22 @@ BOC = BOC"></textarea>
   }
 
   async function preloadExchangeRateHostDates(dateList) {
-    const ranges = buildDateRanges(dateList, getExchangeRateHostBatchWindowDays());
-    let callCount = 0;
-    let cachedDateCount = 0;
+    const info = await ensureExchangeRateHostYearCacheForFrontend();
+    const cachedDateCount = cacheExchangeRateHostYearCacheForDateList(info.cache, dateList);
+    return { callCount: info.apiCalled ? 1 : 0, cachedDateCount, rangeCount: 1 };
+  }
 
-    for (const range of ranges) {
-      const payload = await fetchExchangeRateHostTimeframe(range.start, range.end);
-      callCount++;
-      cachedDateCount += cacheExchangeRateHostTimeframePayload(payload, range.start, range.end);
-    }
-
-    return { callCount, cachedDateCount, rangeCount: ranges.length };
+  function cacheExchangeRateHostYearCacheForDateList(cache, dateList) {
+    let count = 0;
+    (dateList || []).forEach(date => {
+      const parsed = pickExchangeRateHostYearCacheRate(cache, date, true);
+      if (!parsed) return;
+      setRateCache(makeRateCacheKey('ExchangeRateHost', date), parsed);
+      count++;
+    });
+    const latest = pickExchangeRateHostYearCacheRate(cache, '', true);
+    if (latest) setRateCache(makeRateCacheKey('ExchangeRateHost', 'latest-' + todayString()), latest);
+    return count;
   }
 
   function buildDateRanges(sortedDates, maxDays) {
@@ -6062,20 +6067,7 @@ BOC = BOC"></textarea>
   }
 
   async function fetchExchangeRateHostTimeframe(startDate, endDate) {
-    const rc = getRateCredentialConfig();
-    const apiKey = (rc.exchangeRateHostApiKey || '').trim();
-    if (!apiKey) throw new Error('请先在“汇率设置”里填写 exchangerate.host API Key');
-
-    const params = new URLSearchParams({
-      access_key: apiKey,
-      start_date: startDate,
-      end_date: endDate,
-      source: 'USD',
-      currencies: 'CNY,TRY'
-    });
-
-    const url = `https://api.exchangerate.host/timeframe?${params.toString()}`;
-    return await fetchJsonStrict(url);
+    throw new Error('前端不再直接调用 exchangerate.host API；请通过 Cloudflare Worker 写入 data.json 今日缓存。');
   }
 
   function cacheExchangeRateHostTimeframePayload(payload, startDate, endDate) {
@@ -6149,7 +6141,7 @@ BOC = BOC"></textarea>
     const provider = normalizeRateProvider(appData.settings.rateProvider);
     const tcmbRateType = normalizeTcmRateType(appData.settings.tcmbRateType);
     const cacheKey = makeRateCacheKey(provider, key === 'latest' ? 'latest-' + today : key);
-    const cached = getRateCache(cacheKey);
+    const cached = provider === 'ExchangeRateHost' ? null : getRateCache(cacheKey);
     if (cached) return cached;
 
     const dateParam = key === 'latest' ? '' : key;
@@ -6348,50 +6340,84 @@ BOC = BOC"></textarea>
   }
 
   async function fetchRatesFromExchangeRateHost(dateParam) {
-    const rc = getRateCredentialConfig();
-    const apiKey = (rc.exchangeRateHostApiKey || '').trim();
-    if (!apiKey) throw new Error('请先在“汇率设置”里填写 exchangerate.host API Key');
+    const info = await ensureExchangeRateHostYearCacheForFrontend();
+    const cache = info.cache;
+    const rates = pickExchangeRateHostYearCacheRate(cache, dateParam, true);
+    if (!rates) {
+      throw new Error(`exchangerate.host 今日缓存中没有可用汇率：${dateParam || 'latest'}。今日缓存范围：${cache.startDate || '-'} ~ ${cache.endDate || '-'}`);
+    }
+    return {
+      usdCny: rates.usdCny,
+      tryCny: rates.tryCny,
+      date: rates.date || dateParam || cache.latestDate || todayString(),
+      source: info.apiCalled ? 'exchangerate.host GitHub 今日缓存（刚刷新）' : 'exchangerate.host GitHub 今日缓存'
+    };
+  }
 
-    if (!dateParam) {
-      return await fetchLatestRatesFromExchangeRateHostWithCache(apiKey);
+  async function ensureExchangeRateHostYearCacheForFrontend() {
+    let cache = getUsableExchangeRateHostYearCache();
+    if (cache) return { cache, apiCalled: false };
+
+    if (!getWorkerBaseUrl()) {
+      throw new Error('exchangerate.host 今日缓存不存在。为避免超过 API 次数限制，前端不再直接调用 exchangerate.host；请先配置 Cloudflare Worker 云端同步，并通过 Worker 写入 data.json 今日缓存。');
     }
 
-    const params = new URLSearchParams({
-      access_key: apiKey,
-      source: 'USD',
-      currencies: 'CNY,TRY',
-      date: dateParam
-    });
+    const payload = await postWorkerApi('/refresh-rates', { ensureCacheOnly: true });
+    if (payload.sha) rememberCloudSha(payload.sha);
+    if (payload.data) {
+      appData = normalizeData(payload.data);
+      saveLocalData();
+      syncSettingInputs();
+    }
 
-    const url = `https://api.exchangerate.host/historical?${params.toString()}`;
-    const payload = await fetchJsonStrict(url);
-    return parseUsdBasedRates(payload, 'exchangerate.host historical 单日接口', dateParam);
+    cache = getUsableExchangeRateHostYearCache();
+    if (!cache) {
+      throw new Error('Worker 已返回，但 data.json 中仍没有 exchangerate.host 今日缓存。');
+    }
+
+    return { cache, apiCalled: Boolean(payload.summary && payload.summary.cacheJustFetched) };
+  }
+
+  function getUsableExchangeRateHostYearCache() {
+    const settings = appData.settings || {};
+    const cache = settings.exchangeRateHostYearCache;
+    const today = todayString();
+    if (cache && cache.fetchedOn === today && cache.rates && Object.keys(cache.rates).length > 0) return cache;
+    return null;
+  }
+
+  function pickExchangeRateHostYearCacheRate(cache, dateParam, useLatestForFuture) {
+    if (!cache || !cache.rates) return null;
+    const today = todayString();
+    if (!dateParam) return normalizeExchangeRateHostCachedRate(cache.latest, cache.latestDate || today);
+    if (useLatestForFuture && dateParam > today) return normalizeExchangeRateHostCachedRate(cache.latest, cache.latestDate || today);
+    if (cache.rates[dateParam]) return normalizeExchangeRateHostCachedRate(cache.rates[dateParam], dateParam);
+
+    const dates = Object.keys(cache.rates).sort();
+    for (let i = dates.length - 1; i >= 0; i--) {
+      if (dates[i] <= dateParam) return normalizeExchangeRateHostCachedRate(cache.rates[dates[i]], dates[i]);
+    }
+    return null;
+  }
+
+  function normalizeExchangeRateHostCachedRate(rate, fallbackDate) {
+    if (!rate) return null;
+    const usdCny = extractRateValue(rate.usdCny);
+    const tryCny = extractRateValue(rate.tryCny);
+    if (!usdCny || !tryCny) return null;
+    return {
+      usdCny,
+      tryCny,
+      date: rate.date || fallbackDate || todayString(),
+      source: rate.source || 'exchangerate.host timeframe GitHub cache'
+    };
   }
 
   async function fetchLatestRatesFromExchangeRateHostWithCache(apiKey) {
-    const today = todayString();
-    const settings = appData.settings || (appData.settings = {});
-    const cache = settings.exchangeRateHostLatestCache;
-    if (cache && cache.fetchedOn === today && cache.latest) {
-      return Object.assign({}, cache.latest, { source: 'exchangerate.host 今日缓存' });
-    }
-
-    const params = new URLSearchParams({
-      access_key: apiKey,
-      source: 'USD',
-      currencies: 'CNY,TRY'
-    });
-    const url = `https://api.exchangerate.host/live?${params.toString()}`;
-    const payload = await fetchJsonStrict(url);
-    const latest = parseUsdBasedRates(payload, 'exchangerate.host live', '');
-    settings.exchangeRateHostLatestCache = {
-      fetchedOn: today,
-      fetchedAt: new Date().toISOString(),
-      latest
-    };
-    settings.lastRateFetchDate = today;
-    saveLocalData();
-    return latest;
+    const info = await ensureExchangeRateHostYearCacheForFrontend();
+    const rates = pickExchangeRateHostYearCacheRate(info.cache, '', true);
+    if (!rates) throw new Error('exchangerate.host 今日缓存中没有最新可用汇率。');
+    return Object.assign({}, rates, { source: 'exchangerate.host GitHub 今日缓存' });
   }
 
   async function fetchRatesFromCurrencyAPI(dateParam) {

@@ -527,13 +527,21 @@ function normalizeTimeOfDay(value) {
 }
 
 async function refreshRatesBeforeEmail(env, data, candidates, timeZone) {
-  const apiKey = getExchangeRateHostApiKey(env, data);
-  if (!apiKey) {
-    return { attempted: true, ok: false, skipped: 'missing exchangerate.host API key. Set EXCHANGE_RATE_HOST_API_KEY in Worker Secrets or sync exchangeRateHostApiKey to cloud.' };
+  const today = todayString(timeZone);
+  const settings = data.settings || (data.settings = {});
+  let cache = settings.exchangeRateHostYearCache;
+  const hasTodayCache = cache && cache.fetchedOn === today && cache.rates && Object.keys(cache.rates).length > 0;
+
+  if (hasTodayCache) {
+    cache._justFetched = false;
+  } else {
+    const apiKey = getExchangeRateHostApiKey(env, data);
+    if (!apiKey) {
+      return { attempted: true, ok: false, skipped: 'missing exchangerate.host API key. Set EXCHANGE_RATE_HOST_API_KEY in Worker Secrets or sync exchangeRateHostApiKey to cloud.' };
+    }
+    cache = await ensureExchangeRateHostYearCache(env, data, apiKey, today);
   }
 
-  const today = todayString(timeZone);
-  const cache = await ensureExchangeRateHostYearCache(env, data, apiKey, today);
   const missingDates = new Set();
   let refreshedRecords = 0;
   let changed = false;
@@ -700,20 +708,48 @@ async function refreshRatesFromWorker(env, body = {}) {
   settings.rateProvider = 'ExchangeRateHost';
   const timeZone = normalizeTimeZone(settings.timeZone);
 
-  const apiKey = getExchangeRateHostApiKey(env, data);
-  if (!apiKey) {
-    throw new Error('缺少 exchangerate.host API Key。请在 Worker Secret 设置 EXCHANGE_RATE_HOST_API_KEY，或在页面汇率设置里同步 API Key 到云端。');
-  }
-
   const historyDays = Math.max(0, Number(body.historyDays || settings.historyRateRefreshDays || 30) || 30);
   settings.historyRateRefreshDays = historyDays;
   const today = todayString(timeZone);
+  let cache = settings.exchangeRateHostYearCache;
+  const hasTodayCache = cache && cache.fetchedOn === today && cache.rates && Object.keys(cache.rates).length > 0;
+  if (hasTodayCache) {
+    cache._justFetched = false;
+  } else {
+    const apiKey = getExchangeRateHostApiKey(env, data);
+    if (!apiKey) {
+      throw new Error('缺少 exchangerate.host API Key。请在 Worker Secret 设置 EXCHANGE_RATE_HOST_API_KEY，或在页面汇率设置里同步 API Key 到云端。');
+    }
+    cache = await ensureExchangeRateHostYearCache(env, data, apiKey, today);
+  }
+
+  if (body.ensureCacheOnly) {
+    let sha = read.sha || '';
+    if (cache._justFetched) {
+      const writeResult = await writeGithubFile(env, data, read.sha || null);
+      sha = writeResult.sha || '';
+    }
+    return {
+      data,
+      sha,
+      timeZone,
+      summary: {
+        provider: 'exchangerate.host yearly GitHub cache',
+        cacheOnly: true,
+        cacheFetchedOn: cache.fetchedOn,
+        cacheJustFetched: Boolean(cache._justFetched),
+        cacheStartDate: cache.startDate,
+        cacheEndDate: cache.endDate,
+        cacheDateCount: cache.rates ? Object.keys(cache.rates).length : 0,
+        changed: Boolean(cache._justFetched)
+      }
+    };
+  }
+
   const activeRecords = Array.isArray(data.activeRecords) ? data.activeRecords : [];
   const historyRecords = Array.isArray(data.historyRecords) ? data.historyRecords : [];
   const eligibleHistoryRecords = historyRecords.filter(r => isHistoryRateRefreshEligibleWorker(r, historyDays, timeZone));
   const skippedHistoryCount = Math.max(historyRecords.length - eligibleHistoryRecords.length, 0);
-
-  const cache = await ensureExchangeRateHostYearCache(env, data, apiKey, today);
   let activeSuccessCount = 0;
   let historySuccessCount = 0;
   let changed = Boolean(cache._justFetched);

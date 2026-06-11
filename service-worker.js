@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'deposit-app-v83-exchange-host-daily-cache';
+const CACHE_VERSION = 'deposit-app-v85-exchange-host-api-once-daily';
 const CACHEABLE_CDN = [
   'https://code.jquery.com/jquery-3.7.1.min.js'
 ];

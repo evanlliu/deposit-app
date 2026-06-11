@@ -1,3 +1,25 @@
+## v85 exchangerate.host 全入口每日一次 API 保护
+
+- 统一 exchangerate.host 汇率刷新规则：当天 `data.json` 已有 `settings.exchangeRateHostYearCache.fetchedOn = 今天` 且包含汇率数据时，所有入口都直接复用缓存，不再调用 exchangerate.host API。
+- 修复 `/refresh-rates` 的顺序：先判断今日 GitHub 缓存，再判断 API Key；因此今日缓存存在时，即使 API Key 缺失也不会报错或请求 API。
+- 前端不再直接请求 exchangerate.host 的 `live`、`historical`、`timeframe` 接口；新增/编辑自动填汇率、单条保存后刷新、批量刷新都会通过 `data.json` 今日缓存或 Cloudflare Worker 写入今日缓存。
+- 新增 Worker `ensureCacheOnly` 路径：只确保今日年度缓存存在，不批量改动定存记录；当今日缓存不存在时才调用一次 exchangerate.host API 并写回 `data.json`。
+- 第二天日期变化后，`fetchedOn` 与当天不一致，系统才允许重新调用一次 API 刷新新一天的年度缓存。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v85-exchange-host-api-once-daily`。
+
+## v84 邮件推送复用 exchangerate.host 今日缓存
+
+- 邮件推送前刷新候选记录汇率时，优先检查 `data.json` 中的 `settings.exchangeRateHostYearCache`。
+- 如果今日缓存已经存在且包含汇率数据，则直接复用缓存，不再要求 API Key，也不会调用 exchangerate.host API。
+- 只有今日缓存不存在时，才会使用 `EXCHANGE_RATE_HOST_API_KEY` 或云端同步的 API Key 调用 exchangerate.host 获取年度缓存。
+- 不改动邮件模板、推送规则、防重复发送逻辑和 `data.json` 结构。
+- `service-worker.js` 缓存版本更新为 `deposit-app-v84-email-rate-cache`。
+
+### 本次需要更新的文件
+
+- GitHub：`index.html`、`service-worker.js`、`README.md`
+- Cloudflare：`worker.js`
+
 ## v83 exchangerate.host 每日缓存保护
 
 - 刷新汇率时，Cloudflare Worker 会先检查 `data.json` 里的 `settings.exchangeRateHostYearCache`。
